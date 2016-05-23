@@ -296,20 +296,17 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 	#  15828 3 2 1 0
 
 
-@click.command(help="This tool requires the '*.Chimeric.out.sam' files of RNA STAR that have been converted into bamfiles and must be NAME sorted:\n\n  samtools view -bS $file.Chimeric.out.sam > $file.Chimeric.out.unsorted.bam\n  samtools sort -n $file.Chimeric.out.unsorted.bam $file.Chimeric.out.fixed")
+@click.command(help="This tool requires the '*.Chimeric.out.sam' files of RNA STAR converted into BAM")
 @click.argument('bam_file_discordant')
 @click.argument('bam_file_discordant_fixed')
 def main(bam_file_discordant,bam_file_discordant_fixed):
 	path = os.path.dirname(bam_file_discordant)
 	basename,ext = os.path.splitext(os.path.basename(bam_file_discordant))
 	
-	
 	#@TODO / consider todo - start straight from sam
 	#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
 	
-	
-	"""
-	# Convert into a name-sorted bam file (to get all reads with the same name adjacent to each other
+	print "Convert into a name-sorted bam file (to get all reads with the same name adjacent to each other"
 	command = ["samtools",
 			   "sort",
 			   "-n",
@@ -319,9 +316,9 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	
 	if e_code != 0:
 		raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
-	"""
-	"""
-	# Fix sam file with pysam
+	
+	
+	print "--- Fixing sam file ---"
 	sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
 	fh = open(basename+".name-sorted.fixed.sam","w")
 	fh.write(sam_file_discordant.text)
@@ -336,10 +333,9 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 		alignments.append(read)
 	reconstruct_alignments(alignments,sam_file_discordant,fh)
 	fh.close()
-	"""
 	
-	"""
-	# Convert into bam
+	
+	print "Converting fixed file into BAM"
 	command = ["samtools",
 			   "view",
 			   "-bS",
@@ -350,10 +346,9 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	
 	if e_code != 0:
 		raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
-	"""
 	
-	"""
-	# Sort position based
+	
+	print "Sorting position based fixed file"
 	command = ["samtools",
 			   "sort",
 			   basename+".name-sorted.fixed.bam",
@@ -364,7 +359,7 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 		raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
 	
 	
-	# Index the position sorted bam file
+	print "Indexing the position sorted bam file"
 	command = ["samtools",
 			   "index",
 			   basename+".sorted.fixed.bam"]
@@ -372,14 +367,17 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	
 	if e_code != 0:
 		raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
-	"""
 	
+	
+	print "Cleaning up temp files"
 	os.remove(basename+".name-sorted.bam")
 	os.remove(basename+".name-sorted.fixed.sam")
 	os.remove(basename+".name-sorted.fixed.bam")
 	
-	os.rename(basename+".name-sorted.fixed.bam",bam_file_discordant_fixed)
-	os.rename(basename+".name-sorted.fixed.bam"+".bai",bam_file_discordant_fixed+".bai")
+	
+	print "Moving to final destination"
+	os.rename(basename+".sorted.fixed.bam",bam_file_discordant_fixed)
+	os.rename(basename+".sorted.fixed.bam"+".bai",bam_file_discordant_fixed+".bai")
 
 
 if __name__ == "__main__":
