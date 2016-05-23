@@ -336,6 +336,17 @@ def main(bam_file_discordant):
 			last_read_name = read.qname
 		alignments.append(read)
 	reconstruct_alignments(alignments,sam_file_discordant)
+	
+	#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
+	#samtools sort -n  samples/7046-004-041_discordant.Chimeric.out.unsorted.bam samples/7046-004-041_discordant.Chimeric.out.n
+	#./fix-chimeric-out-bam.py samples/7046-004-041_discordant.n.bam > samples/7046-004-041_discordant.n.fixed.sam
+	#samtools view -bS samples/7046-004-041_discordant.n.fixed.sam > samples/7046-004-041_discordant.n.fixed.unsorted.bam
+	#samtools sort samples/7046-004-041_discordant.n.fixed.unsorted.bam samples/7046-004-041_discordant.n.fixed
+	#samtools index samples/7046-004-041_discordant.n.fixed.bam
+	#
+	#rm samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
+	#rm samples/7046-004-041_discordant.n.fixed.sam
+	#rm samples/7046-004-041_discordant.n.fixed.unsorted.bam
 
 
 if __name__ == "__main__":
