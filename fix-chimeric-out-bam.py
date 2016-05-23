@@ -2,10 +2,11 @@
 
 #http://www.samformat.info/sam-format-flag
 
+import click
 import pysam
-#numpy
 
-bam_file_discordant = "samples/7046-004-041_discordant.n.bam"
+
+#bam_file_discordant = "samples/7046-004-041_discordant.n.bam"
 
 ## Sep 01: fix bam files:
 ## - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n 
@@ -18,8 +19,26 @@ bam_file_discordant = "samples/7046-004-041_discordant.n.bam"
 ## - Mark as deletion if possible (N is for splicing, so do D/P)
 ## - Set read group to sample name
 
+def set_qname_to_group(all_reads_updated):
+	qnames = []
+	for a in all_reads_updated:
+		qnames.append(a.qname)
+	
+	qnames = list(set(qnames))
+	
+	if len(qnames) != 1:
+		raise Exception("Not all reads belong to the same QNAME")
+	else:
+		qname = qnames[0]
+		for i in range(len(all_reads_updated)):
+			all_reads_updated[i].set_tag('RG',qname)
+	
+	
+	return all_reads_updated
+
 def update_sa_tags(reads_updated,bam_file):
 	sa_ids = []
+	
 	for a in reads_updated:
 		try:
 			nm = a.get_tag('nM')
@@ -32,15 +51,9 @@ def update_sa_tags(reads_updated,bam_file):
 	for i in range(len(reads_updated)):
 		sa_id = sa_ids[i]
 		sa_tag = ";".join([x for x in sa_ids if x != sa_id])
-		print reads_updated[i]
-		print sa_tag
 		reads_updated[i].set_tag('SA',sa_tag)
 	
-	for a in reads_updated:
-		print a
-	
-	import sys
-	sys.exit()
+	return reads_updated
 
 def set_next_ref(aligned_segment,position):
 	if aligned_segment.next_reference_id != position[0] or aligned_segment.next_reference_start != position[1]:
@@ -217,6 +230,9 @@ t set(['chr9:100772326'])
 
 
 def reconstruct_alignments(alignments,bam_file):
+	"""
+	input: only reads with the same qname
+	"""
 	n = len(alignments)
 	r1 = []
 	r2 = []
@@ -239,37 +255,59 @@ def reconstruct_alignments(alignments,bam_file):
 	all_reads_updated = []
 	
 	if n_r1 > 1:
-		## set "SA:S:chrA:1:10;,,," tag and change the next alignment
-		#double_disco += 1
+		double_disco += 1
+		
 		reads_updated = fix_chain(r1,bam_file,r2)
 		#reads_updated = update_sa_tags(reads_updated,bam_file)
 		for a in reads_updated:
 			all_reads_updated.append(a)
+	else:
+		# No need to update - no supplementary r1 reads
+		for a in r1:
+			all_reads_updated.append(a)
 	
 	if n_r2 > 1:
-		## set "SA:S:chrA:1:10;,,," tag and change the next alignment
-		#double_disco += 1
+		double_disco += 1
+		
 		reads_updated = fix_chain(r2,bam_file,r1)
 		#reads_updated = update_sa_tags(reads_updated,bam_file)
 		for a in reads_updated:
 			all_reads_updated.append(a)
+	else:
+		# No need to update - no supplementary r1 reads
+		for a in r2:
+			all_reads_updated.append(a)
 	
 	if n_s >= 2:
-		## Only set "SA:S:chrA:1:10;,,," tag and do not change the next alignment
+		double_disco += 1
+		
 		reads_updated = fix_chain(singletons,bam_file,[])
 		#reads_updated = update_sa_tags(reads_updated,bam_file)
 		for a in reads_updated:
 			all_reads_updated.append(a)
+	else:
+		# No need to update - no supplementary singleton reads
+		for a in singletons:
+			all_reads_updated.append(a)
+	
+	if double_disco >= 2:
+		print "DOUBLE DISCO! >> forward and reverse"
+		import sys
+		sys.exit(1)
+	
+	
+	all_reads_updated = update_sa_tags(all_reads_updated,bam_file)
+	if len(all_reads_updated) != n:
+		print "Error - reads have been lost"
+		import sys
+		sys.exit(1)
+	
+	all_reads_updated = set_qname_to_group(all_reads_updated)
 	
 	for a in all_reads_updated:
-		all_reads_updated = update_sa_tags(all_reads_updated,bam_file)
+		print a.tostring(bam_file)
 	
-	
-	#if double_disco >= 2:
-	#	print "DOUBLE DISCO!"
-	#	import sys
-	#	sys.exit(1)
-	
+
 	# for all, update group to read name
 	
 	#update_group_names(all_reads_updated)
@@ -283,29 +321,22 @@ def reconstruct_alignments(alignments,bam_file):
 	#  15828 3 2 1 0
 
 
+@click.command(help="This tool requires the '*.Chimeric.out.sam' files of RNA STAR that have been converted into bamfiles and must be NAME sorted:\n\n  samtools view -bS $file.Chimeric.out.sam > $file.Chimeric.out.unsorted.bam\n  samtools sort -n $file.Chimeric.out.unsorted.bam $file.Chimeric.out.fixed")
+@click.argument('bam_file_discordant')
+def main(bam_file_discordant):
+	sam_file_discordant = pysam.AlignmentFile(bam_file_discordant, "rb")
+	print sam_file_discordant.text
+	last_read_name = False
+	alignments = []
+	for read in sam_file_discordant:
+		if read.qname != last_read_name:
+			if len(alignments) > 0:
+				reconstruct_alignments(alignments,sam_file_discordant)
+			alignments = []
+			last_read_name = read.qname
+		alignments.append(read)
+	reconstruct_alignments(alignments,sam_file_discordant)
 
 
-sam_file_discordant = pysam.AlignmentFile(bam_file_discordant, "rb")
-last_read_name = False
-alignments = []
-for read in sam_file_discordant:
-	if read.qname != last_read_name:
-		if len(alignments) > 0:
-			reconstruct_alignments(alignments,sam_file_discordant)
-		alignments = []
-		last_read_name = read.qname
-	alignments.append(read)
-reconstruct_alignments(alignments,sam_file_discordant)
-
-
-
-# 1. Check name sorted
-# 2. 
-
-
-#hg19
-#r1_tmprss = "chr21:42,834,478-42,882,085"
-#r2_erg = "chr21:39,737,183-40,035,618"
-#offset = 5000
-
-#find_breakpoints(r1_tmprss,r2_erg,"samples/7046-004-041_concordant.bam",)
+if __name__ == "__main__":
+	main()
