@@ -2,7 +2,7 @@
 
 #http://www.samformat.info/sam-format-flag
 
-import click
+import click,os,subprocess
 import pysam
 
 
@@ -161,11 +161,9 @@ def fix_chain(alignments,bam_file,mates):
 	else:
 		if len(_linked) == 0:
 			if len(chains_to) > 1:
-				print "Error - unknown situation type 1"
 				# Probably pick simply the link to the mate as follows:
 				# mate_pos = [mates[0].reference_id,mates[0].reference_start]
-				import sys
-				exit(1)
+				raise Exception("Error - unknown situation type 1")
 			
 			mate_pos = [int(x) for x in list(chains_to)[0].split(":")]
 			if mate_pos[0] == -1 and mate_pos[1] == -1:
@@ -189,9 +187,7 @@ def fix_chain(alignments,bam_file,mates):
 					# cross reffing each other
 					alignments_new = alignments
 				else:
-					print "Error - unknown situation type 2"
-					import sys
-					exit(1)
+					raise Exception("Error - unknown situation type 2")
 			
 			if len(mates) == 1:
 				seg_pos = [mates[0].reference_id,mates[0].reference_start]
@@ -212,24 +208,13 @@ def fix_chain(alignments,bam_file,mates):
 				new_alignments.append(set_next_ref(closest,seg_pos))
 	
 	if len(new_alignments) != k:
-		print "Somewhere alignments got lost in this function"
-		import sys
-		sys.exit()
+		raise Exception("Somewhere alignments got lost in this function")
 	
 	return new_alignments
 
 
-"""
-f set(['chr9:100772404', 'chr9:100772393'])
-t set(['chr9:100772326'])
 
-100772404-100772326=78
-100772326-100772393=-67
-"""
-
-
-
-def reconstruct_alignments(alignments,bam_file):
+def reconstruct_alignments(alignments,bam_file,fh_out):
 	"""
 	input: only reads with the same qname
 	"""
@@ -291,27 +276,17 @@ def reconstruct_alignments(alignments,bam_file):
 			all_reads_updated.append(a)
 	
 	if double_disco >= 2:
-		print "DOUBLE DISCO! >> forward and reverse"
-		import sys
-		sys.exit(1)
-	
+		# Should in theory be possible but has not been observed
+		raise Exception("DOUBLE DISCO! >> forward and reverse have multiple segments?")
 	
 	all_reads_updated = update_sa_tags(all_reads_updated,bam_file)
 	if len(all_reads_updated) != n:
-		print "Error - reads have been lost"
-		import sys
-		sys.exit(1)
+		raise Exception("Error - reads have been lost")
 	
 	all_reads_updated = set_qname_to_group(all_reads_updated)
 	
 	for a in all_reads_updated:
-		print a.tostring(bam_file)
-	
-
-	# for all, update group to read name
-	
-	#update_group_names(all_reads_updated)
-	# export
+		fh_out.write(a.tostring(bam_file)+"\n")
 	
 	#if n > 2:
 	#print n,n_r1, n_r2, n_s
@@ -323,30 +298,88 @@ def reconstruct_alignments(alignments,bam_file):
 
 @click.command(help="This tool requires the '*.Chimeric.out.sam' files of RNA STAR that have been converted into bamfiles and must be NAME sorted:\n\n  samtools view -bS $file.Chimeric.out.sam > $file.Chimeric.out.unsorted.bam\n  samtools sort -n $file.Chimeric.out.unsorted.bam $file.Chimeric.out.fixed")
 @click.argument('bam_file_discordant')
-def main(bam_file_discordant):
-	sam_file_discordant = pysam.AlignmentFile(bam_file_discordant, "rb")
-	print sam_file_discordant.text
+@click.argument('bam_file_discordant_fixed')
+def main(bam_file_discordant,bam_file_discordant_fixed):
+	path = os.path.dirname(bam_file_discordant)
+	basename,ext = os.path.splitext(os.path.basename(bam_file_discordant))
+	
+	
+	#@TODO / consider todo - start straight from sam
+	#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
+	
+	
+	"""
+	# Convert into a name-sorted bam file (to get all reads with the same name adjacent to each other
+	command = ["samtools",
+			   "sort",
+			   "-n",
+			   bam_file_discordant,
+			   basename+".name-sorted"]
+	e_code = subprocess.call(command)
+	
+	if e_code != 0:
+		raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
+	"""
+	"""
+	# Fix sam file with pysam
+	sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
+	fh = open(basename+".name-sorted.fixed.sam","w")
+	fh.write(sam_file_discordant.text)
 	last_read_name = False
 	alignments = []
 	for read in sam_file_discordant:
 		if read.qname != last_read_name:
 			if len(alignments) > 0:
-				reconstruct_alignments(alignments,sam_file_discordant)
+				reconstruct_alignments(alignments,sam_file_discordant,fh)
 			alignments = []
 			last_read_name = read.qname
 		alignments.append(read)
-	reconstruct_alignments(alignments,sam_file_discordant)
+	reconstruct_alignments(alignments,sam_file_discordant,fh)
+	fh.close()
+	"""
 	
-	#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
-	#samtools sort -n  samples/7046-004-041_discordant.Chimeric.out.unsorted.bam samples/7046-004-041_discordant.Chimeric.out.n
-	#./fix-chimeric-out-bam.py samples/7046-004-041_discordant.n.bam > samples/7046-004-041_discordant.n.fixed.sam
-	#samtools view -bS samples/7046-004-041_discordant.n.fixed.sam > samples/7046-004-041_discordant.n.fixed.unsorted.bam
-	#samtools sort samples/7046-004-041_discordant.n.fixed.unsorted.bam samples/7046-004-041_discordant.n.fixed
-	#samtools index samples/7046-004-041_discordant.n.fixed.bam
-	#
-	#rm samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
-	#rm samples/7046-004-041_discordant.n.fixed.sam
-	#rm samples/7046-004-041_discordant.n.fixed.unsorted.bam
+	"""
+	# Convert into bam
+	command = ["samtools",
+			   "view",
+			   "-bS",
+			   "-o",
+			   basename+".name-sorted.fixed.bam",
+			   basename+".name-sorted.fixed.sam"]
+	e_code = subprocess.call(command)
+	
+	if e_code != 0:
+		raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
+	"""
+	
+	"""
+	# Sort position based
+	command = ["samtools",
+			   "sort",
+			   basename+".name-sorted.fixed.bam",
+			   basename+".sorted.fixed"]
+	e_code = subprocess.call(command)
+	
+	if e_code != 0:
+		raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
+	
+	
+	# Index the position sorted bam file
+	command = ["samtools",
+			   "index",
+			   basename+".sorted.fixed.bam"]
+	e_code = subprocess.call(command)
+	
+	if e_code != 0:
+		raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
+	"""
+	
+	os.remove(basename+".name-sorted.bam")
+	os.remove(basename+".name-sorted.fixed.sam")
+	os.remove(basename+".name-sorted.fixed.bam")
+	
+	os.rename(basename+".name-sorted.fixed.bam",bam_file_discordant_fixed)
+	os.rename(basename+".name-sorted.fixed.bam"+".bai",bam_file_discordant_fixed+".bai")
 
 
 if __name__ == "__main__":
