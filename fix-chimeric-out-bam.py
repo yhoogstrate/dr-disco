@@ -5,8 +5,9 @@
 import click,os,subprocess
 import pysam
 
+if pysam.__version__[0:4] != "0.9.":
+	raise Exception("Version of pysam needs to be at least 0.9 but is: "+pysam.__version__+" instead")
 
-#bam_file_discordant = "samples/7046-004-041_discordant.n.bam"
 
 ## Sep 01: fix bam files:
 ## - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n 
@@ -103,7 +104,7 @@ def get_closest(location, alignments):
 
 def fix_chain(alignments,bam_file,mates):
 	"""
-	aligments must come from the same MATE and reads should not be marked as DUPLICATE or MULTIMAPPING
+	all segments in variable `aligments` must come from the same MATE and should not be marked as DUPLICATE or MULTIMAPPING
 	"""
 	chains_from = {}
 	chains_to = {}
