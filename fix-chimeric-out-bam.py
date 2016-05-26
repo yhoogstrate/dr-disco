@@ -21,6 +21,17 @@ if pysam.__version__[0:4] != "0.9.":
 ## - Mark as deletion if possible (N is for splicing, so do D/P)
 ## - Set read group to sample name
 
+
+def fix_alignment_score():
+	# Requires:
+	# +1  (read paired)
+	# +64 / +128 << forward or reverse
+	# typically:
+	# first &  first  in pair works
+	# second & second in pair works
+	# first  & socond in pair works
+	raise Exception("TODO")
+
 def set_qname_to_group(all_reads_updated):
 	qnames = []
 	for a in all_reads_updated:
@@ -34,7 +45,6 @@ def set_qname_to_group(all_reads_updated):
 		qname = qnames[0]
 		for i in range(len(all_reads_updated)):
 			all_reads_updated[i].set_tag('LB',qname.replace(":","."))
-	
 	
 	return all_reads_updated
 
@@ -306,6 +316,7 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 		raise Exception("Error - reads have been lost")
 	
 	all_reads_updated = set_qname_to_group(all_reads_updated)
+	all_reads_updated = fix_alignment_score(all_reads_updated)
 	
 	for a in all_reads_updated:
 		#fh_out.write(a.tostring(bam_file)+"\n")
