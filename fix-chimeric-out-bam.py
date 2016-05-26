@@ -8,6 +8,7 @@ import pysam
 if pysam.__version__[0:4] != "0.9.":
 	raise Exception("Version of pysam needs to be at least 0.9 but is: "+pysam.__version__+" instead")
 
+#@todo check samtools v >= 1.3.*
 
 ## Sep 01: fix bam files:
 ## - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n 
@@ -32,7 +33,7 @@ def set_qname_to_group(all_reads_updated):
 	else:
 		qname = qnames[0]
 		for i in range(len(all_reads_updated)):
-			all_reads_updated[i].set_tag('RG',qname)
+			all_reads_updated[i].set_tag('LB',qname.replace(":","."))
 	
 	
 	return all_reads_updated
@@ -74,6 +75,7 @@ def set_next_ref(aligned_segment,position):
 		a.next_reference_start = position[1]
 		
 		return a
+	
 	else:
 		return aligned_segment
 
@@ -160,7 +162,7 @@ def fix_chain(alignments,bam_file,mates):
 			print "Warning - mates do not correspond? - maybe empty (-1) as well?"
 			
 			next_pos = [alignments[0].reference_id,alignments[0].reference_start]
-			last_pos = next_pos
+			last_pos = [mates[0].reference_id,mates[0].reference_start]
 			
 			start = get_closest(next_pos,alignments)
 		
@@ -168,19 +170,24 @@ def fix_chain(alignments,bam_file,mates):
 		# If the mate is not exactly matched but close, fix it:
 		new_mates.append(set_next_ref(mates[0],[start.reference_id,start.reference_start]))
 		
+		i = 0
 		while len(alignments) >= 1:
 			closest = get_closest(next_pos,alignments)
 			next_pos = [closest.reference_id,closest.reference_start]
 			
 			s_fixed = set_next_ref(start,next_pos)
+			s_fixed.set_tag('FI',i)
 			new_alignments.append(s_fixed)
 			alignments = [a for a in alignments if a != closest]
 			
 			start = closest
+			i += 1
 		
 		# Map last one back to the mate again
 		if len(alignments) == 0:
-			new_alignments.append(set_next_ref(start,last_pos))
+			start = set_next_ref(start,last_pos)
+			start.set_tag('FI',i)
+			new_alignments.append(start)
 	
 	elif len(mates) == 0:
 		## Either 2 discordant mates
@@ -301,7 +308,8 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 	all_reads_updated = set_qname_to_group(all_reads_updated)
 	
 	for a in all_reads_updated:
-		fh_out.write(a.tostring(bam_file)+"\n")
+		#fh_out.write(a.tostring(bam_file)+"\n")
+		fh_out.write(a)
 	
 	#if n > 2:
 	#print n,n_r1, n_r2, n_s
@@ -321,12 +329,12 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	#@TODO / consider todo - start straight from sam
 	#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
 	
-	print "Convert into a name-sorted bam file (to get all reads with the same name adjacent to each other"
+	print "Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other"
 	command = ["samtools",
 			   "sort",
+			   "-o",basename+".name-sorted.bam",
 			   "-n",
-			   bam_file_discordant,
-			   basename+".name-sorted"]
+			   bam_file_discordant]
 	e_code = subprocess.call(command)
 	
 	if e_code != 0:
@@ -334,9 +342,24 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	
 	
 	print "--- Fixing sam file ---"
+	"""
 	sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
 	fh = open(basename+".name-sorted.fixed.sam","w")
 	fh.write(sam_file_discordant.text)
+	last_read_name = False
+	alignments = []
+	for read in sam_file_discordant:
+		if read.qname != last_read_name:
+			if len(alignments) > 0:
+				reconstruct_alignments(alignments,sam_file_discordant,fh)
+			alignments = []
+			last_read_name = read.qname
+		alignments.append(read)
+	reconstruct_alignments(alignments,sam_file_discordant,fh)
+	fh.close()
+	"""
+	sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
+	fh = pysam.AlignmentFile(basename+".name-sorted.fixed.sam", "wb", header=sam_file_discordant.header)
 	last_read_name = False
 	alignments = []
 	for read in sam_file_discordant:
@@ -364,10 +387,11 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	
 	
 	print "Sorting position based fixed file"
+	## Samtools 1.3.1
 	command = ["samtools",
 			   "sort",
-			   basename+".name-sorted.fixed.bam",
-			   basename+".sorted.fixed"]
+			   "-o",basename+".sorted.fixed.bam",
+			   basename+".name-sorted.fixed.bam"]
 	e_code = subprocess.call(command)
 	
 	if e_code != 0:
