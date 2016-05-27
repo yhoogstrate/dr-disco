@@ -22,15 +22,14 @@ if pysam.__version__[0:4] != "0.9.":
 ## - Set read group to sample name
 
 
-def fix_alignment_score():
-	# Requires:
-	# +1  (read paired)
-	# +64 / +128 << forward or reverse
-	# typically:
-	# first &  first  in pair works
-	# second & second in pair works
-	# first  & socond in pair works
-	raise Exception("TODO")
+def set_read_group(all_reads_updated,group):
+	for a in all_reads_updated:
+		a.set_tag('RG',group)
+
+def fix_alignment_score(all_reads_updated):
+	for a in all_reads_updated:
+		a.is_paired = True
+		a.is_read2 = True
 
 def set_qname_to_group(all_reads_updated):
 	qnames = []
@@ -232,13 +231,6 @@ def fix_chain(alignments,bam_file,mates):
 			
 			alignments = [a for a in alignments if a != closest]
 			new_alignments.append(set_next_ref(closest,seg_pos))
-		"""
-		print "----"
-		for a in new_alignments:
-			print a
-		print "--------------------------------"
-		print
-		"""
 	
 	else:
 		raise Exception("Dunno how to handle junctions in both mates yet... not aware of STAR Fusion producing them either")
@@ -277,6 +269,8 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 	
 	if n_r1 > 1:
 		reads_updated,mates_updated = fix_chain(r1,bam_file,r2)
+		set_read_group(reads_updated,'spanning_paired')
+		set_read_group(mates_updated,'silent_mate')
 		for a in reads_updated:
 			all_reads_updated.append(a)
 		
@@ -285,6 +279,8 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 	
 	elif n_r2 > 1:
 		reads_updated,mates_updated = fix_chain(r2,bam_file,r1)
+		set_read_group(reads_updated,'spanning_paired')
+		set_read_group(mates_updated,'silent_mate')
 		for a in reads_updated:
 			all_reads_updated.append(a)
 		
@@ -293,6 +289,10 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 	
 	elif n_s >= 2:
 		reads_updated,mates_updated = fix_chain(singletons,bam_file,[])
+		set_read_group(reads_updated,'spanning_singleton')
+		
+		fix_alignment_score(reads_updated)
+		
 		for a in reads_updated:
 			all_reads_updated.append(a)
 		
@@ -301,6 +301,8 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 	
 	elif n_r1 == 1 and n_r2 == 1 and n_s == 0:
 		reads_updated,mates_updated = fix_chain(r1 + r2,bam_file,[])
+		set_read_group(reads_updated,'discordant_mates')
+		
 		for a in reads_updated:
 			all_reads_updated.append(a)
 		
@@ -308,7 +310,11 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 			all_reads_updated.append(a)
 	
 	else:
-		raise Exception("what happens here?")
+		if n == 1:
+			print "Warning - other segments of mate are missing"
+			all_reads_updated.append(alignments[0])
+		else:
+			raise Exception("what happens here?")
 	
 	
 	all_reads_updated = update_sa_tags(all_reads_updated,bam_file)
@@ -316,10 +322,8 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 		raise Exception("Error - reads have been lost")
 	
 	all_reads_updated = set_qname_to_group(all_reads_updated)
-	all_reads_updated = fix_alignment_score(all_reads_updated)
 	
 	for a in all_reads_updated:
-		#fh_out.write(a.tostring(bam_file)+"\n")
 		fh_out.write(a)
 	
 	#if n > 2:
@@ -353,24 +357,15 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	
 	
 	print "--- Fixing sam file ---"
-	"""
 	sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
-	fh = open(basename+".name-sorted.fixed.sam","w")
-	fh.write(sam_file_discordant.text)
-	last_read_name = False
-	alignments = []
-	for read in sam_file_discordant:
-		if read.qname != last_read_name:
-			if len(alignments) > 0:
-				reconstruct_alignments(alignments,sam_file_discordant,fh)
-			alignments = []
-			last_read_name = read.qname
-		alignments.append(read)
-	reconstruct_alignments(alignments,sam_file_discordant,fh)
-	fh.close()
-	"""
-	sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
-	fh = pysam.AlignmentFile(basename+".name-sorted.fixed.sam", "wb", header=sam_file_discordant.header)
+	header = sam_file_discordant.header
+	header['RG'] = [
+		{'ID':'spanning_singleton','DS':'This read was aligned to two locations but no aligned mate'},
+		{'ID':'discordant_mates','DS':'This read has discordant mate pair'},
+		{'ID':'spanning_paired','DS':'This read was aligned to two locations and also has an aligned mate'},
+		{'ID':'silent_mate','DS':'Reads of this type are not discordant while their mate is'}]
+	
+	fh = pysam.AlignmentFile(basename+".name-sorted.fixed.sam", "wb", header=header)
 	last_read_name = False
 	alignments = []
 	for read in sam_file_discordant:
