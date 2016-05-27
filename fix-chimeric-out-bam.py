@@ -5,8 +5,10 @@
 import click,os,subprocess
 import pysam
 
+if pysam.__version__[0:4] != "0.9.":
+	raise Exception("Version of pysam needs to be at least 0.9 but is: "+pysam.__version__+" instead")
 
-#bam_file_discordant = "samples/7046-004-041_discordant.n.bam"
+#@todo check samtools v >= 1.3.*
 
 ## Sep 01: fix bam files:
 ## - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n 
@@ -18,6 +20,16 @@ import pysam
 ## - Update NH tags per mate
 ## - Mark as deletion if possible (N is for splicing, so do D/P)
 ## - Set read group to sample name
+
+
+def set_read_group(all_reads_updated,group):
+	for a in all_reads_updated:
+		a.set_tag('RG',group)
+
+def fix_alignment_score(all_reads_updated):
+	for a in all_reads_updated:
+		a.is_paired = True
+		a.is_read2 = True
 
 def set_qname_to_group(all_reads_updated):
 	qnames = []
@@ -31,8 +43,7 @@ def set_qname_to_group(all_reads_updated):
 	else:
 		qname = qnames[0]
 		for i in range(len(all_reads_updated)):
-			all_reads_updated[i].set_tag('RG',qname)
-	
+			all_reads_updated[i].set_tag('LB',qname.replace(":","."))
 	
 	return all_reads_updated
 
@@ -73,6 +84,7 @@ def set_next_ref(aligned_segment,position):
 		a.next_reference_start = position[1]
 		
 		return a
+	
 	else:
 		return aligned_segment
 
@@ -103,14 +115,13 @@ def get_closest(location, alignments):
 
 def fix_chain(alignments,bam_file,mates):
 	"""
-	aligments must come from the same MATE and reads should not be marked as DUPLICATE or MULTIMAPPING
+	all segments in variable `aligments` must come from the same MATE (unless discordant pairs without suppl. alignments) and should not be marked as DUPLICATE or MULTIMAPPING
 	"""
 	chains_from = {}
 	chains_to = {}
 	
 	k = len(alignments)
 	
-	# Fill phase
 	for alignment in alignments:
 		chain_from = str(alignment.reference_id)+":"+str(alignment.reference_start)
 		chain_to = str(alignment.next_reference_id)+":"+str(alignment.next_reference_start)
@@ -125,13 +136,6 @@ def fix_chain(alignments,bam_file,mates):
 	
 	chains_from = set(chains_from)
 	chains_to = set(chains_to)
-	
-	#links = []
-	#for chain_to in chains_to.keys():
-		#if chain_to in chains_from.keys():
-			#alignment_t = chains_from[chain_to][0]
-			#chain_to_t = alignment_t.next_reference_name+":"+str(alignment_t.next_reference_start)
-			#print "link: "+chain_to+"=>"+chain_to_t
 	
 	_from = chains_from.difference(chains_to)
 	_to = chains_to.difference(chains_from)
@@ -154,63 +158,87 @@ def fix_chain(alignments,bam_file,mates):
 	#    andere(n) naar elkaar - per chromosoom?
 	
 	new_alignments = []
+	new_mates = []
 	
-	if len(list(_from)) == 1 and len(list(_to)) == 1:
-		# Chain is seems to be OKAY - only add SA suffixes/tags
-		new_alignments = alignments
-	else:
-		if len(_linked) == 0:
-			if len(chains_to) > 1:
-				# Probably pick simply the link to the mate as follows:
-				# mate_pos = [mates[0].reference_id,mates[0].reference_start]
-				raise Exception("Error - unknown situation type 1")
+	if len(mates) == 1 and len(alignments) >= 2:
+		if str(mates[0].next_reference_id)+":"+str(mates[0].next_reference_start) in chains_from:
+			next_pos = [mates[0].next_reference_id,mates[0].next_reference_start]
+			last_pos = [mates[0].reference_id,mates[0].reference_start]
 			
-			mate_pos = [int(x) for x in list(chains_to)[0].split(":")]
-			if mate_pos[0] == -1 and mate_pos[1] == -1:
-				mate_pos = [alignments[0].reference_id,alignments[0].reference_start]
-			
-			closest = get_closest(mate_pos,alignments)
-			alignments = [a for a in alignments if a != closest]
-			new_alignments.append(set_next_ref(closest,mate_pos))
-			
-			while len(alignments) > 0:
-				seg_pos = [closest.reference_id,closest.reference_start]
-				closest = get_closest(mate_pos,alignments)
-				
-				alignments = [a for a in alignments if a != closest]
-				new_alignments.append(set_next_ref(closest,seg_pos))
-			
+			start = get_closest(next_pos,alignments)
+		
 		else:
-			#There is at least a start of linked alignments
-			if len(_linked) > 1:
-				if len(_from) == 0 and len(_to) == 0:
-					# cross reffing each other
-					alignments_new = alignments
-				else:
-					raise Exception("Error - unknown situation type 2")
+			print "Warning - mates do not correspond? - maybe empty (-1) as well?"
 			
-			if len(mates) == 1:
-				seg_pos = [mates[0].reference_id,mates[0].reference_start]
-			else:
-				seg_pos = [int(x) for x in list(_linked)[0].split(":")]
-				if seg_pos[0] == -1 and seg_pos[1] == -1:
-					seg_pos = [alignments[0].reference_id,alignments[0].reference_start]
+			next_pos = [alignments[0].reference_id,alignments[0].reference_start]
+			last_pos = [mates[0].reference_id,mates[0].reference_start]
 			
+			start = get_closest(next_pos,alignments)
+		
+		alignments = [a for a in alignments if a != start]
+		# If the mate is not exactly matched but close, fix it:
+		new_mates.append(set_next_ref(mates[0],[start.reference_id,start.reference_start]))
+		
+		i = 0
+		while len(alignments) >= 1:
+			closest = get_closest(next_pos,alignments)
+			next_pos = [closest.reference_id,closest.reference_start]
+			
+			s_fixed = set_next_ref(start,next_pos)
+			s_fixed.set_tag('FI',i)
+			new_alignments.append(s_fixed)
+			alignments = [a for a in alignments if a != closest]
+			
+			start = closest
+			i += 1
+		
+		# Map last one back to the mate again
+		if len(alignments) == 0:
+			start = set_next_ref(start,last_pos)
+			start.set_tag('FI',i)
+			new_alignments.append(start)
+	
+	elif len(mates) == 0:
+		## Either 2 discordant mates
+		## Or 2 discordant segments from one singleton
+		
+		if len(_linked) == len(alignments):
+			# cross reffing each other - is already fine
+			return alignments,new_mates
+		
+		"""
+		for a in alignments:
+			print a
+		print "f",_from
+		print "t",_to
+		print "l",_linked
+		"""
+		
+		seg_pos = None
+		if len(_linked) > 0:
+			seg_pos = [int(x) for x in list(_linked)[0].split(":")]
+		
+		if seg_pos == None or (seg_pos[0] == -1 and seg_pos[1] == -1):
+			seg_pos = [alignments[0].reference_id,alignments[0].reference_start]
+		
+		closest = get_closest(seg_pos,alignments)
+		alignments = [a for a in alignments if a != closest]
+		new_alignments.append(set_next_ref(closest,seg_pos))
+		
+		while len(alignments) > 0:
+			seg_pos = [closest.reference_id,closest.reference_start]
 			closest = get_closest(seg_pos,alignments)
+			
 			alignments = [a for a in alignments if a != closest]
 			new_alignments.append(set_next_ref(closest,seg_pos))
-			
-			while len(alignments) > 0:
-				seg_pos = [closest.reference_id,closest.reference_start]
-				closest = get_closest(seg_pos,alignments)
-				
-				alignments = [a for a in alignments if a != closest]
-				new_alignments.append(set_next_ref(closest,seg_pos))
+	
+	else:
+		raise Exception("Dunno how to handle junctions in both mates yet... not aware of STAR Fusion producing them either")
 	
 	if len(new_alignments) != k:
 		raise Exception("Somewhere alignments got lost in this function")
 	
-	return new_alignments
+	return new_alignments,new_mates
 
 
 
@@ -240,44 +268,54 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 	all_reads_updated = []
 	
 	if n_r1 > 1:
-		double_disco += 1
-		
-		reads_updated = fix_chain(r1,bam_file,r2)
-		#reads_updated = update_sa_tags(reads_updated,bam_file)
+		reads_updated,mates_updated = fix_chain(r1,bam_file,r2)
+		set_read_group(reads_updated,'spanning_paired')
+		set_read_group(mates_updated,'silent_mate')
 		for a in reads_updated:
 			all_reads_updated.append(a)
-	else:
-		# No need to update - no supplementary r1 reads
-		for a in r1:
+		
+		for a in mates_updated:
 			all_reads_updated.append(a)
 	
-	if n_r2 > 1:
-		double_disco += 1
-		
-		reads_updated = fix_chain(r2,bam_file,r1)
-		#reads_updated = update_sa_tags(reads_updated,bam_file)
+	elif n_r2 > 1:
+		reads_updated,mates_updated = fix_chain(r2,bam_file,r1)
+		set_read_group(reads_updated,'spanning_paired')
+		set_read_group(mates_updated,'silent_mate')
 		for a in reads_updated:
 			all_reads_updated.append(a)
-	else:
-		# No need to update - no supplementary r1 reads
-		for a in r2:
+		
+		for a in mates_updated:
 			all_reads_updated.append(a)
 	
-	if n_s >= 2:
-		double_disco += 1
+	elif n_s >= 2:
+		reads_updated,mates_updated = fix_chain(singletons,bam_file,[])
+		set_read_group(reads_updated,'spanning_singleton')
 		
-		reads_updated = fix_chain(singletons,bam_file,[])
-		#reads_updated = update_sa_tags(reads_updated,bam_file)
+		fix_alignment_score(reads_updated)
+		
 		for a in reads_updated:
 			all_reads_updated.append(a)
-	else:
-		# No need to update - no supplementary singleton reads
-		for a in singletons:
+		
+		for a in mates_updated:
 			all_reads_updated.append(a)
 	
-	if double_disco >= 2:
-		# Should in theory be possible but has not been observed
-		raise Exception("DOUBLE DISCO! >> forward and reverse have multiple segments?")
+	elif n_r1 == 1 and n_r2 == 1 and n_s == 0:
+		reads_updated,mates_updated = fix_chain(r1 + r2,bam_file,[])
+		set_read_group(reads_updated,'discordant_mates')
+		
+		for a in reads_updated:
+			all_reads_updated.append(a)
+		
+		for a in mates_updated:
+			all_reads_updated.append(a)
+	
+	else:
+		if n == 1:
+			print "Warning - other segments of mate are missing"
+			all_reads_updated.append(alignments[0])
+		else:
+			raise Exception("what happens here?")
+	
 	
 	all_reads_updated = update_sa_tags(all_reads_updated,bam_file)
 	if len(all_reads_updated) != n:
@@ -286,7 +324,7 @@ def reconstruct_alignments(alignments,bam_file,fh_out):
 	all_reads_updated = set_qname_to_group(all_reads_updated)
 	
 	for a in all_reads_updated:
-		fh_out.write(a.tostring(bam_file)+"\n")
+		fh_out.write(a)
 	
 	#if n > 2:
 	#print n,n_r1, n_r2, n_s
@@ -306,12 +344,12 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	#@TODO / consider todo - start straight from sam
 	#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
 	
-	print "Convert into a name-sorted bam file (to get all reads with the same name adjacent to each other"
+	print "Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other"
 	command = ["samtools",
 			   "sort",
+			   "-o",basename+".name-sorted.bam",
 			   "-n",
-			   bam_file_discordant,
-			   basename+".name-sorted"]
+			   bam_file_discordant]
 	e_code = subprocess.call(command)
 	
 	if e_code != 0:
@@ -320,8 +358,14 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	
 	print "--- Fixing sam file ---"
 	sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
-	fh = open(basename+".name-sorted.fixed.sam","w")
-	fh.write(sam_file_discordant.text)
+	header = sam_file_discordant.header
+	header['RG'] = [
+		{'ID':'spanning_singleton','DS':'This read was aligned to two locations but no aligned mate'},
+		{'ID':'discordant_mates','DS':'This read has discordant mate pair'},
+		{'ID':'spanning_paired','DS':'This read was aligned to two locations and also has an aligned mate'},
+		{'ID':'silent_mate','DS':'Reads of this type are not discordant while their mate is'}]
+	
+	fh = pysam.AlignmentFile(basename+".name-sorted.fixed.sam", "wb", header=header)
 	last_read_name = False
 	alignments = []
 	for read in sam_file_discordant:
@@ -349,10 +393,11 @@ def main(bam_file_discordant,bam_file_discordant_fixed):
 	
 	
 	print "Sorting position based fixed file"
+	## Samtools 1.3.1
 	command = ["samtools",
 			   "sort",
-			   basename+".name-sorted.fixed.bam",
-			   basename+".sorted.fixed"]
+			   "-o",basename+".sorted.fixed.bam",
+			   basename+".name-sorted.fixed.bam"]
 	e_code = subprocess.call(command)
 	
 	if e_code != 0:
