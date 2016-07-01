@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-import pysam
-#numpy
+import pysam,math
 
-
+windowsize = 800
 
 ## Sep 01: fix bam files:
 ## - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n 
@@ -31,8 +30,8 @@ def exp_vector(name,data,fh):
 	fh.write(")\n")
 
 
-def exp_table(table,column_names,column_data):
-	fh = open(table,"w")
+def exp_table(fh,column_names,column_data):
+	#fh = open(table,"w")
 	x = len(column_data)
 	y = len(column_data[0])
 	fh.write("\t".join(column_names)+"\n")
@@ -42,7 +41,21 @@ def exp_table(table,column_names,column_data):
 		fh.write("\t".join(column)+"\n")
 	fh.close()
 
-def get_vector_type_1(region,bam):
+def valid_insert_size(read,max_size):
+	if read.get_tag('RG') == 'discordant_mates':
+		#print read.get_tag('SA')
+		if read.reference_id == read.next_reference_id:
+			dist = abs(read.reference_start - read.next_reference_start)
+			#print read
+			#print "template length",read.template_length
+			#print "abs dist caclulated",
+			#print
+			
+			if dist < max_size:
+				return False
+	return True
+
+def get_vector_type_1(fh,fh_windowed,region,bam,window_size):
 	"""
 	Vector for disco alignments
 	"""
@@ -56,8 +69,23 @@ def get_vector_type_1(region,bam):
 	vector_j = [0] * n
 	
 	previous_count = 0
-	for i in range(region[1],region[2]+1):
-		for r in bam.fetch(region[0],i,i+1):
+	#for i in range(region[1],region[2]+1):
+	for r in bam.fetch(region[0],region[1],region[2]+1):
+		passing = True
+		
+		# List of filters:
+		#if r.get_tag('RG') == "silent_mate":
+			#passing = False
+			#break
+		
+		if not valid_insert_size(r,126):
+			passing = False
+		
+		#if r.get_tag('RG') == "discordant_reads":
+			## check for abs(ins size) > 126
+			# passing = False
+		
+		if passing:
 			start = r.reference_start - region[1]
 			end = start
 			for cigar in r.cigartuples:
@@ -70,7 +98,7 @@ def get_vector_type_1(region,bam):
 				
 				if cigar[0] == 3:
 					if end < n:
-						vector_j[end] += 1
+						vector_j[end+1] += 1
 				"""
 				cigar_m = r.get_cigar_stats()[0][0]
 				cigar_i = r.get_cigar_stats()[0][1]#insertion has no weight
@@ -87,65 +115,211 @@ def get_vector_type_1(region,bam):
 			# - cigar_s - cigar_h
 			
 			if start >= 0:# spliced alignments may start before the start point
-				vector_s[start] += 1
+				vector_s[start+1] += 1
 			if end < n:
-				vector_e[end] += 1
+				vector_e[end+1] += 1
+	
+	exp_table(fh,["s","e","j"],[vector_s,vector_e,vector_j])
+	
+	#total = [ vector_s[i]+vector_e[i] for i in range(len(vector_s))]
+	#export_window(fh_windowed,total,window_size)
+
+def export_window(fh_windowed,vec,size):
+	n = len(vec)
+	j = -1
+	
+	for i in range(n):
+		if i % size == 0:
+			if j >= 0:
+				fh_windowed.write(str(j*size)+ "\t" + str((j+1)*size-1) + "\t" + str(c)+"\n")
+			c = 0
+			j += 1
+		
+		c += vec[i]
+	
+	if j >= 0:
+		fh_windowed.write(str(j*size)+ "\t" + str((j+1)*size-1) + "\t" + str(c)+"\n")
+
+
+#make_window([1,1, 0,0, 5,6, 7,8, 9,0, 1],3)
+
+#import sys
+#sys.exit()
+
+
+def get_entropy(reads,nreferences):
+	n = len(reads)
+	if n <= 5:
+		return None
+	else:
+		frequency_table = [0] * nreferences
+		
+		for read in reads:
+			frequency_table[read.next_reference_id] += 1
+		prob = [float(x)/n for x in frequency_table]
+		
+		#frequency_table = [5] * nreferences
+		#n = sum(frequency_table)
+		#prob = [float(x)/n for x in frequency_table]
+		
+		entropy = - sum([ p * math.log(p) / math.log(2.0) for p in prob if p > 0 ])
+		#entropy = max(0,entropy)# stupid -0
+		
+		# For plotting it's easier to normalize it to [0 <-> 1]
+		entropy = entropy / (math.log(nreferences) / math.log(2.0))
+		
+		return entropy
+
+def get_entropy_mates(reads,references):
+	#n = 
+	nreferences = len(references)
+	if len(reads) <= 5:
+		return None
+	else:
+		frequency_table = [0] * nreferences
+		
+		for read in reads:
+			chrs = [references.index(x.split(",",2)[0]) for x in read.get_tag('SA').split(";")]
+			for _chr in chrs:
+				frequency_table[_chr] += 1
 			
-			#import sys
-			#sys.exit(1)
+		prob = [float(x)/sum(frequency_table) for x in frequency_table]
+		
+		entropy = - sum([ p * math.log(p) / math.log(2.0) for p in prob if p > 0 ])
+		#entropy = max(0,entropy)# stupid -0
+		
+		# For plotting it's easier to normalize it to [0 <-> 1]
+		entropy = entropy / (math.log(nreferences) / math.log(2.0))
+		
+		return entropy
+
+def get_vector_type_2(fh,region,bam,window_size):
+	"""
+	Vector for sliding window entropy
+	"""
 	
-	exp_table("dump.txt",["s","e","j"],[vector_s,vector_e,vector_j])
-	#fh = open("dump.R","w")
-	#exp_vector("s",vector_s,fh)
-	#exp_vector("e",vector_e,fh)
-	#exp_vector("j",vector_j,fh)
-	#fh.close()
+	n = region[2] - region[1] + 1
 	
-	#plot(1:length(s),s,pch=20,cex=0.2,col="blue")
-	##points(1:length(e),s,pch=20,cex=0.2,col="green")
-	#points(1:length(j),s,pch=20,cex=0.2,col="red")
-
-#def find_breakpoints(r1,r2, bam_file_concordant, bam_file_discordant):
-	#sam_file_discordant = pysam.AlignmentFile(bam_file_discordant, "rb")
-#reads = []
-
-
-#tmprss2=['chr21',42833093,42891172]
-
-#erg_bp =['chr21', 39859063, 39859285]
-#erg_bp =['chr21', 39859069, 39859271]
-
-#for read in sam_file_discordant.fetch(erg_bp[0],erg_bp[1],erg_bp[2]):
-	#reads.append(read)
+	# splice junction targets
+	vector_j = [0] * n
+	offset = int(round(0.5 * window_size))
 	
-	#readname = "D00476:156:C6VVJANXX:7:2115:5471:96808"
-	#for read in reads:
-		#if read.qname == readname:
-			#print read.qname
-			#print "\t",read.get_blocks()
+	previous_count = 0
+	for k in range(region[1]+offset,region[2]-offset+1):#+1? w
+		i = k - 200
+		j = min(region[2],i+window_size)
+		
+		#window = i,j
+		reads = []
+		for r in bam.fetch(region[0],i,j):
+			covered_bases = r.get_overlap(i,j)
+			if covered_bases > 0:
+				reads.append(r)
+		
+		entropy = get_entropy(reads,bam.nreferences)
+		#entropy_m = get_entropy_mates(reads,bam.references)
+		
+		if entropy == None:
+			entropy = -1
+		#if entropy_m == None:
+		#	entropy_m = -1
+		
+		#if entropy != None:
+		fh.write(str(k-region[1])+"\t"+str(entropy)+"\n")
+	
+	fh.close()
+
+def get_vector_type_3(fh,region,bam,window_size):
+	"""
+	Exon mask
+	
+	11.8s
+	"""
+	
+	n = region[2] - region[1] + 1
+	hashm = {}
+	
+	"""
+	for i in range(region[1],region[2]+1):#+1? w
+		j = i+1
+		for r in bam.fetch(region[0],i,j):
+			covered_bases = r.get_overlap(i,j)
+			if covered_bases > 0:
+				if r.cigarstring.find("N") != -1:
+					hashm[i-region[1]] = 0
+	
+	"""
+	
+	for r in bam.fetch(region[0],region[1],region[2]+1 ):
+		if r.cigarstring.find("N") != -1:
+			length = r.reference_start
+			for cigar in r.cigartuples:
+				if cigar[0] in [0,2,3,7,8]:
+					length += cigar[1]
 			
-			#if read.is_paired:
-				#print "\t*",read.next_reference_start
-				#print "\t-",sam_file_discordant.mate(read)
-				#print "\tb",read.get_blocks()
-				##print "\tn",read.next_reference_id
-				##print "\tx",read.get_aligned_pairs()
+			window_start = r.reference_start
+			window_end = window_start + length
+			
+			if window_start < region[1]:
+				window_start = region[1]
+			
+			if window_end > region[2]:
+				window_end = region[2]
+			
+			for i in range(window_start, window_end):
+				covered_bases = r.get_overlap(i,i+1)
+				
+				if covered_bases > 0:
+					k = i -region[1] + 1
+					hashm[k] = 0
 	
-	#sam_file_discordant.close()
+	
+	for i in range(n):
+		if i in hashm.keys():
+			fh.write(str(i)+"\t0\n")
+		else:
+			fh.write(str(i)+"\t1\n")
+	
+	fh.close()
 
 
-#hg19
-#r1_tmprss = "chr21:42,834,478-42,882,085"
-#r2_erg = "chr21:39,737,183-40,035,618"
-#offset = 5000
 
-#r1 = ['chr21',42851839,42851841]
-#r1 = ['chr21',42851839,42852839]
-r1 = ['chr21',42834187,42882196]
-r1 = ['chr21',39737183,40035618]#erg
-bam_file_discordant = "samples/7046-004-043_discordant.bam"
-sam_file_discordant = pysam.AlignmentFile(bam_file_discordant, "rb")
 
-get_vector_type_1(r1,sam_file_discordant)
 
-#find_breakpoints(r1_tmprss,r2_erg,)
+#get_vector_type_1(open("test-test-vec1_a.tabular.txt","w"),open("test-test-vec1_b.tabular.txt","w"),r1,sam_file_discordant,windowsize)
+#get_vector_type_2(open("test-test-vec2.tabular.txt","w"),r1,sam_file_discordant,windowsize)
+#get_vector_type_3(open("test-test-vec3.tabular.txt","w"),r1,sam_file_discordant,windowsize)
+
+
+
+
+
+samples = ['7046-004-041','7046-004-043']
+
+genes = {}
+genes['erg'] =     ['chr21',39737183,40035618]
+genes['tmprss2'] = ['chr21',42834678,42882085]
+genes['ar'] =      ['chrX' ,66761874,66952461]
+genes['sash1'] =   ['chr6',148661729,148875184]
+genes['samd5'] =   ['chr6',147827828,147893157]
+genes['klk3'] =    ['chr19',51356171,51366020]
+genes['gapdh'] =   ['chr12',6641585,6649537]
+
+
+
+for sample in samples:
+	print "Running sample: "+sample
+	
+	bam_file_discordant = "samples/"+sample+"_discordant.fixed.bam"
+	sam_file_discordant = pysam.AlignmentFile(bam_file_discordant, "rb")
+	
+	for gene in genes.keys():
+		print " - Obtanining data from: "+gene
+		
+		get_vector_type_1(open("data/"+sample+"-"+gene+"-vec1_a.tabular.txt","w"),None,genes[gene],sam_file_discordant,windowsize)
+		get_vector_type_2(open("data/"+sample+"-"+gene+"-vec2.tabular.txt","w"),genes[gene],sam_file_discordant,windowsize)
+		get_vector_type_3(open("data/"+sample+"-"+gene+"-vec3.tabular.txt","w"),genes[gene],sam_file_discordant,windowsize)
+
+
+
+
