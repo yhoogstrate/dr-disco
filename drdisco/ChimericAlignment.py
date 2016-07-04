@@ -351,6 +351,7 @@ class ChimericAlignment:
 		#@TODO / consider todo - start straight from sam
 		#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
 		
+		
 		self.logger.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
 		pysam.sort("-o",basename+".name-sorted.bam","-n",self.input_alignment_file)
 		
@@ -378,52 +379,25 @@ class ChimericAlignment:
 		fh.close()
 		
 		
-		## pysam.view('-bS','-o','bla.bam','test_terg_01.filtered.name-sorted.fixed.sam')
 		self.logger.info("Converting fixed file into BAM")
 		fhq = open(basename+".name-sorted.fixed.bam","wb")
 		fhq.write(pysam.view('-bS',basename+".name-sorted.fixed.sam"))
 		fhq.close()
-		#command = ["samtools",
-		#		   "view",
-		#		   "-bS",
-		#		   "-o",
-		#		   basename+".name-sorted.fixed.bam",
-		#		   basename+".name-sorted.fixed.sam"]
-		#self.logger.debug(" ".join(command))
-		#e_code = subprocess.call(command)
-		
-		#if e_code != 0:
-			#raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
 		
 		
 		self.logger.info("Sorting position based fixed file")
-		## Samtools 1.3.1
-		command = ["samtools",
-				   "sort",
-				   "-o",basename+".sorted.fixed.bam",
-				   basename+".name-sorted.fixed.bam"]
-		self.logger.debug(" ".join(command))
-		e_code = subprocess.call(command)
-		
-		if e_code != 0:
-			raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
+		pysam.sort("-o",basename+".sorted.fixed.bam",basename+".name-sorted.fixed.bam")
 		
 		
 		self.logger.info("Indexing the position sorted bam file")
-		command = ["samtools",
-				   "index",
-				   basename+".sorted.fixed.bam"]
-		self.logger.debug(" ".join(command))
-		e_code = subprocess.call(command)
-		
-		if e_code != 0:
-			raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
+		pysam.index(basename+".sorted.fixed.bam")
 		
 		
 		self.logger.info("Cleaning up temp files")
 		for fname in [basename+".name-sorted.bam", basename+".name-sorted.fixed.sam", basename+".name-sorted.fixed.bam"]:
 			self.logger.debug("=> "+fname)
 			os.remove(fname)
+		
 		
 		self.logger.info("Moving to final destination")
 		os.rename(basename+".sorted.fixed.bam",bam_file_discordant_fixed)
