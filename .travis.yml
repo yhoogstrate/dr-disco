@@ -23,8 +23,8 @@ install:
   - mkdir -p tmp
 
 script:
-  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo python2 setup.py test ; else sudo python3 setup.py test ; fi
-#  - nosetests
+#  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo python2 setup.py test ; else sudo python3 setup.py test ; fi
+  - nosetests -v tests/*.py
 
 notifications:
   email: false

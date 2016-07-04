@@ -378,18 +378,22 @@ class ChimericAlignment:
 		fh.close()
 		
 		
+		## pysam.view('-bS','-o','bla.bam','test_terg_01.filtered.name-sorted.fixed.sam')
 		self.logger.info("Converting fixed file into BAM")
-		command = ["samtools",
-				   "view",
-				   "-bS",
-				   "-o",
-				   basename+".name-sorted.fixed.bam",
-				   basename+".name-sorted.fixed.sam"]
-		self.logger.debug(" ".join(command))
-		e_code = subprocess.call(command)
+		fhq = open(basename+".name-sorted.fixed.bam","wb")
+		fhq.write(pysam.view('-bS',basename+".name-sorted.fixed.sam"))
+		fhq.close()
+		#command = ["samtools",
+		#		   "view",
+		#		   "-bS",
+		#		   "-o",
+		#		   basename+".name-sorted.fixed.bam",
+		#		   basename+".name-sorted.fixed.sam"]
+		#self.logger.debug(" ".join(command))
+		#e_code = subprocess.call(command)
 		
-		if e_code != 0:
-			raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
+		#if e_code != 0:
+			#raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
 		
 		
 		self.logger.info("Sorting position based fixed file")
