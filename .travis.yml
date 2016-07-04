@@ -23,7 +23,7 @@ install:
   - sudo ./setup.py install
 
 script:
-  - sudo ./setup.py test
+  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo python2 ./setup.py test; else sudo python3 ./setup.py test fi
 #  - nosetests
 
 notifications:
