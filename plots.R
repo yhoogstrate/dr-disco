@@ -80,14 +80,22 @@ plot_gene <- function(frequencies, frequencies_windowed, entropy, intron_mask) {
   ##lines(data_w$V1,data_w$V3)
   #lines(x,log(y),col="red")
   ##abline(v=(0:10)*400,col="gray")
+
+  return(transition4)
+  #print(data$s >= transition4)
+  #print(data$e >= transition4)
 }
 
 
 
-samples=c('7046-004-041','7046-004-043')
-gene_names=c('erg','tmprss2','ar','sash1','samd5','klk3','gapdh')
-#samples=c('7046-004-041')
+samples=c('7046-004-041','7046-004-043','7046-004-051')
+#gene_names=c('erg','tmprss2','ar','sash1','samd5','klk3','gapdh')
+#gene_names=c('erg','tmprss2')
 #gene_names=c('tmprss2')
+
+gene_names=c('erg')
+samples=c('7046-004-051')
+
 
 for(sample in samples) {
   print(sample)
@@ -101,11 +109,9 @@ for(sample in samples) {
     v3 = paste(data,"vec3.tabular.txt",sep="")
     
     png(figure,width=1250,height=600)
-    plot_gene(v1,FALSE,v2,v3)
+    boundary <- plot_gene(v1,FALSE,v2,v3)
+    print(boundary)
     dev.off()
-    
-    #png("043-erg.png",width=1250,height=600)
-    #plot_gene("043-erg-vec1_a.tabular.txt","043-erg-vec1_b.tabular.txt","043-erg-vec2.tabular.txt","043-erg-vec3.tabular.txt")
   }
 }
 

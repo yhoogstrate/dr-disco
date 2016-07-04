@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import pysam,math
+from operator import itemgetter, attrgetter, methodcaller
 
 windowsize = 800
 
@@ -16,7 +17,7 @@ windowsize = 800
 ## - Set read group to sample name
 
 def chunker(seq, size):
-    return (seq[pos:pos + size] for pos in xrange(0, len(seq), size))
+	return (seq[pos:pos + size] for pos in xrange(0, len(seq), size))
 
 def exp_vector(name,data,fh):
 	fh.write(name+"=c(")
@@ -63,7 +64,7 @@ def get_vector_type_1(fh,fh_windowed,region,bam,window_size):
 	n = region[2] - region[1] + 1
 	matrix = [[0,0,0]] * n
 	vector_s = [0] * n
-	vector_e = [0] * n
+	vector_e = [0] * (n+1)
 	
 	# splice junction targets
 	vector_j = [0] * n
@@ -284,6 +285,97 @@ def get_vector_type_3(fh,region,bam,window_size):
 
 
 
+def read_vec_1(vec_1):
+	vec_1_a = []
+	vec_1_b = []
+	vec_1_c = []
+	
+	header = True
+	
+	with open(vec_1,'r') as fh:
+		for line in fh:
+			if not header:
+				line = line.strip().split("\t")
+				
+				vec_1_a.append(int(line[0]))
+				vec_1_b.append(int(line[1]))
+				vec_1_c.append(int(line[2]))
+			else:
+				header = False
+	
+	return [vec_1_a,vec_1_b,vec_1_c]
+
+def read_vec_3(vec_3):
+	vec_3_hash = {}
+	
+	with open(vec_3,'r') as fh:
+		for line in fh:
+			line = line.strip().split("\t")
+			
+			vec_3_hash[int(line[0])] = int(line[1])
+	
+	return vec_3_hash
+
+
+def filter_vec(vec,vec_filter,minimum,gene,lbl):
+	#for i in range(len(vec_filter)):
+		#print str(i)+'.\t',vec[i],vec_filter[i]
+	#print vec
+	return [(i,vec[i],gene[0]+':'+str(gene[1]+i),lbl) for i in range(len(vec)) if vec[i]*vec_filter[i] >= minimum]
+
+
+def estimate_breakpoint(vec_1,threshold_vec_1,vec_3,gene):
+	vec_1 = read_vec_1(vec_1)
+	vec_3 = read_vec_3(vec_3)
+	
+	max_p = None
+	
+	vec_f = filter_vec(vec_1[1],vec_3,threshold_vec_1,gene,'+')
+	vec_r = filter_vec(vec_1[0],vec_3,threshold_vec_1,gene,'-')
+	
+	return vec_f + vec_r
+
+
+def noise_artefact_of(b1,b2,coef):
+	d1 = abs(b1[0] - b2[0])
+	d2 = abs( math.log(b1[1]+1) - math.log(b2[1]+1) ) + 0.0000001
+	
+	dydx = 1.0 * d1 / d2
+	
+	#print dydx,coef
+	#
+	if dydx <= coef:
+		return True
+	else:
+		return False
+
+
+def noise_filter(breaks,coef):
+	"""
+	This is a kinda linear filter on log transformed read count values
+	"""
+	passed = []
+	
+	while len(breaks) > 0:
+		# last one
+		new_breaks = []
+		
+		for b in breaks[1:]:
+			#print "b:",breaks[0],"x"
+			if not noise_artefact_of(b,breaks[0],coef):
+			#	print "   -",b
+			#	print "   OK"
+			#	print
+				new_breaks.append(b)
+			#else:
+			#	print "   -",b
+			#	print "   rmeoved"
+			#	print
+		
+		passed.append(breaks[0])
+		breaks = new_breaks
+	
+	return passed
 
 
 #get_vector_type_1(open("test-test-vec1_a.tabular.txt","w"),open("test-test-vec1_b.tabular.txt","w"),r1,sam_file_discordant,windowsize)
@@ -294,16 +386,24 @@ def get_vector_type_3(fh,region,bam,window_size):
 
 
 
-samples = ['7046-004-041','7046-004-043']
+samples = ["7046-004-001", "7046-004-012", "7046-004-027", "7046-004-041", "7046-004-043", "7046-004-045", "7046-004-047", "7046-004-050", "7046-004-051", "7046-004-053", "7046-004-054", "7046-004-056", "7046-004-058", "7046-004-059", "7046-004-060", "7046-004-061", "7046-004-063", "7046-004-064", "7046-004-065", "7046-004-067", "7046-004-068", "7046-004-069", "7046-004-072", "7046-004-073", "7046-004-075", "7046-004-078", "7046-004-081", "7046-004-082", "7046-004-131", "7046-004-133", "7046-004-138", "7046-004-139", "7046-004-143", "7046-004-150"]
+samples = ["7046-004-045", "7046-004-047", "7046-004-050", "7046-004-051", "7046-004-053", "7046-004-054", "7046-004-056", "7046-004-058", "7046-004-059", "7046-004-060", "7046-004-061", "7046-004-063", "7046-004-064", "7046-004-065", "7046-004-067", "7046-004-068", "7046-004-069", "7046-004-072", "7046-004-073", "7046-004-075", "7046-004-078", "7046-004-081", "7046-004-082", "7046-004-131", "7046-004-133", "7046-004-138", "7046-004-139", "7046-004-143", "7046-004-150"]
+samples = ["7046-004-149"]
 
 genes = {}
-genes['erg'] =     ['chr21',39737183,40035618]
+#genes['erg'] =     ['chr21',39737183,40035618]
+#genes['erg-achter'] = ['chr21',40075920,40120824]
 genes['tmprss2'] = ['chr21',42834678,42882085]
-genes['ar'] =      ['chrX' ,66761874,66952461]
-genes['sash1'] =   ['chr6',148661729,148875184]
-genes['samd5'] =   ['chr6',147827828,147893157]
-genes['klk3'] =    ['chr19',51356171,51366020]
-genes['gapdh'] =   ['chr12',6641585,6649537]
+#genes['ar'] =      ['chrX' ,66761874,66952461]
+#genes['sash1'] =   ['chr6',148661729,148875184]
+#genes['samd5'] =   ['chr6',147827828,147893157]
+#genes['klk3'] =    ['chr19',51356171,51366020]
+#genes['gapdh'] =   ['chr12',6641585,6649537]
+#genes['sacs'] =     ['chr13',23900962,24009867]
+#genes['rp11.1'] =   ['chr16',63041862,63676663]
+
+
+#genes['erg'] = ['chr21',39817540,39817630]
 
 
 
@@ -315,10 +415,22 @@ for sample in samples:
 	
 	for gene in genes.keys():
 		print " - Obtanining data from: "+gene
+		vec_1 = "data/"+sample+"-"+gene+"-vec1_a.tabular.txt"
+		vec_3 = "data/"+sample+"-"+gene+"-vec3.tabular.txt"
 		
-		get_vector_type_1(open("data/"+sample+"-"+gene+"-vec1_a.tabular.txt","w"),None,genes[gene],sam_file_discordant,windowsize)
-		get_vector_type_2(open("data/"+sample+"-"+gene+"-vec2.tabular.txt","w"),genes[gene],sam_file_discordant,windowsize)
-		get_vector_type_3(open("data/"+sample+"-"+gene+"-vec3.tabular.txt","w"),genes[gene],sam_file_discordant,windowsize)
+		get_vector_type_1(open(vec_1,"w"),None,genes[gene],sam_file_discordant,windowsize)
+		#get_vector_type_2(open("data/"+sample+"-"+gene+"-vec2.tabular.txt","w"),genes[gene],sam_file_discordant,windowsize)
+		get_vector_type_3(open(vec_3,"w"),genes[gene],sam_file_discordant,windowsize)
+		
+		candidate_breaks = estimate_breakpoint(vec_1,7,vec_3,genes[gene])
+		#print candidate_breaks
+		candidate_breaks = sorted(candidate_breaks, key=itemgetter(1), reverse=True)
+		#print candidate_breaks
+		
+		breaks = noise_filter(candidate_breaks,coef=335.0)
+		
+		for b in breaks:
+			print (b[2],b[3],b[1])
 
 
 
