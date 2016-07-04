@@ -18,10 +18,11 @@ install:
 #  - sudo pip install click
 #  - sudo pip install nose
   - sudo apt-get install -qq samtools
-  - ./setup.py install --user
+  - sudo ./setup.py install
 
 script:
-  - nosetests
+  - sudo ./setup.py test
+#  - nosetests
 
 notifications:
   email: false
