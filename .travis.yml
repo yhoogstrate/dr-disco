@@ -1,0 +1,27 @@
+language: python
+
+python:
+  - "2.6"
+  - "2.7"
+  - "3.2"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.5-dev" # 3.5 development branch
+  - "nightly" # currently points to 3.6-dev
+
+install:
+  - sudo pip install cython
+  - sudo pip install numpy
+  - sudo pip install htseq
+  - sudo pip install pysam
+  - sudo pip install click
+  - sudo pip install nose
+  - sudo apt-get install -qq samtools
+  - python setup.py install --user
+
+script:
+  - nosetests
+
+notifications:
+  email: false
