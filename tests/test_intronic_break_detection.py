@@ -35,7 +35,12 @@ class TestIntronicBreakDetection(unittest.TestCase):
         input_file_a =    "tests/fix-chimeric/test_terg_01.filtered.bam"
         input_file_f =    "tests/fix-chimeric/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
-        
+        # Use some FuMa files please
+        bps = BreakPoints(input_file_f)
+        for bp in bps:
+            decomposed_bp = bp.decompose(input_file_a)
+            print(decomposed_bp)
+
 
 def main():
     unittest.main()
