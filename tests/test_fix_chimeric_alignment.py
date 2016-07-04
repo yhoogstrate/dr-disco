@@ -22,7 +22,7 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import unittest,logging,sys
+import unittest,logging,sys,subprocess,filecmp
 logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
 
 from drdisco.ChimericAlignment import ChimericAlignment
@@ -32,8 +32,24 @@ class TestChimericAlignment(unittest.TestCase):
     def test_01(self):
         print("\n")
         
-        alignment_handle = ChimericAlignment("tests/fix-chimeric/test_terg_01.filtered.bam")
-        alignment_handle.convert("tmp/test_terg_01.filtered.fixed.bam","tmp")
+        input_file =    "tests/fix-chimeric/test_terg_01.filtered.bam"
+        output_file =   "tmp/test_terg_01.filtered.fixed.bam"
+        output_file_s = "tmp/test_terg_01.filtered.fixed.sam"
+        
+        test_file = "tests/fix-chimeric/test_terg_01.filtered.fixed.sam"
+        
+        alignment_handle = ChimericAlignment(input_file)
+        alignment_handle.convert(output_file,"tmp")
+        
+        command = ["samtools",
+                   "view",
+                   "-o", output_file_s,
+                   output_file]
+
+        e_code = subprocess.call(command)
+        self.assertEqual(e_code,0)
+
+        self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
 def main():
     unittest.main()
