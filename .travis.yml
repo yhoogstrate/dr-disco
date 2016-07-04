@@ -20,6 +20,7 @@ install:
   - sudo apt-get install -qq samtools
   - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo pip install setuptools; sudo python2 setup.py install ; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then sudo apt-get remove python-pip ; sudo apt-get install python3-setuptools ; sudo easy_install3 pip ; sudo python3 setup.py install ; fi
+  - mkdir -p tmp
 
 script:
   - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo python2 setup.py test ; else sudo python3 setup.py test ; fi
