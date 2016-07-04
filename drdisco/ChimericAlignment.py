@@ -352,16 +352,7 @@ class ChimericAlignment:
 		#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
 		
 		self.logger.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
-		command = ["samtools",
-				   "sort",
-				   "-o",basename+".name-sorted.bam",
-				   "-n",
-				   self.input_alignment_file]
-		self.logger.debug(" ".join(command))
-		e_code = subprocess.call(command)
-		
-		if e_code != 0:
-			raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
+		pysam.sort("-o",basename+".name-sorted.bam","-n",self.input_alignment_file)
 		
 		
 		self.logger.info("Fixing sam file")
