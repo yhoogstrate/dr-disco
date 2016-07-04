@@ -346,6 +346,7 @@ class ChimericAlignment:
 	def convert(self,bam_file_discordant_fixed,temp_dir):
 		path = os.path.dirname(self.input_alignment_file)
 		basename,ext = os.path.splitext(os.path.basename(self.input_alignment_file))
+		basename = temp_dir.rstrip("/")+"/"+basename
 		
 		#@TODO / consider todo - start straight from sam
 		#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
@@ -356,13 +357,14 @@ class ChimericAlignment:
 				   "-o",basename+".name-sorted.bam",
 				   "-n",
 				   self.input_alignment_file]
+		self.logger.debug(" ".join(command))
 		e_code = subprocess.call(command)
 		
 		if e_code != 0:
 			raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
 		
 		
-		print("--- Fixing sam file ---")
+		self.logger.info("Fixing sam file")
 		sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
 		header = sam_file_discordant.header
 		header['RG'] = [
@@ -385,48 +387,50 @@ class ChimericAlignment:
 		fh.close()
 		
 		
-		print("Converting fixed file into BAM")
+		self.logger.info("Converting fixed file into BAM")
 		command = ["samtools",
 				   "view",
 				   "-bS",
 				   "-o",
 				   basename+".name-sorted.fixed.bam",
 				   basename+".name-sorted.fixed.sam"]
+		self.logger.debug(" ".join(command))
 		e_code = subprocess.call(command)
 		
 		if e_code != 0:
 			raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
 		
 		
-		print("Sorting position based fixed file")
+		self.logger.info("Sorting position based fixed file")
 		## Samtools 1.3.1
 		command = ["samtools",
 				   "sort",
 				   "-o",basename+".sorted.fixed.bam",
 				   basename+".name-sorted.fixed.bam"]
+		self.logger.debug(" ".join(command))
 		e_code = subprocess.call(command)
 		
 		if e_code != 0:
 			raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
 		
 		
-		print("Indexing the position sorted bam file")
+		self.logger.info("Indexing the position sorted bam file")
 		command = ["samtools",
 				   "index",
 				   basename+".sorted.fixed.bam"]
+		self.logger.debug(" ".join(command))
 		e_code = subprocess.call(command)
 		
 		if e_code != 0:
 			raise Exception("Abnormal termination of samtools: exit="+str(e_code)+" while running:\n"+"\t".join(command))
 		
 		
-		print("Cleaning up temp files")
-		os.remove(basename+".name-sorted.bam")
-		os.remove(basename+".name-sorted.fixed.sam")
-		os.remove(basename+".name-sorted.fixed.bam")
+		self.logger.info("Cleaning up temp files")
+		for fname in [basename+".name-sorted.bam", basename+".name-sorted.fixed.sam", basename+".name-sorted.fixed.bam"]:
+			self.logger.debug("=> "+fname)
+			os.remove(fname)
 		
-		
-		print("Moving to final destination")
+		self.logger.info("Moving to final destination")
 		os.rename(basename+".sorted.fixed.bam",bam_file_discordant_fixed)
 		os.rename(basename+".sorted.fixed.bam"+".bai",bam_file_discordant_fixed+".bai")
 
