@@ -24,10 +24,11 @@ Installer of Dr. Disco
 
 import drdisco
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 setup(name = "dr-disco",
         scripts=['bin/dr-disco'],
         packages = ["drdisco"],
+        test_suite="tests",
         version = drdisco.__version__,
         description = "Makes discordant RNA-Seq alignments healthy, and tries to interpret intronic break points",
         author = drdisco.__author__,
@@ -42,4 +43,3 @@ setup(name = "dr-disco",
         'Topic :: Scientific/Engineering :: Bio-Informatics'
         ]
      )
-

@@ -36,6 +36,10 @@ def main():
 def CLI():
     pass
 
+
+#@click.command(help="This tool requires the '*.Chimeric.out.sam' files of RNA STAR converted into BAM")
+#@click.argument('bam_file_discordant')
+#@click.argument('bam_file_discordant_fixed')
 @CLI.command(name="fix",short_help="Fixes chimeric SAM/BAM"
 "alignment produced by RNA-STAR")
 @click.option("--temp-dir","-t",type=click.Path(exists=True),default="/tmp",help="Path"
@@ -44,7 +48,8 @@ def CLI():
 @click.argument('input_bam/sam_file', type=click.File('r'))
 def CLI_fix_chimeric_alignment(temp_dir,output_alignment_file,
     input_alignmentfile):
-    pass
+    alignment_hande = ChimericAlignment(input_alignmentfile)
+    alignment_handle.convert(output_alignment_file,temp_dir)
 
 
 @CLI.command(name='intronic',short_help='Detects and interprets intronic break points')
