@@ -18,7 +18,7 @@ install:
   - sudo pip install click
   - sudo pip install nose
   - sudo apt-get install -qq samtools
-  - python setup.py install --user
+  - ./setup.py install --user
 
 script:
   - nosetests
