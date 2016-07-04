@@ -1,30 +1,20 @@
 language: python
 
 python:
-#  - "2.6"
+  - "2.6"
   - "2.7"
-#  - "3.2"
-#  - "3.3"
-#  - "3.4"
+  - "3.2"
+  - "3.3"
+  - "3.4"
   - "3.5"
-#  - "3.5-dev" # 3.5 development branch
+  - "3.5-dev" # 3.5 development branch
 #  - "nightly" # currently points to 3.6-dev
 
 install:
-#  - sudo pip install cython
-#  - sudo pip install numpy
-#  - sudo pip install htseq
-#  - sudo pip install pysam
-#  - sudo pip install click
-#  - sudo pip install nose
-#  - sudo apt-get install -qq samtools
-#  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo pip install setuptools; sudo python2 setup.py install ; fi
-#  - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then sudo apt-get remove python-pip ; sudo apt-get install python3-setuptools ; sudo easy_install3 pip ; sudo python3 setup.py install ; fi
   - pip install -r requirements.txt
   - mkdir -p tmp
 
 script:
-#  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then sudo python2 setup.py test ; else sudo python3 setup.py test ; fi
   - nosetests -v tests/*.py
 
 notifications:

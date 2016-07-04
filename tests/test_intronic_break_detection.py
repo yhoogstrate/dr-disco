@@ -28,27 +28,14 @@ logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(level
 from drdisco.ChimericAlignment import ChimericAlignment
 
 
-class TestChimericAlignment(unittest.TestCase):
+class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
         print("\n")
         
-        input_file =    "tests/fix-chimeric/test_terg_01.filtered.bam"
-        output_file =   "tmp/test_terg_01.filtered.fixed.bam"
-        output_file_s = "tmp/test_terg_01.filtered.fixed.sam"
-        
-        test_file = "tests/fix-chimeric/test_terg_01.filtered.fixed.sam"
-        
-        alignment_handle = ChimericAlignment(input_file)
-        alignment_handle.convert(output_file,"tmp")
+        input_file_a =    "tests/fix-chimeric/test_terg_01.filtered.bam"
+        input_file_f =    "tests/fix-chimeric/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
         
-        # Bam2Sam
-        fhq = open(output_file_s,"w")
-        fhq.write(pysam.view(output_file))
-        fhq.close()
-        
-        
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
 def main():
     unittest.main()

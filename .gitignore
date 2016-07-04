@@ -1,4 +1,4 @@
-*.txt
+/*.txt
 *.png
 /samples
 .Rhistory
@@ -7,3 +7,4 @@ tmp/
 *.pyc
 *.egg-info
 /dist
+/data
