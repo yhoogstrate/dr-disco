@@ -11,9 +11,9 @@ python:
   - "nightly" # currently points to 3.6-dev
 
 install:
-  - sudo pip install cython
-  - sudo pip install numpy
-  - sudo pip install htseq
+#  - sudo pip install cython
+#  - sudo pip install numpy
+#  - sudo pip install htseq
   - sudo pip install pysam
   - sudo pip install click
   - sudo pip install nose
