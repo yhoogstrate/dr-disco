@@ -30,8 +30,10 @@ from drdisco.ChimericAlignment import ChimericAlignment
 
 class TestChimericAlignment(unittest.TestCase):
     def test_01(self):
-        alignment_hande = ChimericAlignment("tests/fix-chimeric/test_test_01.filtered.bam")
-        alignment_handle.convert("tests/fix-chimeric/test_test_01.filtered.fixed.bam","tmp")
+        print("\n")
+        
+        alignment_handle = ChimericAlignment("tests/fix-chimeric/test_terg_01.filtered.bam")
+        alignment_handle.convert("tmp/test_terg_01.filtered.fixed.bam","tmp")
 
 def main():
     unittest.main()

@@ -2,7 +2,7 @@
 
 #http://www.samformat.info/sam-format-flag
 
-import click,os,subprocess
+import click,os,subprocess,logging
 import pysam
 
 
@@ -21,7 +21,10 @@ import pysam
 
 
 class ChimericAlignment:
-	def __init__(self,f1,f2,f3):
+	def __init__(self,input_alignment_file):
+		self.logger = logging.getLogger(self.__class__.__name__)
+		
+		self.input_alignment_file = input_alignment_file
 		self.test_pysam_version()
 	
 	def test_pysam_version(self):
@@ -173,7 +176,7 @@ class ChimericAlignment:
 				next_pos = [mates[0].next_reference_id,mates[0].next_reference_start]
 				last_pos = [mates[0].reference_id,mates[0].reference_start]
 				
-				start = get_closest(next_pos,alignments)
+				start = self.get_closest(next_pos,alignments)
 			
 			else:
 				print("Warning - mates do not correspond? - maybe empty (-1) as well?")
@@ -181,18 +184,18 @@ class ChimericAlignment:
 				next_pos = [alignments[0].reference_id,alignments[0].reference_start]
 				last_pos = [mates[0].reference_id,mates[0].reference_start]
 				
-				start = get_closest(next_pos,alignments)
+				start = self.get_closest(next_pos,alignments)
 			
 			alignments = [a for a in alignments if a != start]
 			# If the mate is not exactly matched but close, fix it:
-			new_mates.append(set_next_ref(mates[0],[start.reference_id,start.reference_start]))
+			new_mates.append(self.set_next_ref(mates[0],[start.reference_id,start.reference_start]))
 			
 			i = 0
 			while len(alignments) >= 1:
-				closest = get_closest(next_pos,alignments)
+				closest = self.get_closest(next_pos,alignments)
 				next_pos = [closest.reference_id,closest.reference_start]
 				
-				s_fixed = set_next_ref(start,next_pos)
+				s_fixed = self.set_next_ref(start,next_pos)
 				s_fixed.set_tag('FI',i)
 				new_alignments.append(s_fixed)
 				alignments = [a for a in alignments if a != closest]
@@ -202,7 +205,7 @@ class ChimericAlignment:
 			
 			# Map last one back to the mate again
 			if len(alignments) == 0:
-				start = set_next_ref(start,last_pos)
+				start = self.set_next_ref(start,last_pos)
 				start.set_tag('FI',i)
 				new_alignments.append(start)
 		
@@ -229,16 +232,16 @@ class ChimericAlignment:
 			if seg_pos == None or (seg_pos[0] == -1 and seg_pos[1] == -1):
 				seg_pos = [alignments[0].reference_id,alignments[0].reference_start]
 			
-			closest = get_closest(seg_pos,alignments)
+			closest = self.get_closest(seg_pos,alignments)
 			alignments = [a for a in alignments if a != closest]
-			new_alignments.append(set_next_ref(closest,seg_pos))
+			new_alignments.append(self.set_next_ref(closest,seg_pos))
 			
 			while len(alignments) > 0:
 				seg_pos = [closest.reference_id,closest.reference_start]
-				closest = get_closest(seg_pos,alignments)
+				closest = self.get_closest(seg_pos,alignments)
 				
 				alignments = [a for a in alignments if a != closest]
-				new_alignments.append(set_next_ref(closest,seg_pos))
+				new_alignments.append(self.set_next_ref(closest,seg_pos))
 		
 		else:
 			raise Exception("Dunno how to handle junctions in both mates yet... not aware of STAR Fusion producing them either")
@@ -247,7 +250,6 @@ class ChimericAlignment:
 			raise Exception("Somewhere alignments got lost in this function")
 		
 		return new_alignments,new_mates
-
 
 
 	def reconstruct_alignments(self,alignments,bam_file,fh_out):
@@ -276,9 +278,9 @@ class ChimericAlignment:
 		all_reads_updated = []
 		
 		if n_r1 > 1:
-			reads_updated,mates_updated = fix_chain(r1,bam_file,r2)
-			set_read_group(reads_updated,'spanning_paired')
-			set_read_group(mates_updated,'silent_mate')
+			reads_updated,mates_updated = self.fix_chain(r1,bam_file,r2)
+			self.set_read_group(reads_updated,'spanning_paired')
+			self.set_read_group(mates_updated,'silent_mate')
 			for a in reads_updated:
 				all_reads_updated.append(a)
 			
@@ -286,9 +288,9 @@ class ChimericAlignment:
 				all_reads_updated.append(a)
 		
 		elif n_r2 > 1:
-			reads_updated,mates_updated = fix_chain(r2,bam_file,r1)
-			set_read_group(reads_updated,'spanning_paired')
-			set_read_group(mates_updated,'silent_mate')
+			reads_updated,mates_updated = self.fix_chain(r2,bam_file,r1)
+			self.set_read_group(reads_updated,'spanning_paired')
+			self.set_read_group(mates_updated,'silent_mate')
 			for a in reads_updated:
 				all_reads_updated.append(a)
 			
@@ -296,10 +298,10 @@ class ChimericAlignment:
 				all_reads_updated.append(a)
 		
 		elif n_s >= 2:
-			reads_updated,mates_updated = fix_chain(singletons,bam_file,[])
-			set_read_group(reads_updated,'spanning_singleton')
+			reads_updated,mates_updated = self.fix_chain(singletons,bam_file,[])
+			self.set_read_group(reads_updated,'spanning_singleton')
 			
-			fix_alignment_score(reads_updated)
+			self.fix_alignment_score(reads_updated)
 			
 			for a in reads_updated:
 				all_reads_updated.append(a)
@@ -308,8 +310,8 @@ class ChimericAlignment:
 				all_reads_updated.append(a)
 		
 		elif n_r1 == 1 and n_r2 == 1 and n_s == 0:
-			reads_updated,mates_updated = fix_chain(r1 + r2,bam_file,[])
-			set_read_group(reads_updated,'discordant_mates')
+			reads_updated,mates_updated = self.fix_chain(r1 + r2,bam_file,[])
+			self.set_read_group(reads_updated,'discordant_mates')
 			
 			for a in reads_updated:
 				all_reads_updated.append(a)
@@ -325,11 +327,11 @@ class ChimericAlignment:
 				raise Exception("what happens here?")
 		
 		
-		all_reads_updated = update_sa_tags(all_reads_updated,bam_file)
+		all_reads_updated = self.update_sa_tags(all_reads_updated,bam_file)
 		if len(all_reads_updated) != n:
 			raise Exception("Error - reads have been lost")
 		
-		all_reads_updated = set_qname_to_group(all_reads_updated)
+		all_reads_updated = self.set_qname_to_group(all_reads_updated)
 		
 		for a in all_reads_updated:
 			fh_out.write(a)
@@ -341,20 +343,19 @@ class ChimericAlignment:
 		#  12689 3 1 2 0
 		#  15828 3 2 1 0
 
-
-	def convert(self,bam_file_discordant,bam_file_discordant_fixed):
-		path = os.path.dirname(bam_file_discordant)
-		basename,ext = os.path.splitext(os.path.basename(bam_file_discordant))
+	def convert(self,bam_file_discordant_fixed,temp_dir):
+		path = os.path.dirname(self.input_alignment_file)
+		basename,ext = os.path.splitext(os.path.basename(self.input_alignment_file))
 		
 		#@TODO / consider todo - start straight from sam
 		#samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
 		
-		print("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
+		self.logger.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
 		command = ["samtools",
 				   "sort",
 				   "-o",basename+".name-sorted.bam",
 				   "-n",
-				   bam_file_discordant]
+				   self.input_alignment_file]
 		e_code = subprocess.call(command)
 		
 		if e_code != 0:
@@ -376,11 +377,11 @@ class ChimericAlignment:
 		for read in sam_file_discordant:
 			if read.qname != last_read_name:
 				if len(alignments) > 0:
-					reconstruct_alignments(alignments,sam_file_discordant,fh)
+					self.reconstruct_alignments(alignments,sam_file_discordant,fh)
 				alignments = []
 				last_read_name = read.qname
 			alignments.append(read)
-		reconstruct_alignments(alignments,sam_file_discordant,fh)
+		self.reconstruct_alignments(alignments,sam_file_discordant,fh)
 		fh.close()
 		
 		
