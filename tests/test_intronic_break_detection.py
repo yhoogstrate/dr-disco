@@ -25,21 +25,25 @@ Dr. Disco - testing fix-chimeric
 import unittest,logging,sys,subprocess,filecmp,pysam
 logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
 
-from drdisco.ChimericAlignment import ChimericAlignment
+from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
+from drdisco.IntronDecomposition import IntronDecomposition
 
 
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
         print("\n")
         
-        input_file_a =    "tests/fix-chimeric/test_terg_01.filtered.bam"
-        input_file_f =    "tests/fix-chimeric/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        input_file_a =    "tests/detect-intronic/test_terg_01.filtered.fixed.bam"
+        input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
-        # Use some FuMa files please
-        bps = BreakPoints(input_file_f)
+        bps = FusionCatcher(input_file_f,"")
         for bp in bps:
-            decomposed_bp = bp.decompose(input_file_a)
-            print(decomposed_bp)
+            ic = IntronDecomposition(bp)
+            #ic.annotate_genes(gobj)
+            ic.decompose(input_file_a)
+            
+            #decomposed_bp = bp.decompose(input_file_a)
+            #print(decomposed_bp)
 
 
 def main():

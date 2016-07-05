@@ -4,7 +4,7 @@
 
 #http://www.samformat.info/sam-format-flag
 
-import click,os,subprocess,logging
+import os,subprocess,logging
 import pysam
 
 
@@ -21,6 +21,7 @@ import pysam
 ## - Mark as deletion if possible (N is for splicing, so do D/P)
 ## - Set read group to sample name
 
+from drdisco import __version__, __author__, __homepage__
 
 class ChimericAlignment:
     def __init__(self,input_alignment_file):
@@ -366,6 +367,9 @@ class ChimericAlignment:
             {'ID':'discordant_mates','DS':'This read has discordant mate pair'},
             {'ID':'spanning_paired','DS':'This read was aligned to two locations and also has an aligned mate'},
             {'ID':'silent_mate','DS':'Reads of this type are not discordant while their mate is'}]
+        header['PG'] = [
+            {'ID':'drdisco_fix_chimeric','PN':'drdisco fix-chimeric','CL':'','VN':__version__}
+        ]
         
         fh = pysam.AlignmentFile(basename+".name-sorted.fixed.sam", "wb", header=header)
         last_read_name = False
