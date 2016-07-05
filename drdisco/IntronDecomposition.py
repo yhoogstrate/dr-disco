@@ -25,6 +25,7 @@ class Chain:
         # 1. 'N' <- N alignment flag in SAM, meaning INTRON
         # 2. 'discordant_read'
         # 3. 'split_read'
+        # 4. 'silent_mate'
         #
         # ... 'S' and 'H' for soft and hard clipping?
         pass
@@ -66,7 +67,6 @@ class IntronDecomposition:
     def parse_SA(self,SA_tag):
         sa_tags = SA_tag.split(":")
         for i in range(len(sa_tags)):
-            print sa_tags[i]
             sa_tags[i] = sa_tags[i].split(",")
             sa_tags[i][1] = int(sa_tags[i][1])
             #sa_tags[i][2] = int(sa_tags[i][2])
@@ -85,9 +85,20 @@ class IntronDecomposition:
         c = Chain()
         
         for r in pysam_fh.fetch(lpos[0],lpos[1]):
-            print r.query_name
-            print " -" , r.reference_start, "-" if r.is_reverse else "+"
-            print " -" , r.cigarstring
-            print " -" , r.get_tag('RG')
-            print " -" , self.parse_SA(r.get_tag('SA'))
-            #print r.get_aligned_pairs()
+            sa = self.parse_SA(r.get_tag('SA'))
+            _chr = pysam_fh.get_reference_name(r.reference_id)
+            insert_size = self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
+            
+            if abs(insert_size) >= 1.5*126:
+                print r.query_name
+                print " -" , r.reference_start, "-" if r.is_reverse else "+"
+                print " -" , r.cigarstring
+                print " -" , r.get_tag('RG')
+                print " -" , sa
+                
+                if r.get_tag('RG') == 'discordant_mates':
+                    print ' *', self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
+                #print r.get_aligned_pairs()
+            else:
+                # Figure out whether there was hard or soft clipping on one of the mates
+                pass
