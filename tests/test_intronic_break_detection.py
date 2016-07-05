@@ -44,6 +44,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
             
             #decomposed_bp = bp.decompose(input_file_a)
             #print(decomposed_bp)
+            return True
 
 
 def main():

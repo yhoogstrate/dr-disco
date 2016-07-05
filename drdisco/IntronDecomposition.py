@@ -28,4 +28,10 @@ class IntronDecomposition:
     
     def decompose(self,alignment_file):
         pysam_fh = self.test_disco_alignment(alignment_file)
-        #self.break_point
+        
+        lpos = self.break_point.get_left_position(True)
+        rpos = self.break_point.get_right_position(True)
+        
+        for r in pysam_fh.fetch(lpos[0],lpos[1]):
+            print r.query_name, r.cigar, r.get_tag('RG')
+            #print r.get_aligned_pairs()
