@@ -9,12 +9,70 @@ Tries to figure out within a discordant RNA-Seq read alignment:
 
 #http://www.samformat.info/sam-format-flag
 
-import logging
+import logging,re
 import pysam
+
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 
 class Arc:
     def __init__(self):
         pass
+
+def bam_parse_alignment_end(read):
+    pos = read.reference_start
+    if not read.is_reverse:
+        for chunk in read.cigar:
+            """
+                M	BAM_CMATCH	0
+                I	BAM_CINS	1
+                D	BAM_CDEL	2
+                N	BAM_CREF_SKIP	3
+                S	BAM_CSOFT_CLIP	4
+                H	BAM_CHARD_CLIP	5
+                P	BAM_CPAD	6
+                =	BAM_CEQUAL	7
+                X	BAM_CDIFF	8
+                        """
+            if chunk[0] in [0,2,3]:
+                pos += chunk[1]
+    
+    return pos
+
+pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
+def bam_parse_alignment_offset_using_cigar(sa_tag):
+    pos = 0
+    if sa_tag[4] == '+':
+        for chunk in pat_bam_parse_alignment_offset_using_cigar.finditer(sa_tag[2]):
+            """
+                M	BAM_CMATCH	0
+                I	BAM_CINS	1
+                D	BAM_CDEL	2
+                N	BAM_CREF_SKIP	3
+                S	BAM_CSOFT_CLIP	4
+                H	BAM_CHARD_CLIP	5
+                P	BAM_CPAD	6
+                =	BAM_CEQUAL	7
+                X	BAM_CDIFF	8
+                        """
+            
+            if chunk.group(2) in ['M','D','N']:
+                pos += int(chunk.group(1))
+    
+    return pos
+
+class BreakPosition:
+    def __init__(self,_chr,position_0_based,strand):
+        self._chr = _chr
+        self.pos = position_0_based
+        self.strand = strand
+    
+    def __str__(self):
+        if self.strand == STRAND_FORWARD:
+            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(+)"
+        elif self.strand == STRAND_REVERSE:
+            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
+        else:    
+            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(?)"
 
 class Element:
     def __init__(self,_chr,_pos):
@@ -56,10 +114,14 @@ class Chain:
         #print " -" , parsed_SA_tag
         
         if read.get_tag('RG') == "discordant_mates":
-            pos1 = [self.pysam_fh.get_reference_name(read.reference_id),read.reference_start, "-" if read.is_reverse else "+"]
-            pos2 = [parsed_SA_tag[0][0], parsed_SA_tag[0][1], parsed_SA_tag[0][4]]
-            print pos1,pos2
-            #self.insert_entry(
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),bam_parse_alignment_end(read), not read.is_reverse)
+            
+            if read.mate_is_reverse:
+                pos2 = BreakPosition(parsed_SA_tag[0][0], parsed_SA_tag[0][1], STRAND_FORWARD if parsed_SA_tag[0][4] == "+" else STRAND_REVERSE)
+            else:
+                pos2 = BreakPosition(parsed_SA_tag[0][0], parsed_SA_tag[0][1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag[0]), STRAND_FORWARD if parsed_SA_tag[0][4] == "+" else STRAND_REVERSE)
+            
+            print str(pos1)+"-"+str(pos2)
         
         self.find_sam_SHI_arcs(read)
     
@@ -110,7 +172,6 @@ class IntronDecomposition:
         for i in range(len(sa_tags)):
             sa_tags[i] = sa_tags[i].split(",")
             sa_tags[i][1] = int(sa_tags[i][1])
-            #sa_tags[i][2] = int(sa_tags[i][2])
         
         return sa_tags
     
@@ -129,6 +190,11 @@ class IntronDecomposition:
             sa = self.parse_SA(r.get_tag('SA'))
             _chr = pysam_fh.get_reference_name(r.reference_id)
             insert_size = self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
+            
+            #print r.is_reverse, r.mate_is_reverse
+            #if r.is_reverse == r.mate_is_reverse:
+                #print "****************"
+                #print r
             
             if abs(insert_size) >= 400:
                 if r.get_tag('RG') == 'discordant_mates':
