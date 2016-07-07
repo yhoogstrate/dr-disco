@@ -131,7 +131,6 @@ class Chain:
          - Soft clipping
          - Splicing"""
         return True
-
     
     def prune(self):
         pass
