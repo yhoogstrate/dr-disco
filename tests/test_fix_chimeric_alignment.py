@@ -22,7 +22,7 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import unittest,logging,sys,subprocess,filecmp,pysam
+import unittest,logging,sys,subprocess,filecmp,pysam,os
 logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
 
 from drdisco.ChimericAlignment import ChimericAlignment
@@ -31,6 +31,9 @@ from drdisco.ChimericAlignment import ChimericAlignment
 class TestChimericAlignment(unittest.TestCase):
     def test_01(self):
         print("\n")
+        
+        if not os.path.exists("tmp"):
+            os.mkdir("tmp")
         
         input_file =    "tests/fix-chimeric/test_terg_01.filtered.bam"
         output_file =   "tmp/test_terg_01.filtered.fixed.bam"

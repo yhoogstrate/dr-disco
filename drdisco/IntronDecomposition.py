@@ -24,8 +24,10 @@ class Node:
         self._previous = None
         self._next = None
     
-    def add_arc(self,arc_type):
-        pass
+    def add_arc(self,node2,arc_type,do_vice_versa=True):
+        if do_vice_versa:
+            node2.add_arc(self,arc_type,False)
+        print "adding arc"
 
 def bam_parse_alignment_end(read):
     pos = read.reference_start
@@ -107,8 +109,8 @@ class Element:
 
 class Chain:
     def __init__(self,pysam_fh):
-        idx = {}
-        root = None
+        self.idx = {}
+        #self.root = None
         self.pysam_fh = pysam_fh
     
     def insert_entry(self,pos1,pos2,_type):
@@ -120,12 +122,13 @@ class Chain:
         """
         
         if not self.idx.has_key(pos1):
-            self.idx[pos1] = Node()
+            self.idx[pos1] = Node(pos1)
         
         if not self.idx.has_key(pos2):
-            self.idx[pos2] = Node()
+            self.idx[pos2] = Node(pos2)
         
-        self.idx[pos1].add_arc(pos1,pos2,_type)
+        print ">>>>>>>>>>>>>>>>>>>>>>>>",pos2
+        self.idx[pos1].add_arc(pos2,_type)
     
     def insert(self,read,parsed_SA_tag):
         """Inserts a read in the Chain and determine the type of arc"""
@@ -151,7 +154,7 @@ class Chain:
             else:
                 pos2 = BreakPosition(parsed_SA_tag[0][0], parsed_SA_tag[0][1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag[0]), STRAND_FORWARD if parsed_SA_tag[0][4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(str(pos1),str(pos2),"discordant_mates")
+            self.insert_entry(pos1,pos2,"discordant_mates")
         
         self.find_sam_SHI_arcs(read)
     
