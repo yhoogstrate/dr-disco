@@ -2,11 +2,19 @@
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
+"""
+Tries to figure out within a discordant RNA-Seq read alignment:
+ - Tries to explain introns and exons by fusion transcripts
+"""
+
 #http://www.samformat.info/sam-format-flag
 
 import logging
 import pysam
 
+class Arc:
+    def __init__(self):
+        pass
 
 class Element:
     def __init__(self,_chr,_pos):
@@ -17,10 +25,22 @@ class Element:
 
 
 class Chain:
-    def __init__(self):
+    def __init__(self,pysam_fh):
         idx = {}
+        root = None
+        self.pysam_fh = pysam_fh
     
-    def insert(self,pos1,pos2,_type):
+    def insert_entry(self,pos1,pos2,_type):
+        if not self.idx.has_key(pos1):
+            self.idx[pos1] = Arc()
+        
+        if not self.idx.has_key(pos2):
+            self.idx[pos2] = Arc()
+        
+        self.idx[pos1].insert(pos1,pos2,_type)
+    
+    def insert(self,read,parsed_SA_tag):
+        """Inserts a read in the Chain and determine the type of arc"""
         # Type:
         # 1. 'N' <- N alignment flag in SAM, meaning INTRON
         # 2. 'discordant_read'
@@ -28,7 +48,28 @@ class Chain:
         # 4. 'silent_mate'
         #
         # ... 'S' and 'H' for soft and hard clipping?
-        pass
+        
+        #print read.query_name
+        #print " -" , read.reference_start, "-" if read.is_reverse else "+"
+        #print " -" , read.cigarstring
+        #print " -" , read.get_tag('RG')
+        #print " -" , parsed_SA_tag
+        
+        if read.get_tag('RG') == "discordant_mates":
+            pos1 = [self.pysam_fh.get_reference_name(read.reference_id),read.reference_start, "-" if read.is_reverse else "+"]
+            pos2 = [parsed_SA_tag[0][0], parsed_SA_tag[0][1], parsed_SA_tag[0][4]]
+            print pos1,pos2
+            #self.insert_entry(
+        
+        self.find_sam_SHI_arcs(read)
+    
+    def find_sam_SHI_arcs(self,r):
+        """Tries to find ARCs introduced by:
+         - Hard clipping
+         - Soft clipping
+         - Splicing"""
+        return True
+
     
     def prune(self):
         pass
@@ -82,22 +123,16 @@ class IntronDecomposition:
         chain_left = []
         chain_right = []
         
-        c = Chain()
+        c = Chain(pysam_fh)
         
         for r in pysam_fh.fetch(lpos[0],lpos[1]):
             sa = self.parse_SA(r.get_tag('SA'))
             _chr = pysam_fh.get_reference_name(r.reference_id)
             insert_size = self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
             
-            if abs(insert_size) >= 1.5*126:
-                print r.query_name
-                print " -" , r.reference_start, "-" if r.is_reverse else "+"
-                print " -" , r.cigarstring
-                print " -" , r.get_tag('RG')
-                print " -" , sa
-                
+            if abs(insert_size) >= 400:
                 if r.get_tag('RG') == 'discordant_mates':
-                    print ' *', self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
+                    c.insert(r,sa)
                 #print r.get_aligned_pairs()
             else:
                 # Figure out whether there was hard or soft clipping on one of the mates
