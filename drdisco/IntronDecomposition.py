@@ -18,6 +18,15 @@ class Arc:
     def __init__(self):
         pass
 
+class Node:
+    def __init__(self,position):
+        self.position = position
+        self._previous = None
+        self._next = None
+    
+    def add_arc(self,arc_type):
+        pass
+
 def bam_parse_alignment_end(read):
     pos = read.reference_start
     if not read.is_reverse:
@@ -40,6 +49,8 @@ def bam_parse_alignment_end(read):
 
 pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
 def bam_parse_alignment_offset_using_cigar(sa_tag):
+    """Parses the offset to theend point of the reads' mate
+    """
     pos = 0
     if sa_tag[4] == '+':
         for chunk in pat_bam_parse_alignment_offset_using_cigar.finditer(sa_tag[2]):
@@ -61,6 +72,18 @@ def bam_parse_alignment_offset_using_cigar(sa_tag):
     return pos
 
 class BreakPosition:
+    """
+    Unambiguous data type that determines where a break point occurs.
+    
+    chr1:
+    | 0 | 1 | 2 | 3 | ~~~ 
+    
+    chr2:
+     ~~~ | 6 | 7 | 8 |
+     
+     string function of break points:
+     chr1:3/4 and chr2:5/6
+    """
     def __init__(self,_chr,position_0_based,strand):
         self._chr = _chr
         self.pos = position_0_based
@@ -89,13 +112,20 @@ class Chain:
         self.pysam_fh = pysam_fh
     
     def insert_entry(self,pos1,pos2,_type):
+        """
+         - Checks if Node exists at pos1, otherwise creates one
+         - Checks if Node exists at pos2, otherwise creates one
+         - Checks if Arc exists between them
+         
+        """
+        
         if not self.idx.has_key(pos1):
-            self.idx[pos1] = Arc()
+            self.idx[pos1] = Node()
         
         if not self.idx.has_key(pos2):
-            self.idx[pos2] = Arc()
+            self.idx[pos2] = Node()
         
-        self.idx[pos1].insert(pos1,pos2,_type)
+        self.idx[pos1].add_arc(pos1,pos2,_type)
     
     def insert(self,read,parsed_SA_tag):
         """Inserts a read in the Chain and determine the type of arc"""
@@ -121,7 +151,7 @@ class Chain:
             else:
                 pos2 = BreakPosition(parsed_SA_tag[0][0], parsed_SA_tag[0][1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag[0]), STRAND_FORWARD if parsed_SA_tag[0][4] == "+" else STRAND_REVERSE)
             
-            print str(pos1)+"-"+str(pos2)
+            self.insert_entry(str(pos1),str(pos2),"discordant_mates")
         
         self.find_sam_SHI_arcs(read)
     
