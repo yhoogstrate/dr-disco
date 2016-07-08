@@ -15,26 +15,43 @@ import pysam
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 
 class Arc:
-    def __init__(self):
-        pass
+    def __init__(self,_target):
+        self._target = _target
+        self._types = {}
+    
+    def add_type(self,_type):
+        if not self._types.has_key(_type):
+            self._types[_type] = 0
+        
+        self._types[_type] += 1
 
 class Node:
     def __init__(self,position):
         self.position = position
-        self._previous = None
-        self._next = None
+        self.arcs = {}
+    
+    def insert_arc(self,arc):
+        skey = str(arc._target)
+        
+        if not self.arcs.has_key(skey):
+            self.arcs[skey] = Arc(skey)
+        
+        self.arcs[skey] = Arc
     
     def add_arc(self,node2,arc_type,do_vice_versa=True):
         if do_vice_versa:
             node2.add_arc(self,arc_type,False)
-        print "adding arc"
+        
+        arc = Arc(node2)
+        arc.add_type(arc_type)
+        self.insert_arc(arc)
+        #print "adding arc",str(self.position)," -> ",str(node2.position)
 
 def bam_parse_alignment_end(read):
     pos = read.reference_start
     if not read.is_reverse:
         for chunk in read.cigar:
-            """
-                M	BAM_CMATCH	0
+            """ M	BAM_CMATCH	0
                 I	BAM_CINS	1
                 D	BAM_CDEL	2
                 N	BAM_CREF_SKIP	3
@@ -42,8 +59,8 @@ def bam_parse_alignment_end(read):
                 H	BAM_CHARD_CLIP	5
                 P	BAM_CPAD	6
                 =	BAM_CEQUAL	7
-                X	BAM_CDIFF	8
-                        """
+                X	BAM_CDIFF	8"""
+            
             if chunk[0] in [0,2,3]:
                 pos += chunk[1]
     
@@ -56,8 +73,7 @@ def bam_parse_alignment_offset_using_cigar(sa_tag):
     pos = 0
     if sa_tag[4] == '+':
         for chunk in pat_bam_parse_alignment_offset_using_cigar.finditer(sa_tag[2]):
-            """
-                M	BAM_CMATCH	0
+            """ M	BAM_CMATCH	0
                 I	BAM_CINS	1
                 D	BAM_CDEL	2
                 N	BAM_CREF_SKIP	3
@@ -65,8 +81,7 @@ def bam_parse_alignment_offset_using_cigar(sa_tag):
                 H	BAM_CHARD_CLIP	5
                 P	BAM_CPAD	6
                 =	BAM_CEQUAL	7
-                X	BAM_CDIFF	8
-                        """
+                X	BAM_CDIFF	8"""
             
             if chunk.group(2) in ['M','D','N']:
                 pos += int(chunk.group(1))
@@ -99,18 +114,10 @@ class BreakPosition:
         else:    
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(?)"
 
-class Element:
-    def __init__(self,_chr,_pos):
-        self._chr = _chr
-        self._pos = _pos
-        arcs_fwd = []
-        arcs_rev = []
-
 
 class Chain:
     def __init__(self,pysam_fh):
         self.idx = {}
-        #self.root = None
         self.pysam_fh = pysam_fh
     
     def insert_entry(self,pos1,pos2,_type):
@@ -127,8 +134,7 @@ class Chain:
         if not self.idx.has_key(pos2):
             self.idx[pos2] = Node(pos2)
         
-        print ">>>>>>>>>>>>>>>>>>>>>>>>",pos2
-        self.idx[pos1].add_arc(pos2,_type)
+        self.idx[pos1].add_arc(self.idx[pos2],_type)
     
     def insert(self,read,parsed_SA_tag):
         """Inserts a read in the Chain and determine the type of arc"""
