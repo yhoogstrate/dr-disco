@@ -1,4 +1,3 @@
-sysconfig
 pysam>=0.9.0
 click
 nose
