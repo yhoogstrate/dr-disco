@@ -1,4 +1,5 @@
+sysconfig
 pysam>=0.9.0
 click
 nose
-fuma>=3.0.2
+fuma==3.0.3
