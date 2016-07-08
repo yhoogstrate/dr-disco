@@ -88,6 +88,8 @@ def bam_parse_alignment_offset_using_cigar(sa_tag):
     
     return pos
 
+
+
 class BreakPosition:
     """
     Unambiguous data type that determines where a break point occurs.
@@ -146,12 +148,6 @@ class Chain:
         #
         # ... 'S' and 'H' for soft and hard clipping?
         
-        #print read.query_name
-        #print " -" , read.reference_start, "-" if read.is_reverse else "+"
-        #print " -" , read.cigarstring
-        #print " -" , read.get_tag('RG')
-        #print " -" , parsed_SA_tag
-        
         if read.get_tag('RG') == "discordant_mates":
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),bam_parse_alignment_end(read), not read.is_reverse)
             
@@ -161,15 +157,6 @@ class Chain:
                 pos2 = BreakPosition(parsed_SA_tag[0][0], parsed_SA_tag[0][1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag[0]), STRAND_FORWARD if parsed_SA_tag[0][4] == "+" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,"discordant_mates")
-        
-        self.find_sam_SHI_arcs(read)
-    
-    def find_sam_SHI_arcs(self,r):
-        """Tries to find ARCs introduced by:
-         - Hard clipping
-         - Soft clipping
-         - Splicing"""
-        return True
     
     def prune(self):
         pass
@@ -229,15 +216,52 @@ class IntronDecomposition:
             _chr = pysam_fh.get_reference_name(r.reference_id)
             insert_size = self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
             
-            #print r.is_reverse, r.mate_is_reverse
-            #if r.is_reverse == r.mate_is_reverse:
-                #print "****************"
-                #print r
-            
-            if abs(insert_size) >= 400:
-                if r.get_tag('RG') == 'discordant_mates':
+            if r.get_tag('RG') == 'discordant_mates':
+                if abs(insert_size) >= 400:
                     c.insert(r,sa)
-                #print r.get_aligned_pairs()
+            elif r.get_tag('RG') == 'silent_mate':
+                # usually in a exon?
+                #print r.is_reverse, r.mate_is_reverse
+                #if r.is_reverse == r.mate_is_reverse:
+                    #print "****************"
+                    #print r
+
+                read = r
+                print read.query_name
+                print " -" , "first in pair" if not read.is_secondary else "second in pair"
+                print " -" , read.reference_start, "-" if read.is_reverse else "+"
+                print " -" , read.cigarstring
+                print " -" , read.get_tag('RG')
+                print " -" , read.get_tag('SA')
+                print " - NH:i:" , read.get_tag('HI')
+                        
+                
+                if read.is_read1:
+                    # The complete mate is the secondary, meaning:
+                    # HI:i:1       HI:i:2
+                    # [====]---$---[====>-----<========]
+                    # The 'break' between the mates is from spanning_paired.2 <-> read
+                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
+                    pass
+                else:# is_read2
+                    # The complete mate is the primary, meaning:
+                    #                HI:i:1       HI:i:2
+                    # [========>-----<====]---$---[====]
+                    # The 'break' between the mates is from read <-> spanning_paired.1
+                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
+                    pass
+
             else:
-                # Figure out whether there was hard or soft clipping on one of the mates
                 pass
+            
+            # Find introns etc:
+            #self.find_sam_SHI_arcs(read)
+        
+    #def find_sam_SHI_arcs(self,r):
+    #    """Tries to find ARCs introduced by:
+    #     - Hard clipping
+    #     - Soft clipping
+    #     - Splicing"""
+    #    return True
+
+

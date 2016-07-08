@@ -120,12 +120,38 @@ class ChimericAlignment:
                     #if dd_chr == 0 and dd_pos == 0:
                     #   pass
                     #else:
+                    d_chr = dd_chr
+                    d_pos = dd_pos
+                    
                     is_closest = True
             
             if is_closest:
                 closest = alignment
         
         return closest
+    
+    def get_closest_by_hi(self,hi_closest,alignments):
+        d_hi = None
+        closest = None
+        
+        for alignment in alignments:
+            is_closest = False
+            
+            cur_hi = alignment.get_tag('HI')
+            dd_hi = abs(hi_closest - cur_hi)
+            
+            if d_hi == None:
+                is_closest = True
+            else:
+                if dd_hi < d_hi:
+                    is_closest = True
+            
+            if is_closest:
+                d_hi = dd_hi
+                closest = alignment
+        
+        return closest
+        
 
     def fix_chain(self,alignments,bam_file,mates):
         """
@@ -175,6 +201,42 @@ class ChimericAlignment:
         new_mates = []
         
         if len(mates) == 1 and len(alignments) >= 2:
+            if mates[0].is_read1:
+                hi_closest = -1
+            else:
+                hi_closest = len(alignments)+1
+            
+            start = self.get_closest_by_hi(hi_closest,alignments)
+            last_pos = [mates[0].reference_id,mates[0].reference_start]
+            
+            alignments = [a for a in alignments if a != start]
+            # If the mate is not exactly matched but close, fix it:
+            new_mates.append(self.set_next_ref(mates[0],[start.reference_id,start.reference_start]))
+            
+            hi_closest = start.get_tag('HI')
+            i = 0
+            while len(alignments) >= 1:
+                closest = self.get_closest_by_hi(hi_closest,alignments)
+                hi_closest = closest.get_tag('HI')
+                
+                next_pos = [closest.reference_id,closest.reference_start]
+                
+                s_fixed = self.set_next_ref(start,next_pos)
+                s_fixed.set_tag('FI',i)
+                new_alignments.append(s_fixed)
+                alignments = [a for a in alignments if a != closest]
+                
+                start = closest
+                i += 1
+            
+            # Map last one back to the mate again
+            if len(alignments) == 0:
+                start = self.set_next_ref(start,last_pos)
+                start.set_tag('FI',i)
+                new_alignments.append(start)
+            
+            
+            """ - Does it based on shortest genomic distance:
             if str(mates[0].next_reference_id)+":"+str(mates[0].next_reference_start) in chains_from:
                 next_pos = [mates[0].next_reference_id,mates[0].next_reference_start]
                 last_pos = [mates[0].reference_id,mates[0].reference_start]
@@ -211,6 +273,9 @@ class ChimericAlignment:
                 start = self.set_next_ref(start,last_pos)
                 start.set_tag('FI',i)
                 new_alignments.append(start)
+            """
+            
+            # Now do it based on HI-tag
         
         elif len(mates) == 0:
             ## Either 2 discordant mates
@@ -219,14 +284,6 @@ class ChimericAlignment:
             if len(_linked) == len(alignments):
                 # cross reffing each other - is already fine
                 return alignments,new_mates
-            
-            """
-            for a in alignments:
-                print a
-            print "f",_from
-            print "t",_to
-            print "l",_linked
-            """
             
             seg_pos = None
             if len(_linked) > 0:
@@ -408,4 +465,3 @@ class ChimericAlignment:
         self.logger.info("Moving to final destination")
         os.rename(basename+".sorted.fixed.bam",bam_file_discordant_fixed)
         os.rename(basename+".sorted.fixed.bam"+".bai",bam_file_discordant_fixed+".bai")
-
