@@ -236,17 +236,9 @@ class IntronDecomposition:
             if r.get_tag('RG') == 'discordant_mates':
                 if abs(insert_size) >= 400:
                     c.insert(r,sa[0])
+            
             elif r.get_tag('RG') == 'silent_mate':
                 # usually in a exon?
-                #print read.query_name
-                #print " -" , "first in pair" if not read.is_secondary else "second in pair"
-                #print " -" , read.reference_start, "-" if read.is_reverse else "+"
-                #print " -" , read.cigarstring
-                #print " -" , read.get_tag('RG')
-                #print " -" , read.get_tag('SA')
-                #print " - NH:i:" , read.get_tag('HI')
-                
-                
                 if r.is_read1:
                     # The complete mate is the secondary, meaning:
                     # HI:i:1       HI:i:2
@@ -267,9 +259,24 @@ class IntronDecomposition:
                     broken_mate = sa[0]
                 
                 c.insert(r,broken_mate)
-        
+            
+            elif r.get_tag('RG') == 'spanning_paired':
+                read = r
+                print read.query_name
+                print " -" , "first in pair" if not read.is_secondary else "second in pair"
+                print " -" , read.reference_start, "-" if read.is_reverse else "+"
+                print " -" , read.cigarstring
+                print " -" , read.get_tag('RG')
+                print " -" , read.get_tag('SA')
+                print " - NH:i:" , read.get_tag('HI')
+                print
+                
+                other_piece = sa[0]
+                
+                print other_piece
+            
             else:
-                pass
+                raise Exception("Unknown type read: '"+str(r.get_tag('RG'))+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
             
             # Find introns etc:
             #self.find_sam_SHI_arcs(read)
