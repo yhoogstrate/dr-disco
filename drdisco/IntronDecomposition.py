@@ -137,7 +137,7 @@ class Chain:
         
         self.idx[pos1].add_arc(self.idx[pos2],_type)
     
-    def insert(self,read,parsed_SA_tag):
+    def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a read in the Chain and determine the type of arc"""
         # Type:
         # 1. 'N' <- N alignment flag in SAM, meaning INTRON
@@ -147,32 +147,30 @@ class Chain:
         #
         # ... 'S' and 'H' for soft and hard clipping?
         
-        if read.get_tag('RG') == "discordant_mates":
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 bam_parse_alignment_end(read),
-                                 not read.is_reverse)
-            
-            if read.mate_is_reverse:
-                pos2 = BreakPosition(parsed_SA_tag[0], parsed_SA_tag[1], STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+        if specific_type == None:# If no specific type is defined, use the type of reads
+            rg = read.get_tag('RG')
+            if rg in ["discordant_mates","silent_mate","spanning_paired","spanning_singleton"]:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     bam_parse_alignment_end(read),
+                                     not read.is_reverse)
+                
+                if read.mate_is_reverse:
+                    pos2 = BreakPosition(parsed_SA_tag[0],
+                                         parsed_SA_tag[1],
+                                         STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                else:
+                    pos2 = BreakPosition(parsed_SA_tag[0],
+                                         parsed_SA_tag[1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag),
+                                         STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                
+                self.insert_entry(pos1,pos2,rg)
             else:
-                pos2 = BreakPosition(parsed_SA_tag[0], parsed_SA_tag[1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag), STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-            
-            self.insert_entry(pos1,pos2,"discordant_mates")
-        elif read.get_tag('RG') == "silent_mate":
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 bam_parse_alignment_end(read),
-                                 not read.is_reverse)
-            
-            if read.mate_is_reverse:
-                pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1],
-                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-            else:
-                pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag),
-                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-            
-            self.insert_entry(pos1,pos2,"silent_mate")
+                raise Exception("Fatal Error, RG: "+rg)
+        
+        else:
+            # Type is defined, usually hard or soft clipping or splicing or deletions
+            print "Someone was here.."
+            pass
 
     
     def prune(self):
@@ -260,21 +258,10 @@ class IntronDecomposition:
                 
                 c.insert(r,broken_mate)
             
-            elif r.get_tag('RG') == 'spanning_paired':
+            elif r.get_tag('RG') in ['spanning_paired', 'spanning_singleton']:
                 read = r
-                print read.query_name
-                print " -" , "first in pair" if not read.is_secondary else "second in pair"
-                print " -" , read.reference_start, "-" if read.is_reverse else "+"
-                print " -" , read.cigarstring
-                print " -" , read.get_tag('RG')
-                print " -" , read.get_tag('SA')
-                print " - NH:i:" , read.get_tag('HI')
-                print
-                
-                other_piece = sa[0]
-                
-                print other_piece
-            
+                c.insert(r,sa[0])
+
             else:
                 raise Exception("Unknown type read: '"+str(r.get_tag('RG'))+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
             

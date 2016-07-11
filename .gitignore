@@ -10,3 +10,5 @@ tmp/
 /data*/*.swp
 /data
 *.swp
+.coverage
+/htmlcov/*
