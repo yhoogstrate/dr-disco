@@ -68,8 +68,8 @@ def bam_parse_alignment_end(read):
 
 pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
 def bam_parse_alignment_offset_using_cigar(sa_tag):
-    """Parses the offset to theend point of the reads' mate
-    """
+    """Parses the offset to theend point of the reads' mate"""
+    
     pos = 0
     if sa_tag[4] == '+':
         for chunk in pat_bam_parse_alignment_offset_using_cigar.finditer(sa_tag[2]):
@@ -127,7 +127,6 @@ class Chain:
          - Checks if Node exists at pos1, otherwise creates one
          - Checks if Node exists at pos2, otherwise creates one
          - Checks if Arc exists between them
-         
         """
         
         if not self.idx.has_key(pos1):
@@ -149,14 +148,32 @@ class Chain:
         # ... 'S' and 'H' for soft and hard clipping?
         
         if read.get_tag('RG') == "discordant_mates":
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),bam_parse_alignment_end(read), not read.is_reverse)
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 bam_parse_alignment_end(read),
+                                 not read.is_reverse)
             
             if read.mate_is_reverse:
-                pos2 = BreakPosition(parsed_SA_tag[0][0], parsed_SA_tag[0][1], STRAND_FORWARD if parsed_SA_tag[0][4] == "+" else STRAND_REVERSE)
+                pos2 = BreakPosition(parsed_SA_tag[0], parsed_SA_tag[1], STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             else:
-                pos2 = BreakPosition(parsed_SA_tag[0][0], parsed_SA_tag[0][1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag[0]), STRAND_FORWARD if parsed_SA_tag[0][4] == "+" else STRAND_REVERSE)
+                pos2 = BreakPosition(parsed_SA_tag[0], parsed_SA_tag[1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag), STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,"discordant_mates")
+        elif read.get_tag('RG') == "silent_mate":
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 bam_parse_alignment_end(read),
+                                 not read.is_reverse)
+            
+            if read.mate_is_reverse:
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1],
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            else:
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag),
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,"silent_mate")
+
     
     def prune(self):
         pass
@@ -193,7 +210,7 @@ class IntronDecomposition:
             return 99999999
     
     def parse_SA(self,SA_tag):
-        sa_tags = SA_tag.split(":")
+        sa_tags = SA_tag.split(";")
         for i in range(len(sa_tags)):
             sa_tags[i] = sa_tags[i].split(",")
             sa_tags[i][1] = int(sa_tags[i][1])
@@ -218,39 +235,39 @@ class IntronDecomposition:
             
             if r.get_tag('RG') == 'discordant_mates':
                 if abs(insert_size) >= 400:
-                    c.insert(r,sa)
+                    c.insert(r,sa[0])
             elif r.get_tag('RG') == 'silent_mate':
                 # usually in a exon?
-                #print r.is_reverse, r.mate_is_reverse
-                #if r.is_reverse == r.mate_is_reverse:
-                    #print "****************"
-                    #print r
-
-                read = r
-                print read.query_name
-                print " -" , "first in pair" if not read.is_secondary else "second in pair"
-                print " -" , read.reference_start, "-" if read.is_reverse else "+"
-                print " -" , read.cigarstring
-                print " -" , read.get_tag('RG')
-                print " -" , read.get_tag('SA')
-                print " - NH:i:" , read.get_tag('HI')
-                        
+                #print read.query_name
+                #print " -" , "first in pair" if not read.is_secondary else "second in pair"
+                #print " -" , read.reference_start, "-" if read.is_reverse else "+"
+                #print " -" , read.cigarstring
+                #print " -" , read.get_tag('RG')
+                #print " -" , read.get_tag('SA')
+                #print " - NH:i:" , read.get_tag('HI')
                 
-                if read.is_read1:
+                
+                if r.is_read1:
                     # The complete mate is the secondary, meaning:
                     # HI:i:1       HI:i:2
                     # [====]---$---[====>-----<========]
                     # The 'break' between the mates is from spanning_paired.2 <-> read
                     # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
-                    pass
+                    
+                    broken_mate = sa[1]
+                    #broken_mate[1] += bam_parse_alignment_offset_using_cigar(broken_mate)
+
                 else:# is_read2
                     # The complete mate is the primary, meaning:
                     #                HI:i:1       HI:i:2
                     # [========>-----<====]---$---[====]
                     # The 'break' between the mates is from read <-> spanning_paired.1
                     # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
-                    pass
-
+                    
+                    broken_mate = sa[0]
+                
+                c.insert(r,broken_mate)
+        
             else:
                 pass
             
