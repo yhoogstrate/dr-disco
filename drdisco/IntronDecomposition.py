@@ -283,13 +283,43 @@ class IntronDecomposition:
                 raise Exception("Unknown type read: '"+str(r.get_tag('RG'))+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
             
             # Find introns etc:
-            #self.find_sam_SHI_arcs(read)
+            for internal_arc in self.find_cigar_arcs(r):
+                print internal_arc
         
-    #def find_sam_SHI_arcs(self,r):
-    #    """Tries to find ARCs introduced by:
-    #     - Hard clipping
-    #     - Soft clipping
-    #     - Splicing"""
-    #    return True
+    def find_cigar_arcs(self,read):
+        """Tries to find ARCs introduced by:
+         - Hard clipping
+         - Soft clipping
+         - Splicing
+         - Deletion
+
+            M	BAM_CMATCH	0
+            I	BAM_CINS	1
+            D	BAM_CDEL	2
+            N	BAM_CREF_SKIP	3
+            S	BAM_CSOFT_CLIP	4
+            H	BAM_CHARD_CLIP	5
+            P	BAM_CPAD	6
+            =	BAM_CEQUAL	7
+            X	BAM_CDIFF	8"""
+        
+        tt = {
+            2:'cigar_deletion',
+            3:'cigar_splice_junction',
+            4:'cigar_soft_clip',
+            5:'cigar_hard_clip'
+        }
+        
+        offset = read.reference_start
+        for chunk in read.cigar:
+                          # D N S H
+            if chunk[0] in tt.keys():
+                # Small softclips occur all the time - introns and 
+                # deletions of that size shouldn't add weight anyway
+                if chunk[1] > 3:
+                    yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+            
+            offset += chunk[1]
+        
 
 
