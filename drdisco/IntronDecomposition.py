@@ -36,7 +36,8 @@ def cigar_to_cigartuple(cigar_str):
     
     return cigartup
 
-class Arc:
+
+class _Arc:
     def __init__(self,_target):
         self._target = _target
         self._types = {}
@@ -47,27 +48,39 @@ class Arc:
         
         self._types[_type] += 1
 
+
+
 class Node:
     def __init__(self,position):
         self.position = position
         self.arcs = {}
     
-    def insert_arc(self,arc):
+    def insert_arc(self,arc,arc_type):
         skey = str(arc._target)
         
         if not self.arcs.has_key(skey):
-            self.arcs[skey] = Arc(skey)
+            self.arcs[skey] = _Arc(skey)
         
-        self.arcs[skey] = Arc
+        self.arcs[skey].add_type(arc_type)
     
     def add_arc(self,node2,arc_type,do_vice_versa=True):
         if do_vice_versa:
             node2.add_arc(self,arc_type,False)
         
-        arc = Arc(node2)
-        arc.add_type(arc_type)
-        self.insert_arc(arc)
-        #print "adding arc",str(self.position)," -> ",str(node2.position)
+        arc = _Arc(node2)
+        self.insert_arc(arc,arc_type)
+    
+    def __str__(self):
+        return str(self.position)
+    
+    def str2(self):
+        out = ""
+        
+        for sarc in self.arcs:
+            arc = self.arcs[sarc]
+            out += "-> "+str(arc._target)+" "+str(arc._types)
+        
+        return out
 
 def bam_parse_alignment_offset(cigartuple):
     pos = 0
@@ -143,55 +156,54 @@ class Chain:
         """
          - Checks if Node exists at pos1, otherwise creates one
          - Checks if Node exists at pos2, otherwise creates one
-         - Checks if Arc exists between them
+         - Checks if _Arc exists between them
         """
         
         if not self.idx.has_key(pos1):
-            self.idx[pos1] = Node(pos1)
+            self.idx[str(pos1)] = Node(pos1)
         
         if not self.idx.has_key(pos2):
-            self.idx[pos2] = Node(pos2)
+            self.idx[str(pos2)] = Node(pos2)
         
-        self.idx[pos1].add_arc(self.idx[pos2],_type)
+        self.idx[str(pos1)].add_arc(self.idx[str(pos2)],_type)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
-        """Inserts a read in the Chain and determine the type of arc"""
+        """Inserts a bi-drectional arc between read and sa-tag in the Chain
+        determines the type of arc by @RG tag (done by dr-disco fix-chimeric)"""
         # Type:
-        # 1. 'N' <- N alignment flag in SAM, meaning INTRON
         # 2. 'discordant_read'
         # 3. 'split_read'
         # 4. 'silent_mate'
-        #
-        # ... 'S' and 'H' for soft and hard clipping?
         
-        if specific_type == None:# If no specific type is defined, use the type of reads
-            rg = read.get_tag('RG')
-            if rg in ["discordant_mates","silent_mate","spanning_paired","spanning_singleton"]:
-                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     bam_parse_alignment_end(read),
-                                     not read.is_reverse)
-                
-                if read.mate_is_reverse:
-                    pos2 = BreakPosition(parsed_SA_tag[0],
-                                         parsed_SA_tag[1],
-                                         STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-                else:
-                    pos2 = BreakPosition(parsed_SA_tag[0],
-                                         bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-                                         STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-                
-                self.insert_entry(pos1,pos2,rg)
+        rg = read.get_tag('RG')
+        if rg in ["discordant_mates","silent_mate","spanning_paired","spanning_singleton"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 bam_parse_alignment_end(read),
+                                 not read.is_reverse)
+            
+            if read.mate_is_reverse:
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1],
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             else:
-                raise Exception("Fatal Error, RG: "+rg)
-        
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg)
         else:
-            # Type is defined, usually hard or soft clipping or splicing or deletions
-            print "Someone was here.."
-            pass
-
+            raise Exception("Fatal Error, RG: "+rg)
     
     def prune(self):
-        pass
+        for key in sorted(self.idx):
+            print key, self.idx[key].str2()
+            
+            #print self.idx[key].arcs
+            #print str(self.idx[key].arcs)
+            #print [str(x) for x in self.idx[key].arcs.values()]
+            
+            #print "k:",key, " | ".join([str(arc) for arc in self.idx[key].arcs])
+            #str(self.idx[key].arcs)
         # do some clever tricks to merge arcs together and reduce data points
 
 
@@ -243,6 +255,7 @@ class IntronDecomposition:
         
         c = Chain(pysam_fh)
         
+        #@todo move loop into a function insert_tree() ?
         for r in pysam_fh.fetch(lpos[0],lpos[1]):
             sa = self.parse_SA(r.get_tag('SA'))
             _chr = pysam_fh.get_reference_name(r.reference_id)
@@ -284,8 +297,18 @@ class IntronDecomposition:
             
             # Find introns etc:
             for internal_arc in self.find_cigar_arcs(r):
-                print internal_arc
+                pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                     internal_arc[0],
+                                     not r.is_reverse)
+                pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                     internal_arc[1],
+                                     not r.is_reverse)
+                
+                c.insert_entry(pos1,pos2,internal_arc[2])
         
+        # Merge arcs somehow, label nodes
+        c.prune()
+
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
          - Hard clipping
@@ -320,6 +343,4 @@ class IntronDecomposition:
                     yield (offset , (offset + chunk[1]) , tt[chunk[0]])
             
             offset += chunk[1]
-        
-
 
