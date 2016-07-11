@@ -159,13 +159,15 @@ class Chain:
          - Checks if _Arc exists between them
         """
         
-        if not self.idx.has_key(pos1):
-            self.idx[str(pos1)] = Node(pos1)
+        key1 = str(pos1)
+        if not self.idx.has_key(key1):
+            self.idx[key1] = Node(pos1)
         
-        if not self.idx.has_key(pos2):
-            self.idx[str(pos2)] = Node(pos2)
+        key2 = str(pos2)
+        if not self.idx.has_key(key2):
+            self.idx[key2] = Node(pos2)
         
-        self.idx[str(pos1)].add_arc(self.idx[str(pos2)],_type)
+        self.idx[key1].add_arc(self.idx[key2],_type)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional arc between read and sa-tag in the Chain
