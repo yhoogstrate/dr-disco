@@ -14,6 +14,28 @@ import pysam
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 
+pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
+def cigar_to_cigartuple(cigar_str):
+    tt = {'M':0,#	BAM_CMATCH	0
+          'I':1,#	BAM_CINS	1
+          'D':2,#	BAM_CDEL	2
+          'N':3,#	BAM_CREF_SKIP	3
+          'S':4,#	BAM_CSOFT_CLIP	4
+          'H':5,#	BAM_CHARD_CLIP	5
+          'P':6,#	BAM_CPAD	6
+          '=':7,#	BAM_CEQUAL	7
+          'X':8#	BAM_CDIFF	8
+          }
+    
+    cigartup = []
+    
+    for chunk in pat_bam_parse_alignment_offset_using_cigar.finditer(cigar_str):
+        flag = chunk.group(2)
+        length = chunk.group(1)
+        cigartup.append((tt[flag],int(length)))
+    
+    return cigartup
+
 class Arc:
     def __init__(self,_target):
         self._target = _target
@@ -47,47 +69,42 @@ class Node:
         self.insert_arc(arc)
         #print "adding arc",str(self.position)," -> ",str(node2.position)
 
+def bam_parse_alignment_offset(cigartuple):
+    pos = 0
+    for chunk in cigartuple:
+        """ M	BAM_CMATCH	0
+            I	BAM_CINS	1
+            D	BAM_CDEL	2
+            N	BAM_CREF_SKIP	3
+            S	BAM_CSOFT_CLIP	4
+            H	BAM_CHARD_CLIP	5
+            P	BAM_CPAD	6
+            =	BAM_CEQUAL	7
+            X	BAM_CDIFF	8"""
+        
+        if chunk[0] in [0,2,3]:
+            pos += chunk[1]
+    
+    return pos
+
 def bam_parse_alignment_end(read):
     pos = read.reference_start
     if not read.is_reverse:
-        for chunk in read.cigar:
-            """ M	BAM_CMATCH	0
-                I	BAM_CINS	1
-                D	BAM_CDEL	2
-                N	BAM_CREF_SKIP	3
-                S	BAM_CSOFT_CLIP	4
-                H	BAM_CHARD_CLIP	5
-                P	BAM_CPAD	6
-                =	BAM_CEQUAL	7
-                X	BAM_CDIFF	8"""
-            
-            if chunk[0] in [0,2,3]:
-                pos += chunk[1]
+        pos += bam_parse_alignment_offset(read.cigar)
     
     return pos
 
-pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
-def bam_parse_alignment_offset_using_cigar(sa_tag):
-    """Parses the offset to theend point of the reads' mate"""
+def bam_parse_alignment_pos_using_cigar(sa_tag):
+    """SA tag looks like this:
+        ['chr21', 42879876, '85S41M', '3', '-', '1']
+    """
     
-    pos = 0
+    pos = sa_tag[1]
     if sa_tag[4] == '+':
-        for chunk in pat_bam_parse_alignment_offset_using_cigar.finditer(sa_tag[2]):
-            """ M	BAM_CMATCH	0
-                I	BAM_CINS	1
-                D	BAM_CDEL	2
-                N	BAM_CREF_SKIP	3
-                S	BAM_CSOFT_CLIP	4
-                H	BAM_CHARD_CLIP	5
-                P	BAM_CPAD	6
-                =	BAM_CEQUAL	7
-                X	BAM_CDIFF	8"""
-            
-            if chunk.group(2) in ['M','D','N']:
-                pos += int(chunk.group(1))
+        cigartuple = cigar_to_cigartuple(sa_tag[2])
+        pos += bam_parse_alignment_offset(cigartuple)
     
     return pos
-
 
 
 class BreakPosition:
@@ -160,7 +177,7 @@ class Chain:
                                          STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
                 else:
                     pos2 = BreakPosition(parsed_SA_tag[0],
-                                         parsed_SA_tag[1] + bam_parse_alignment_offset_using_cigar(parsed_SA_tag),
+                                         bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                          STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
                 
                 self.insert_entry(pos1,pos2,rg)
