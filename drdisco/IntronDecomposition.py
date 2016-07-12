@@ -37,7 +37,47 @@ def cigar_to_cigartuple(cigar_str):
     return cigartup
 
 
-class _Arc:
+
+class CigarAlignment:
+    """
+    STAR Fusion is not clear about which chunk is the one that started
+    the read. We can calculate this back based on the CIGAR string.
+    
+    Usually you find a discordant pair as follows:
+    
+    part1: 46S80M
+    part2: 80M46s
+    
+    Here the M and S are exectly complementary to each other. It does
+    however occur that additional soft/hard clips are added. Hence we
+    have to align them to each other and find the one with the least
+    distance (in cases above r^2 = 0).
+    
+    We use matrices in a alignment context:
+    
+    tup1: 
+    tup2: 
+    
+    
+    
+    """
+    def __init__(self,cigtup1,cigtup2):
+        self.cigtup1 = cigtup1
+        self.cigtup2 = cigtup2
+        
+        self.m = len(self.cigtup1)
+        self.n = len(self.cigtup2)
+        
+        self.matrix = [[0] * (self.m+1) ] * (self.n + 1)
+
+    def get_first_broken_chunk(self,cigartup1,cigartup2):
+        # 1. align
+        # 2. calculate M / S 
+        pass
+
+
+
+class Arc:
     def __init__(self,_target):
         self._target = _target
         self._types = {}
@@ -59,7 +99,7 @@ class Node:
         skey = str(arc._target)
         
         if not self.arcs.has_key(skey):
-            self.arcs[skey] = _Arc(skey)
+            self.arcs[skey] = Arc(skey)
         
         self.arcs[skey].add_type(arc_type)
     
@@ -67,7 +107,7 @@ class Node:
         if do_vice_versa:
             node2.add_arc(self,arc_type,False)
         
-        arc = _Arc(node2)
+        arc = Arc(node2)
         self.insert_arc(arc,arc_type)
     
     def __str__(self):
@@ -78,9 +118,9 @@ class Node:
         
         for sarc in self.arcs:
             arc = self.arcs[sarc]
-            out += "-> "+str(arc._target)+" "+str(arc._types)
+            out += "\n\t-> "+str(arc._target)+" "+str(arc._types)
         
-        return out
+        return out+"\n"
 
 def bam_parse_alignment_offset(cigartuple):
     pos = 0
@@ -156,7 +196,7 @@ class Chain:
         """
          - Checks if Node exists at pos1, otherwise creates one
          - Checks if Node exists at pos2, otherwise creates one
-         - Checks if _Arc exists between them
+         - Checks if Arc exists between them
         """
         
         key1 = str(pos1)
