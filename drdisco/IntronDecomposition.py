@@ -105,15 +105,28 @@ class CigarAlignment:
         for j in range(1,self.n+1):
             self.matrix[0][j] = self.cigtup2[j-1][1]
     
+    def get_blocks(self,diagonal):
+        i = diagonal
+        j = 0
+        
+        for block in range(0,diagonal+1):
+            if i < self.m and j < self.n:
+                yield (i,j)
+                
+            i -= 1
+            j +=1
+        
     def get_order(self):
         diagonals = (self.n + self.m) - 1
         for diagonal in range(diagonals):
             # 0,0
             # 1,0   0,1
             # 2,0   1,1   0,2
+            print "d=",diagonal
             
-            i = 
-            j = 
+            for block in self.get_blocks(diagonal):
+                print block
+            print
             
         
         # 1. align
