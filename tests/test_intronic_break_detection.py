@@ -33,7 +33,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
         print("\n")
         
-        input_file_a =    "tests/detect-intronic/test_terg_01.filtered.fixed.bam"
+        input_file_a =    "tests/detect-intronic/test_terg_01.sub.filtered.fixed.bam"
         input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
         bps = FusionCatcher(input_file_f,"")
