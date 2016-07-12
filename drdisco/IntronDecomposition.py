@@ -55,11 +55,36 @@ class CigarAlignment:
     
     We use matrices in a alignment context:
     
-    tup1: 
-    tup2: 
+    tup1: 2S55M69S
+    tup2: 57S69M
     
+    Intiation:
     
+                   2S     55M     69S
+        ||======||=====||======||======||
+        || 0    || 2^2 || 55^2 || 69^2 ||
+        ||======||=====||======||======||
+    57S || 57^2 ||      |       |       |
+        ||======||------+-------+-------+
+    69M || 69^2 ||      |       |       |
+        ||======||------+-------+-------+
     
+    fill function:
+    i,j = min(
+       (tup1[i] - tup2[j])   +   matrix[i-1,j-1]
+       matrix[i-1]              , i >= 1
+       matrix[j-1]              , j >= 1
+    )
+    
+                   2S     55M     69S
+        ||======||=====||======||======||
+        || 0    || 2^2 || 55^2 || 69^2 ||
+        ||======||=====||======||======||
+    57S || 57^2 || i1   |  i2   |  i3   |
+        ||======||------+-------+-------+
+    69M || 69^2 || i2   |  i3   |  i4   |
+        ||======||------+-------+-------+
+        
     """
     def __init__(self,cigtup1,cigtup2):
         self.cigtup1 = cigtup1
@@ -68,9 +93,29 @@ class CigarAlignment:
         self.m = len(self.cigtup1)
         self.n = len(self.cigtup2)
         
-        self.matrix = [[0] * (self.m+1) ] * (self.n + 1)
-
-    def get_first_broken_chunk(self,cigartup1,cigartup2):
+        self.init_matrix()
+    
+    def init_matrix(self):
+        #self.matrix = [[0] * (self.n+1) ] * (self.m + 1) << copies references of lists >,<
+        self.matrix = [[0 for i in range(self.n+1)] for i in range(self.m+1)]
+        
+        for i in range(1,self.m+1):
+            self.matrix[i][0] = self.cigtup1[i-1][1]
+        
+        for j in range(1,self.n+1):
+            self.matrix[0][j] = self.cigtup2[j-1][1]
+    
+    def get_order(self):
+        diagonals = (self.n + self.m) - 1
+        for diagonal in range(diagonals):
+            # 0,0
+            # 1,0   0,1
+            # 2,0   1,1   0,2
+            
+            i = 
+            j = 
+            
+        
         # 1. align
         # 2. calculate M / S 
         pass
@@ -218,7 +263,7 @@ class Chain:
         # 4. 'silent_mate'
         
         rg = read.get_tag('RG')
-        if rg in ["discordant_mates","silent_mate","spanning_paired","spanning_singleton"]:
+        if rg in ["discordant_mates","silent_mate","spanning_singleton"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  bam_parse_alignment_end(read),
                                  not read.is_reverse)
@@ -232,7 +277,19 @@ class Chain:
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg)
+            #self.insert_entry(pos1,pos2,rg)
+        elif rg in ["spanning_paired"]:
+            #cig1 = read.cigar
+            #cig2 = cigar_to_cigartuple(parsed_SA_tag[2])
+            
+            cig1 = cigar_to_cigartuple("2S55M69S")
+            cig2 = cigar_to_cigartuple("57S69M")
+            
+            ca = CigarAlignment(cig1, cig2)
+            ca.get_order()
+            
+            import sys
+            sys.exit()
         else:
             raise Exception("Fatal Error, RG: "+rg)
     
