@@ -105,16 +105,52 @@ class CigarAlignment:
         for j in range(1,self.n+1):
             self.matrix[0][j] = self.cigtup2[j-1][1]
     
-    def get_order(self):
-        diagonals = (self.n + self.m) - 1
-        for diagonal in range(diagonals):
+    def get_diagonal(self,diagonal):
             # 0,0
             # 1,0   0,1
             # 2,0   1,1   0,2
-            
-            i = 
-            j = 
-            
+
+            i = diagonal
+            j = 0
+
+            for block in range(diagonal+1):
+                if i < self.m and j < self.n:
+                    yield (i,j)
+                
+                i -= 1
+                j += 1
+    
+    def cigar_diff(self,cig_chunk1,cig_chunk2):
+        """
+        Maybe sort on cigar type, to reduce if statements
+        """
+        if (cig_chunk1[0] == 0 and cig_chunk2[0] == 0) or
+           (cig_chunk1[0] == 4 and cig_chunk2[0] == 4):
+            # M * M or S*S => sqaure 
+            return (cig_chunk1[1] * cig_chunk2[1])
+        
+        elif (cig_chunk1[0] == 0 and cig_chunk2[0] == 4) or
+             (cig_chunk1[0] == 4 and cig_chunk2[0] == 0):
+            return (cig_chunk1[1] - cig_chunk2[1])^2
+        
+        else:
+            raise Exception("Not yet implemented")
+        
+    
+    def calc_diff(self,i,j):
+        
+        #a Correct for the outer lines
+        cell = (cell[0]+1,cell[1]+1)
+        
+        print cell,self.matrix[cell[0]][cell[1]]
+    
+    def get_order(self):
+        diagonals = (self.n + self.m) - 1
+        for diagonal in range(diagonals):
+            for cell in self.get_diagonal(diagonal):
+               
+                diff = self.calc_diff(cell[0],cell[1])
+           print
         
         # 1. align
         # 2. calculate M / S 
