@@ -111,10 +111,10 @@ class CigarAlignment:
         self.tb_matrix[0][0] = 't' # Terminate traceback; finished
         
         for i in range(1,self.m+1):
-            self.tb_matrix[i][0] = "-"
+            self.tb_matrix[i][0] = "|"
         
         for j in range(1,self.n+1):
-            self.tb_matrix[0][j] = "|"
+            self.tb_matrix[0][j] = "-"
         
         self.print_tb_matrix()
     
@@ -131,32 +131,8 @@ class CigarAlignment:
                 print str(self.matrix[i][j])+"\t",
             print
         print
-        
-    
-## Legacy code... remove it one day:
-    #def get_blocks(self,diagonal):
-        #i = diagonal
-        #j = 0
-        
-        #for block in range(0,diagonal+1):
-            #if i < self.m and j < self.n:
-                #yield (i,j)
-                
-            #i -= 1
-            #j +=1
-        
-    #def get_order(self):
-        #diagonals = (self.n + self.m) - 1
-        #for diagonal in range(diagonals):
-            ## 0,0
-            ## 1,0   0,1
-            ## 2,0   1,1   0,2
-            #print "d=",diagonal
-            
-            #for block in self.get_blocks(diagonal):
-                #print block
-            #print
-            
+
+
     def get_diagonal(self,diagonal):
             # 0,0
             # 1,0   0,1
@@ -203,17 +179,21 @@ class CigarAlignment:
         # Gap in i?
         
         # Insertion vertical, in tup1
-        c_ins_1 = pow(self.cigtup1[i][1],2)
+        #c_ins_1 = pow(self.cigtup1[i][1],2)
+        c_ins_1 = self.matrix[i-1][j]     + pow(self.cigtup1[i][1],2)
         
         # Insertion horizontal, in tup2
-        c_ins_2 = pow(self.cigtup2[j][1],2)
+        #c_ins_2 = pow(self.cigtup2[j][1],2)
+        c_ins_2 = self.matrix[i][j-1]     + pow(self.cigtup2[j][1],2)
         
-        c_diag =  self.matrix[i][j] + self.cigar_diff(self.cigtup1[i],self.cigtup2[j])
+        c_diag = self.matrix[i][j] + self.cigar_diff(self.cigtup1[i],self.cigtup2[j])
         
-        if i == 0 and j == 0:
+        if i == 1 and j == 2:
+            print
             print c_ins_1
             print c_ins_2
             print c_diag
+            print
         
         if c_ins_1 < c_diag:
             _type = "|"
@@ -242,8 +222,8 @@ class CigarAlignment:
                 self.tb_matrix[cell[0]+1][cell[1]+1] = _type
                 self.matrix[cell[0]+1][cell[1]+1] = diff
                 
-                #self.print_tb_matrix()
-                #self.print_matrix()
+        self.print_tb_matrix()
+        self.print_matrix()
     
     def traceback_matrix(self):
         tup1_rev = []
@@ -272,8 +252,8 @@ class CigarAlignment:
             elif action == "m":
                 print "match"
                 
-                tup1_rev.append(['m',self.cigtup1[i-1]])
-                tup2_rev.append(['m',self.cigtup2[j-1]])
+                tup1_rev.append([action,self.cigtup1[i-1]])
+                tup2_rev.append([action,self.cigtup2[j-1]])
                 
                 i -= 1 
                 j -= 1
@@ -281,29 +261,29 @@ class CigarAlignment:
             elif action == "-":
                 print "insertion -"
                 
-                tup1_rev.append(self.cigtup1[i-1])
-                tup2_rev.append((-1,0))
+                tup1_rev.append([action,(-1,0)])
+                tup2_rev.append([action,self.cigtup2[j-1]])
                 
-                i -= 1
+                j -= 1
             
             elif action == "|":
                 print "insertion |"
                 
-                j -= 1
+                tup1_rev.append([action,self.cigtup1[i-1]])
+                tup2_rev.append([action,(-1,0)])
                 
-                tup1_rev.append((-1,0))
-                tup2_rev.append(self.cigtup2[j-1])
+                i -= 1
             
             action = self.tb_matrix[i][j]
-            
+        
         print
         print
         print "------------"
         print self.cigtup1
         print self.cigtup2
         print
-        print tup1_rev
-        print tup2_rev
+        print tup1_rev[::-1]
+        print tup2_rev[::-1]
         print "------------"
         
     
@@ -474,11 +454,18 @@ class Chain:
             
             #self.insert_entry(pos1,pos2,rg)
         elif rg in ["spanning_paired"]:
-            #cig1 = read.cigar
-            #cig2 = cigar_to_cigartuple(parsed_SA_tag[2])
+            #cig1 = cigar_to_cigartuple("2S55M69S")
+            #cig2 = cigar_to_cigartuple("57S69M")
             
-            cig1 = cigar_to_cigartuple("2S55M69S")
-            cig2 = cigar_to_cigartuple("57S69M")
+            #cig1 = cigar_to_cigartuple("57S69M")
+            #cig2 = cigar_to_cigartuple("2S55M69S")
+            
+            #cig1 = cigar_to_cigartuple("57S69M")
+            #cig2 = cigar_to_cigartuple("55M69S2M")
+            
+            cig1 = cigar_to_cigartuple("1M57S69M")
+            cig2 = cigar_to_cigartuple("55M69S2M")
+            
             
             ca = CigarAlignment(cig1, cig2)
             ca.get_order()
