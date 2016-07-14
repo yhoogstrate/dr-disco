@@ -242,6 +242,9 @@ class CigarAlignment:
         if len(cigtup1_aligned) != len(cigtup2_aligned):
             raise Exception("Lengths of aligned cigarstring tuples are different - error has taken place in the alignment",cigtup1_aligned,cigtup2_aligned)
         
+        print cigtup1_aligned
+        print cigtup2_aligned
+        
         c1 = []
         c2 = []
         
@@ -250,8 +253,36 @@ class CigarAlignment:
                 c1.append(cigtup1_aligned[i])
                 c2.append(cigtup2_aligned[i])
         
-        for i in range(len(c1)):
-            print c1[i],"...",c2[i]
+        # 'M':0,#	BAM_CMATCH	0
+        # 'S':4,#	BAM_CSOFT_CLIP	4
+        
+        offset = int(len(c1)/2)
+        c1_l = sum([x[1] for x in c1[0:offset] if x[0] == 0])
+        c2_l = sum([x[1] for x in c2[0:offset] if x[0] == 0])
+        
+        c1_total = sum([x[1] for x in c1 if x[0] in [0,4]])
+        c2_total = sum([x[1] for x in c2 if x[0] in [0,4]])
+        
+        c1_r = 1.0 * c1_l / c1_total
+        c2_r = 1.0 * c2_l / c2_total
+        
+        print c1_l
+        print c2_l
+        print
+        print c1_total
+        print c2_total
+        print
+        print c1_r
+        print c2_r
+        print
+        print 
+        
+        if c1_r > c2_r:
+            print "!!"
+            return STRAND_FORWARD
+        else:
+            return STRAND_REVERSE
+
 
     def get_order(self):
         # 1. align
@@ -261,8 +292,7 @@ class CigarAlignment:
         c1,c2 = self.traceback_matrix()
         
         # 2. calculate M / S only on those chunks that are aligned (M to S flags and vice versa)
-        self.calculate_order(c1,c2)
-        
+        return self.calculate_order(c1,c2)
 
 
 class Arc:
@@ -425,25 +455,12 @@ class Chain:
             #cig1 = cigar_to_cigartuple("2S55M69S")
             #cig2 = cigar_to_cigartuple("57S69M")
             
-            #ca = CigarAlignment(cig1, cig2)
-            #ca.get_order()
-            
-            
-            #cig1 = cigar_to_cigartuple("57S69M")
-            #cig2 = cigar_to_cigartuple("2S55M69S")
-            
-            #ca = CigarAlignment(cig1, cig2)
-            #ca.get_order()
-            
-            cig1 = cigar_to_cigartuple("57S69M")
-            cig2 = cigar_to_cigartuple("55M69S2M")
-            
-            #cig1 = cigar_to_cigartuple("1M57S69M")
-            #cig2 = cigar_to_cigartuple("55M69S2M")
-            
-            
             ca = CigarAlignment(cig1, cig2)
-            ca.get_order()
+            if ca.get_order() == STRAND_FORWARD:
+                pass
+            else:
+                pass
+            
             
             import sys
             sys.exit()
