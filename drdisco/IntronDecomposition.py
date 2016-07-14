@@ -188,10 +188,7 @@ class CigarAlignment:
         
     
     def calc_diff(self,i,j):
-        #print self.cigtup1[i]
-        #print self.cigtup2[j]
-        #print
-        print self.cigtup1[i],"-",self.cigtup2[j]
+        print i,j,"\t",self.cigtup1[i],"-",self.cigtup2[j]
 
 
 #                   2S     55M     69S
@@ -204,17 +201,25 @@ class CigarAlignment:
 #        ||======||------+-------+-------+
         
         # Gap in i?
-        c_ins_1 = self.matrix[i][j+1] + pow(self.cigtup1[i][1],2)
-        c_ins_2 = self.matrix[i+1][j] + pow(self.cigtup2[j][1],2)
+        
+        # Insertion vertical, in tup1
+        c_ins_1 = pow(self.cigtup1[i][1],2)
+        
+        # Insertion horizontal, in tup2
+        c_ins_2 = pow(self.cigtup2[j][1],2)
         
         c_diag =  self.matrix[i][j] + self.cigar_diff(self.cigtup1[i],self.cigtup2[j])
         
+        if i == 0 and j == 0:
+            print c_ins_1
+            print c_ins_2
+            print c_diag
         
         if c_ins_1 < c_diag:
             _type = "|"
             _min = c_ins_1
         else:
-            _type = "M"
+            _type = "m"
             _min = c_diag
         
         if c_ins_2 < _min:
@@ -228,20 +233,88 @@ class CigarAlignment:
         
         return (_min, _type)
     
-    def get_order(self):
-        diagonals = (self.n + self.m) - 1
-        for diagonal in range(diagonals):
+    def fill_matrix(self):
+        n_diagonals = (self.n + self.m) - 1
+        for diagonal in range(n_diagonals):
             for cell in self.get_diagonal(diagonal):
                
                 diff, _type = self.calc_diff(cell[0],cell[1])
                 self.tb_matrix[cell[0]+1][cell[1]+1] = _type
+                self.matrix[cell[0]+1][cell[1]+1] = diff
                 
-                self.print_tb_matrix()
-            
+                #self.print_tb_matrix()
+                #self.print_matrix()
+    
+    def traceback_matrix(self):
+        tup1_rev = []
+        tup2_rev = []
+        
+        i = self.m + 1
+        j = self.n + 1
+        
+        print
+        print
+        self.print_tb_matrix()
         print
         
+        action = "s"
+        while action != "t":
+            if i < 0 and j < 0:
+                raise Exception("Unpredicted out of bound")
+            
+            print i,j,"=>",action,
+            
+            if action == "s":
+                print "starting"
+                i -= 1 
+                j -= 1
+            
+            elif action == "m":
+                print "match"
+                
+                tup1_rev.append(['m',self.cigtup1[i-1]])
+                tup2_rev.append(['m',self.cigtup2[j-1]])
+                
+                i -= 1 
+                j -= 1
+            
+            elif action == "-":
+                print "insertion -"
+                
+                tup1_rev.append(self.cigtup1[i-1])
+                tup2_rev.append((-1,0))
+                
+                i -= 1
+            
+            elif action == "|":
+                print "insertion |"
+                
+                j -= 1
+                
+                tup1_rev.append((-1,0))
+                tup2_rev.append(self.cigtup2[j-1])
+            
+            action = self.tb_matrix[i][j]
+            
+        print
+        print
+        print "------------"
+        print self.cigtup1
+        print self.cigtup2
+        print
+        print tup1_rev
+        print tup2_rev
+        print "------------"
+        
+    
+    def get_order(self):
         # 1. align
-        # 2. calculate M / S 
+        #   a. fill
+        self.fill_matrix()
+        #   b. trace back
+        self.traceback_matrix()
+        
+        # 2. calculate M / S only on those chunks that are aligned (M to S flags and vice versa)
 
 
 class Arc:
