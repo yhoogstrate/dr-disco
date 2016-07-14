@@ -450,24 +450,59 @@ class Chain:
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            #self.insert_entry(pos1,pos2,rg)
+            self.insert_entry(pos1,pos2,rg)
+        
         elif rg in ["spanning_paired"]:
-            #cig1 = cigar_to_cigartuple("2S55M69S")
-            #cig2 = cigar_to_cigartuple("57S69M")
+            ca = CigarAlignment(read.cigar, cigar_to_cigartuple(parsed_SA_tag[2]))
             
-            ca = CigarAlignment(cig1, cig2)
             if ca.get_order() == STRAND_FORWARD:
-                pass
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     bam_parse_alignment_end(read),
+                                     not read.is_reverse)
+                
+                #if read.mate_is_reverse:
+                if parsed_SA_tag[4] == "+":
+                    pos2 = BreakPosition(parsed_SA_tag[0],
+                                        parsed_SA_tag[1],
+                                        STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                else:
+                    pos2 = BreakPosition(parsed_SA_tag[0],
+                                        bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
+                                        STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             else:
-                pass
+                if not read.is_reverse:
+                    pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                        read.reference_start,
+                                        not read.is_reverse)
+                else:
+                    pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                        bam_parse_alignment_end(read),
+                                        not read.is_reverse)
+                    
+                
+                ## The read is the second in pair, and the SA tag the first...
+                if parsed_SA_tag[4] != "+":
+                    print read
+                    raise Exception("Todo")
+                    # Most likely code that should do it:
+                    #
+                    #pos1 = BreakPosition(parsed_SA_tag[0],
+                    #                    parsed_SA_tag[1],
+                    #                    STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                    #
+                    #self.insert_entry(pos1,pos2,rg)
+                    
+                else:
+                    pos1 = BreakPosition(parsed_SA_tag[0],
+                                        bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
+                                        STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                
+            self.insert_entry(pos1,pos2,rg)
             
-            
-            import sys
-            sys.exit()
         else:
             raise Exception("Fatal Error, RG: "+rg)
     
-    def prune(self):
+    def print_chain(self):
         for key in sorted(self.idx):
             print key, self.idx[key].str2()
             
@@ -477,8 +512,10 @@ class Chain:
             
             #print "k:",key, " | ".join([str(arc) for arc in self.idx[key].arcs])
             #str(self.idx[key].arcs)
-        # do some clever tricks to merge arcs together and reduce data points
 
+    def prune(self):
+        self.print_chain()
+        # do some clever tricks to merge arcs together and reduce data points
 
 
 class IntronDecomposition:
@@ -577,7 +614,8 @@ class IntronDecomposition:
                                      internal_arc[1],
                                      not r.is_reverse)
                 
-                c.insert_entry(pos1,pos2,internal_arc[2])
+                ##Re-enable
+                ##c.insert_entry(pos1,pos2,internal_arc[2])
         
         # Merge arcs somehow, label nodes
         c.prune()
