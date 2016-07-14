@@ -198,9 +198,6 @@ class CigarAlignment:
                 diff, _type = self.calc_diff(cell[0],cell[1])
                 self.tb_matrix[cell[0]+1][cell[1]+1] = _type
                 self.matrix[cell[0]+1][cell[1]+1] = diff
-                
-        #self.print_tb_matrix()
-        #self.print_matrix()
     
     def traceback_matrix(self):
         tup1_rev = []
@@ -219,21 +216,21 @@ class CigarAlignment:
                 j -= 1
             
             elif action == "m":
-                tup1_rev.append([action,self.cigtup1[i-1]])
-                tup2_rev.append([action,self.cigtup2[j-1]])
+                tup1_rev.append(self.cigtup1[i-1])
+                tup2_rev.append(self.cigtup2[j-1])
                 
                 i -= 1 
                 j -= 1
             
             elif action == "-":
-                tup1_rev.append([action,(-1,0)])
-                tup2_rev.append([action,self.cigtup2[j-1]])
+                tup1_rev.append((-1,0))
+                tup2_rev.append(self.cigtup2[j-1])
                 
                 j -= 1
             
             elif action == "|":
-                tup1_rev.append([action,self.cigtup1[i-1]])
-                tup2_rev.append([action,(-1,0)])
+                tup1_rev.append(self.cigtup1[i-1])
+                tup2_rev.append((-1,0))
                 
                 i -= 1
             
@@ -241,14 +238,31 @@ class CigarAlignment:
         
         return tup1_rev[::-1], tup2_rev[::-1]
 
+    def calculate_order(self,cigtup1_aligned,cigtup2_aligned):
+        if len(cigtup1_aligned) != len(cigtup2_aligned):
+            raise Exception("Lengths of aligned cigarstring tuples are different - error has taken place in the alignment",cigtup1_aligned,cigtup2_aligned)
+        
+        c1 = []
+        c2 = []
+        
+        for i in range(len(cigtup1_aligned)):
+            if cigtup1_aligned[i][0] != -1 and cigtup2_aligned[i][0] != -1:
+                c1.append(cigtup1_aligned[i])
+                c2.append(cigtup2_aligned[i])
+        
+        for i in range(len(c1)):
+            print c1[i],"...",c2[i]
+
     def get_order(self):
         # 1. align
         #   a. fill
         self.fill_matrix()
         #   b. trace back
-        self.traceback_matrix()
+        c1,c2 = self.traceback_matrix()
         
         # 2. calculate M / S only on those chunks that are aligned (M to S flags and vice versa)
+        self.calculate_order(c1,c2)
+        
 
 
 class Arc:
