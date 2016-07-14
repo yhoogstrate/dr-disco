@@ -104,6 +104,34 @@ class CigarAlignment:
         
         for j in range(1,self.n+1):
             self.matrix[0][j] = pow(self.cigtup2[j-1][1],2)
+        
+        
+        
+        self.tb_matrix = [["?" for i in range(self.n+1)] for i in range(self.m+1)]
+        self.tb_matrix[0][0] = 't' # Terminate traceback; finished
+        
+        for i in range(1,self.m+1):
+            self.tb_matrix[i][0] = "-"
+        
+        for j in range(1,self.n+1):
+            self.tb_matrix[0][j] = "|"
+        
+        self.print_tb_matrix()
+    
+    def print_tb_matrix(self):
+        for j in range(self.n+1):
+            for i in range(self.m+1):
+                print self.tb_matrix[i][j],
+            print
+        print
+    
+    def print_matrix(self):
+        for j in range(self.n+1):
+            for i in range(self.m+1):
+                print str(self.matrix[i][j])+"\t",
+            print
+        print
+        
     
 ## Legacy code... remove it one day:
     #def get_blocks(self,diagonal):
@@ -175,25 +203,40 @@ class CigarAlignment:
 #    69M || 69^2 ||      |       |       |
 #        ||======||------+-------+-------+
         
+        # Gap in i?
         c_ins_1 = self.matrix[i][j+1] + pow(self.cigtup1[i][1],2)
         c_ins_2 = self.matrix[i+1][j] + pow(self.cigtup2[j][1],2)
         
         c_diag =  self.matrix[i][j] + self.cigar_diff(self.cigtup1[i],self.cigtup2[j])
         
         
-        print i,j,">>", self.matrix[i][j]," + ",self.cigar_diff(self.cigtup1[i],self.cigtup2[j]),"=",c_diag
+        if c_ins_1 < c_diag:
+            _type = "|"
+            _min = c_ins_1
+        else:
+            _type = "M"
+            _min = c_diag
+        
+        if c_ins_2 < _min:
+            _type = "-"
+            _min = c_ins_2
+        
+        #print i,j,">>", self.matrix[i][j]," + ",self.cigar_diff(self.cigtup1[i],self.cigtup2[j]),"=",c_diag
         #print self.cigar_diff(self.m[i],self.n[j])
         #a Correct for the outer lines
         #cell = (cell[0]+1,cell[1]+1)
         
-        #print cell,self.matrix[cell[0]][cell[1]]
+        return (_min, _type)
     
     def get_order(self):
         diagonals = (self.n + self.m) - 1
         for diagonal in range(diagonals):
             for cell in self.get_diagonal(diagonal):
                
-                diff = self.calc_diff(cell[0],cell[1])
+                diff, _type = self.calc_diff(cell[0],cell[1])
+                self.tb_matrix[cell[0]+1][cell[1]+1] = _type
+                
+                self.print_tb_matrix()
             
         print
         
