@@ -100,10 +100,10 @@ class CigarAlignment:
         self.matrix = [[0 for i in range(self.n+1)] for i in range(self.m+1)]
         
         for i in range(1,self.m+1):
-            self.matrix[i][0] = self.cigtup1[i-1][1]
+            self.matrix[i][0] = pow(self.cigtup1[i-1][1],2)
         
         for j in range(1,self.n+1):
-            self.matrix[0][j] = self.cigtup2[j-1][1]
+            self.matrix[0][j] = pow(self.cigtup2[j-1][1],2)
     
     def get_diagonal(self,diagonal):
             # 0,0
@@ -124,25 +124,45 @@ class CigarAlignment:
         """
         Maybe sort on cigar type, to reduce if statements
         """
-        if (cig_chunk1[0] == 0 and cig_chunk2[0] == 0) or
-           (cig_chunk1[0] == 4 and cig_chunk2[0] == 4):
+        if (cig_chunk1[0] == 0 and cig_chunk2[0] == 0) or (cig_chunk1[0] == 4 and cig_chunk2[0] == 4):
             # M * M or S*S => sqaure 
-            return (cig_chunk1[1] * cig_chunk2[1])
+            return pow(cig_chunk1[1] + cig_chunk2[1],2)
         
-        elif (cig_chunk1[0] == 0 and cig_chunk2[0] == 4) or
-             (cig_chunk1[0] == 4 and cig_chunk2[0] == 0):
-            return (cig_chunk1[1] - cig_chunk2[1])^2
+        elif (cig_chunk1[0] == 0 and cig_chunk2[0] == 4) or (cig_chunk1[0] == 4 and cig_chunk2[0] == 0):
+            return pow((cig_chunk1[1] - cig_chunk2[1]),2)
         
         else:
             raise Exception("Not yet implemented")
         
     
     def calc_diff(self,i,j):
+        #print self.cigtup1[i]
+        #print self.cigtup2[j]
+        #print
+        print self.cigtup1[i],"-",self.cigtup2[j]
+
+
+#                   2S     55M     69S
+#        ||======||=====||======||======||
+#        || 0    || 2^2 || 55^2 || 69^2 ||
+#        ||======||=====||======||======||
+#    57S || 57^2 ||      |       |       |
+#        ||======||------+-------+-------+
+#    69M || 69^2 ||      |       |       |
+#        ||======||------+-------+-------+
         
+        c_ins_1 = self.matrix[i][j+1] + pow(self.cigtup1[i][1],2)
+        c_ins_2 = self.matrix[i+1][j] + pow(self.cigtup2[j][1],2)
+        
+        c_diag =  self.matrix[i][j] + self.cigar_diff(self.cigtup1[i],self.cigtup2[j])
+        
+        
+        print i,j,">>", self.matrix[i][j]," + ",self.cigar_diff(self.cigtup1[i],self.cigtup2[j]),"=",c_diag
+        #print self.cigar_diff(self.m[i],self.n[j])
         #a Correct for the outer lines
-        cell = (cell[0]+1,cell[1]+1)
+        #cell = (cell[0]+1,cell[1]+1)
         
-        print cell,self.matrix[cell[0]][cell[1]]
+        #print cell,self.matrix[cell[0]][cell[1]]
     
     def get_order(self):
         diagonals = (self.n + self.m) - 1
@@ -150,7 +170,8 @@ class CigarAlignment:
             for cell in self.get_diagonal(diagonal):
                
                 diff = self.calc_diff(cell[0],cell[1])
-           print
+            
+        print
         
         # 1. align
         # 2. calculate M / S 
