@@ -115,8 +115,6 @@ class CigarAlignment:
         
         for j in range(1,self.n+1):
             self.tb_matrix[0][j] = "-"
-        
-        self.print_tb_matrix()
     
     def print_tb_matrix(self):
         for j in range(self.n+1):
@@ -164,9 +162,6 @@ class CigarAlignment:
         
     
     def calc_diff(self,i,j):
-        print i,j,"\t",self.cigtup1[i],"-",self.cigtup2[j]
-
-
 #                   2S     55M     69S
 #        ||======||=====||======||======||
 #        || 0    || 2^2 || 55^2 || 69^2 ||
@@ -176,24 +171,11 @@ class CigarAlignment:
 #    69M || 69^2 ||      |       |       |
 #        ||======||------+-------+-------+
         
-        # Gap in i?
-        
-        # Insertion vertical, in tup1
         #c_ins_1 = pow(self.cigtup1[i][1],2)
-        c_ins_1 = self.matrix[i-1][j]     + pow(self.cigtup1[i][1],2)
-        
-        # Insertion horizontal, in tup2
         #c_ins_2 = pow(self.cigtup2[j][1],2)
-        c_ins_2 = self.matrix[i][j-1]     + pow(self.cigtup2[j][1],2)
-        
+        c_ins_1 = self.matrix[i-1][j]     + pow(self.cigtup1[i][1],2)# Insertion vertical, in tup1
+        c_ins_2 = self.matrix[i][j-1]     + pow(self.cigtup2[j][1],2)# Insertion horizontal, in tup2
         c_diag = self.matrix[i][j] + self.cigar_diff(self.cigtup1[i],self.cigtup2[j])
-        
-        if i == 1 and j == 2:
-            print
-            print c_ins_1
-            print c_ins_2
-            print c_diag
-            print
         
         if c_ins_1 < c_diag:
             _type = "|"
@@ -206,11 +188,6 @@ class CigarAlignment:
             _type = "-"
             _min = c_ins_2
         
-        #print i,j,">>", self.matrix[i][j]," + ",self.cigar_diff(self.cigtup1[i],self.cigtup2[j]),"=",c_diag
-        #print self.cigar_diff(self.m[i],self.n[j])
-        #a Correct for the outer lines
-        #cell = (cell[0]+1,cell[1]+1)
-        
         return (_min, _type)
     
     def fill_matrix(self):
@@ -222,8 +199,8 @@ class CigarAlignment:
                 self.tb_matrix[cell[0]+1][cell[1]+1] = _type
                 self.matrix[cell[0]+1][cell[1]+1] = diff
                 
-        self.print_tb_matrix()
-        self.print_matrix()
+        #self.print_tb_matrix()
+        #self.print_matrix()
     
     def traceback_matrix(self):
         tup1_rev = []
@@ -232,26 +209,16 @@ class CigarAlignment:
         i = self.m + 1
         j = self.n + 1
         
-        print
-        print
-        self.print_tb_matrix()
-        print
-        
         action = "s"
         while action != "t":
             if i < 0 and j < 0:
                 raise Exception("Unpredicted out of bound")
             
-            print i,j,"=>",action,
-            
             if action == "s":
-                print "starting"
                 i -= 1 
                 j -= 1
             
             elif action == "m":
-                print "match"
-                
                 tup1_rev.append([action,self.cigtup1[i-1]])
                 tup2_rev.append([action,self.cigtup2[j-1]])
                 
@@ -259,16 +226,12 @@ class CigarAlignment:
                 j -= 1
             
             elif action == "-":
-                print "insertion -"
-                
                 tup1_rev.append([action,(-1,0)])
                 tup2_rev.append([action,self.cigtup2[j-1]])
                 
                 j -= 1
             
             elif action == "|":
-                print "insertion |"
-                
                 tup1_rev.append([action,self.cigtup1[i-1]])
                 tup2_rev.append([action,(-1,0)])
                 
@@ -276,17 +239,8 @@ class CigarAlignment:
             
             action = self.tb_matrix[i][j]
         
-        print
-        print
-        print "------------"
-        print self.cigtup1
-        print self.cigtup2
-        print
-        print tup1_rev[::-1]
-        print tup2_rev[::-1]
-        print "------------"
-        
-    
+        return tup1_rev[::-1], tup2_rev[::-1]
+
     def get_order(self):
         # 1. align
         #   a. fill
@@ -457,14 +411,21 @@ class Chain:
             #cig1 = cigar_to_cigartuple("2S55M69S")
             #cig2 = cigar_to_cigartuple("57S69M")
             
+            #ca = CigarAlignment(cig1, cig2)
+            #ca.get_order()
+            
+            
             #cig1 = cigar_to_cigartuple("57S69M")
             #cig2 = cigar_to_cigartuple("2S55M69S")
             
-            #cig1 = cigar_to_cigartuple("57S69M")
-            #cig2 = cigar_to_cigartuple("55M69S2M")
+            #ca = CigarAlignment(cig1, cig2)
+            #ca.get_order()
             
-            cig1 = cigar_to_cigartuple("1M57S69M")
+            cig1 = cigar_to_cigartuple("57S69M")
             cig2 = cigar_to_cigartuple("55M69S2M")
+            
+            #cig1 = cigar_to_cigartuple("1M57S69M")
+            #cig2 = cigar_to_cigartuple("55M69S2M")
             
             
             ca = CigarAlignment(cig1, cig2)
