@@ -1,3 +1,14 @@
-*.txt
+/*.txt
 *.png
 /samples
+.Rhistory
+tmp/
+/build
+*.pyc
+*.egg-info
+/dist
+/data*/*.swp
+/data
+*.swp
+.coverage
+/htmlcov/*
