@@ -378,7 +378,14 @@ class ChimericAlignment:
         
         elif n_s >= 2:
             reads_updated,mates_updated = self.fix_chain(singletons,bam_file,[])
-            self.set_read_group(reads_updated,'spanning_singleton')
+            
+            ca = CigarAlignment(reads_updated[0].cigar,reads_updated[1].cigar)
+            if ca.get_order() == STRAND_FORWARD:
+                self.set_read_group([reads_updated[0]],'spanning_singleton_1')
+                self.set_read_group([reads_updated[1]],'spanning_singleton_2')
+            else:
+                self.set_read_group([reads_updated[0]],'spanning_singleton_2')
+                self.set_read_group([reads_updated[1]],'spanning_singleton_1')
             
             self.fix_alignment_score(reads_updated)
             
