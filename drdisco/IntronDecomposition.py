@@ -19,10 +19,11 @@ from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 
 
 class Arc:
-    def __init__(self,_target):
-        if not isinstance(_target, Node):
-            raise Exception("_trget must be a Node")
+    def __init__(self,_origin,_target):
+        if not isinstance(_target, Node) or not isinstance(_origin, Node):
+            raise Exception("_origin and _target must be a Node")
         
+        self._origin = _origin
         self._target = _target
         self._types = {}
     
@@ -41,13 +42,10 @@ class Arc:
         """
         
         score = 0
-        scoring_table={
-        'spanning_paired_1': 3,
-        'spanning_paired_2': 3,
-        'spanning_singleton_1': 2, 
-        'spanning_singleton_2': 2
-        }
-        
+        scoring_table={'spanning_paired_1': 3,
+                       'spanning_paired_2': 3,
+                       'spanning_singleton_1': 2, 
+                       'spanning_singleton_2': 2}
         
         for _type in scoring_table.keys():
             if self._types.has_key(_type):
@@ -72,7 +70,7 @@ class Node:
         skey = str(arc._target)
         
         if not self.arcs.has_key(skey):
-            self.arcs[skey] = Arc(arc._target)
+            self.arcs[skey] = arc#Arc(arc._target)
         
         self.arcs[skey].add_type(arc_type)
     
@@ -95,7 +93,7 @@ class Node:
         if do_vice_versa:
             node2.add_arc(self,arc_type,False)
         
-        arc = Arc(node2)
+        arc = Arc(self,node2)
         self.insert_arc(arc,arc_type)
     
     def __iter__(self):
@@ -311,34 +309,36 @@ class Chain:
             key = node.position
             print key, node.str2()
 
-    def prune_pos(self, insert_size, node1, node2):
+    def prune_arc(self, insert_size, arc):
         ## @todo make somehow only 
         #if 
+        node1 = arc._origin
+        node2 = arc._target
+        
         print insert_size
         print
-        print node1
+        print node1 
         print node1.arcs
-        print
-        print node2
-        print node2.arcs
+        print node1.get_top_arc()
+        #print
+        #print node2
+        #print node2.arcs
     
     def get_start_point(self):
         """
         Returns the chain with the higest number of counts
         """
         maxscore = -1
-        node1 = None
-        node2 = None
+        arc = None
         
         for node in self:
             _score, _arc, _node1, _node2 = node.get_top_arc()
             if _arc != None and _score > maxscore:
                 maxscore = _score
-                node1  = _node1
-                node2  = _node2
+                arc = _arc
         
-        if node1 != None:
-            return (node1, node2)
+        if arc != None:
+            return arc
         else:
             return None
     
@@ -350,7 +350,7 @@ class Chain:
         
         init = self.get_start_point()
         if init != None:
-            self.prune_pos(insert_size, init[0], init[1])
+            self.prune_arc(insert_size, init)
 
 
 class IntronDecomposition:
@@ -453,7 +453,7 @@ class IntronDecomposition:
                 c.insert_entry(pos1,pos2,internal_arc[2],True)
         
         # Merge arcs somehow, label nodes
-        c.prune(400)
+        c.prune(400+126-12)
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
