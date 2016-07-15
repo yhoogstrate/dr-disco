@@ -41,13 +41,20 @@ class Arc:
         """
         
         score = 0
-        #print self._types
+        scoring_table={
+        'spanning_paired_1': 3,
+        'spanning_paired_2': 3,
+        'spanning_singleton_1': 2, 
+        'spanning_singleton_2': 2
+        }
         
-        if self._types.has_key('spanning_paired'):
-            score += self._types['spanning_paired']*3
         
-        if self._types.has_key('spanning_singleton'):
-            score += self._types['spanning_singleton']*2
+        for _type in scoring_table.keys():
+            if self._types.has_key(_type):
+                score += self._types[_type]*scoring_table[_type]
+        
+        #if self._types.has_key('spanning_singleton'):
+            #score += self._types['spanning_singleton']*2
         
         #if self._types.has_key('spannin'):
         #    score += self._types['spanning_singleton']*2
@@ -79,9 +86,12 @@ class Node:
                 maxscore = score
                 top_arc = arc
         
-        return (maxscore, top_arc, self, top_arc._target)
+        if top_arc != None:
+            return (maxscore, top_arc, self, top_arc._target)
+        else:
+            return (None, None, None, None)
     
-    def add_arc(self,node2,arc_type,do_vice_versa=True):
+    def add_arc(self,node2,arc_type,do_vice_versa):
         if do_vice_versa:
             node2.add_arc(self,arc_type,False)
         
@@ -172,7 +182,6 @@ class BreakPosition:
 class Chain:
     def __init__(self,pysam_fh):
         self.idxtree = GenomeIntervalTree()
-        #self.idx = {}
         self.pysam_fh = pysam_fh
     
     def create_node(self,pos):
@@ -193,7 +202,7 @@ class Chain:
         except:
             return None
     
-    def insert_entry(self,pos1,pos2,_type):
+    def insert_entry(self,pos1,pos2,_type,do_vice_versa):
         """
          - Checks if Node exists at pos1, otherwise creates one
          - Checks if Node exists at pos2, otherwise creates one
@@ -206,7 +215,7 @@ class Chain:
         node1 = self.get_node_reference(pos1)
         node2 = self.get_node_reference(pos2)
         
-        node1.add_arc(node2,_type)
+        node1.add_arc(node2,_type,do_vice_versa)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional arc between read and sa-tag in the Chain
@@ -217,7 +226,7 @@ class Chain:
         # 4. 'silent_mate'
         
         rg = read.get_tag('RG')
-        if rg in ["discordant_mates","silent_mate","spanning_singleton"]:
+        if rg in ["discordant_mates","silent_mate"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  bam_parse_alignment_end(read),
                                  not read.is_reverse)
@@ -231,61 +240,69 @@ class Chain:
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg)
+            self.insert_entry(pos1,pos2,rg,False)
         
-        elif rg in ["spanning_paired"]:
-            ca = CigarAlignment(read.cigar, cigar_to_cigartuple(parsed_SA_tag[2]))
+        elif rg in ["spanning_paired_1","spanning_singleton_1"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 bam_parse_alignment_end(read),
+                                 not read.is_reverse)
             
-            if ca.get_order() == STRAND_FORWARD:
-                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     bam_parse_alignment_end(read),
-                                     not read.is_reverse)
-                
-                #if read.mate_is_reverse:
-                if parsed_SA_tag[4] == "+":
-                    pos2 = BreakPosition(parsed_SA_tag[0],
-                                        parsed_SA_tag[1],
-                                        STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-                else:
-                    pos2 = BreakPosition(parsed_SA_tag[0],
-                                        bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-                                        STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-            else:
-                if not read.is_reverse:
-                    pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                        read.reference_start,
-                                        not read.is_reverse)
-                else:
-                    pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                        bam_parse_alignment_end(read),
-                                        not read.is_reverse)
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                                 parsed_SA_tag[1],
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg,False)
+        
+        elif rg in ["spanning_paired_2","spanning_singleton_2"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 read.reference_start,
+                                 not read.is_reverse)
+            
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                                 bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg,False)
+        
+            #else:
+            #pos2 = BreakPosition(parsed_SA_tag[0],
+            #                    bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
+            #                    STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+        
+            #else:
+                #if not read.is_reverse:
+                    #pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                        #read.reference_start,
+                                        #not read.is_reverse)
+                #else:
+                    #pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                        #bam_parse_alignment_end(read),
+                                        #not read.is_reverse)
                     
                 
-                ## The read is the second in pair, and the SA tag the first...
-                if parsed_SA_tag[4] != "+":
-                    print read
-                    raise Exception("Todo")
-                    # Most likely code that should do it:
-                    #
+                ### The read is the second in pair, and the SA tag the first...
+                #if parsed_SA_tag[4] != "+":
+                    #print read
+                    #raise Exception("Todo")
+                    ## Most likely code that should do it:
+                    ##
+                    ##pos1 = BreakPosition(parsed_SA_tag[0],
+                    ##                    parsed_SA_tag[1],
+                    ##                    STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                    ##
+                    ##self.insert_entry(pos1,pos2,rg)
+                    
+                #else:
                     #pos1 = BreakPosition(parsed_SA_tag[0],
-                    #                    parsed_SA_tag[1],
-                    #                    STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-                    #
-                    #self.insert_entry(pos1,pos2,rg)
-                    
-                else:
-                    pos1 = BreakPosition(parsed_SA_tag[0],
-                                        bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-                                        STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-                
-            self.insert_entry(pos1,pos2,rg)
+                                        #bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
+                                        #STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
         else:
             raise Exception("Fatal Error, RG: "+rg)
     
     def __iter__(self):
         for key in self.idxtree:
-            for element in self.idxtree[key]:
+            for element in sorted(self.idxtree[key]):
                 for strand in sorted(element[2].keys()):
                     yield element[2][strand]
     
@@ -298,8 +315,12 @@ class Chain:
         ## @todo make somehow only 
         #if 
         print insert_size
+        print
         print node1
+        print node1.arcs
+        print
         print node2
+        print node2.arcs
     
     def get_start_point(self):
         """
@@ -330,7 +351,6 @@ class Chain:
         init = self.get_start_point()
         if init != None:
             self.prune_pos(insert_size, init[0], init[1])
-            
 
 
 class IntronDecomposition:
@@ -414,7 +434,7 @@ class IntronDecomposition:
                 
                 c.insert(r,broken_mate)
             
-            elif r.get_tag('RG') in ['spanning_paired', 'spanning_singleton']:
+            elif r.get_tag('RG') in ['spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2']:
                 read = r
                 c.insert(r,sa[0])
 
@@ -430,7 +450,7 @@ class IntronDecomposition:
                                      internal_arc[1],
                                      not r.is_reverse)
                 
-                c.insert_entry(pos1,pos2,internal_arc[2])
+                c.insert_entry(pos1,pos2,internal_arc[2],True)
         
         # Merge arcs somehow, label nodes
         c.prune(400)
