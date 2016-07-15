@@ -7,6 +7,9 @@
 import os,subprocess,logging
 import pysam
 
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
+from .CigarAlignment import *
+
 
 #@todo check samtools v >= 1.3.*
 
@@ -335,9 +338,18 @@ class ChimericAlignment:
         
         all_reads_updated = []
         
-        if n_r1 > 1:
+        if n_r1 == 2:
             reads_updated,mates_updated = self.fix_chain(r1,bam_file,r2)
-            self.set_read_group(reads_updated,'spanning_paired')
+            
+            ca = CigarAlignment(reads_updated[0].cigar,reads_updated[1].cigar)
+            if ca.get_order() == STRAND_FORWARD:
+                self.set_read_group([reads_updated[0]],'spanning_paired_1')
+                self.set_read_group([reads_updated[1]],'spanning_paired_2')
+            else:
+                self.set_read_group([reads_updated[0]],'spanning_paired_2')
+                self.set_read_group([reads_updated[1]],'spanning_paired_1')
+            
+            #self.set_read_group(reads_updated,'spanning_paired')
             self.set_read_group(mates_updated,'silent_mate')
             for a in reads_updated:
                 all_reads_updated.append(a)
@@ -345,9 +357,18 @@ class ChimericAlignment:
             for a in mates_updated:
                 all_reads_updated.append(a)
         
-        elif n_r2 > 1:
+        elif n_r2 == 2:
             reads_updated,mates_updated = self.fix_chain(r2,bam_file,r1)
-            self.set_read_group(reads_updated,'spanning_paired')
+            
+            ca = CigarAlignment(reads_updated[0].cigar,reads_updated[1].cigar)
+            if ca.get_order() == STRAND_FORWARD:
+                self.set_read_group([reads_updated[0]],'spanning_paired_1')
+                self.set_read_group([reads_updated[1]],'spanning_paired_2')
+            else:
+                self.set_read_group([reads_updated[0]],'spanning_paired_2')
+                self.set_read_group([reads_updated[1]],'spanning_paired_1')
+            
+            #self.set_read_group(reads_updated,'spanning_paired')
             self.set_read_group(mates_updated,'silent_mate')
             for a in reads_updated:
                 all_reads_updated.append(a)

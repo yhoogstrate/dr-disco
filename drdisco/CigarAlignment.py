@@ -107,13 +107,37 @@ class CigarAlignment:
         
     """
     def __init__(self,cigtup1,cigtup2):
-        self.cigtup1 = cigtup1
-        self.cigtup2 = cigtup2
+        self.cigtup1 = self.cleanup_cigar(cigtup1,[3])
+        self.cigtup2 = self.cleanup_cigar(cigtup2,[3])
         
         self.m = len(self.cigtup1)
         self.n = len(self.cigtup2)
         
         self.init_matrix()
+    
+    def cleanup_cigar(self,cigartup,invalid_chunks):
+        clean = []
+        
+        ## Removal of wrong chunks
+        for chunk in cigartup:
+            if chunk[0] not in invalid_chunks:
+                clean.append(chunk)
+        
+        ## Merging those that become adjacent to each other
+        ### E.g. removal of 'N' in 6M10N6M -> 6M6M -> 12M
+        last_type = -1
+        concat = []
+        
+        for chunk in clean:
+            if chunk[0] == last_type:
+                
+                # increase last insert
+                concat[-1] = (chunk[0],concat[-1][1]+chunk[1])
+            else:
+                concat.append(chunk)
+                last_type = chunk[0]
+        
+        return concat
     
     def init_matrix(self):
         #self.matrix = [[0] * (self.n+1) ] * (self.m + 1) << copies references of lists >,<
@@ -178,7 +202,7 @@ class CigarAlignment:
             return pow((cig_chunk1[1] - cig_chunk2[1]),2)
         
         else:
-            raise Exception("Not yet implemented")
+            raise Exception("Not yet implemented:",self.cigtup1,"\n",self.cigtup2,"\n\n",cig_chunk1[0],"\n",cig_chunk2[0])
         
     
     def calc_diff(self,i,j):
