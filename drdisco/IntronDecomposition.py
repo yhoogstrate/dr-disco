@@ -19,6 +19,10 @@ from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 
 
 class Arc:
+    """
+    Connection between two genomic locations
+     - Also contains different types of evidence
+    """
     def __init__(self,_origin,_target):
         if not isinstance(_target, Node) or not isinstance(_origin, Node):
             raise Exception("_origin and _target must be a Node")
@@ -51,17 +55,30 @@ class Arc:
             if self._types.has_key(_type):
                 score += self._types[_type]*scoring_table[_type]
         
-        #if self._types.has_key('spanning_singleton'):
-            #score += self._types['spanning_singleton']*2
-        
-        #if self._types.has_key('spannin'):
-        #    score += self._types['spanning_singleton']*2
-        
         return score
 
+    def get_breakpoint_direction(self):
+        """Do some kind of majority vote to figure out whether the reads
+        were on the left or right side of the node:
+        
+        (STRAND_FORWARD)
+            -----|
+        ---------|
+           ------|
+
+        or
+        
+        |...
+        |.....
+        |.......
+        (STRAND_REVERSE)
+        
+        """
 
 
 class Node:
+    """A Simple node, just a chromomal location( and strand)"""
+    
     def __init__(self,position):
         self.position = position
         self.arcs = {}
@@ -70,7 +87,7 @@ class Node:
         skey = str(arc._target)
         
         if not self.arcs.has_key(skey):
-            self.arcs[skey] = arc#Arc(arc._target)
+            self.arcs[skey] = arc
         
         self.arcs[skey].add_type(arc_type)
     
@@ -247,14 +264,14 @@ class Chain:
             
             pos2 = BreakPosition(parsed_SA_tag[0],
                                  parsed_SA_tag[1],
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,False)
         
         elif rg in ["spanning_paired_2","spanning_singleton_2"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  read.reference_start,
-                                 not read.is_reverse)
+                                 read.is_reverse)
             
             pos2 = BreakPosition(parsed_SA_tag[0],
                                  bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
@@ -315,11 +332,26 @@ class Chain:
         node1 = arc._origin
         node2 = arc._target
         
-        print insert_size
+        
         print
         print node1 
-        print node1.arcs
-        print node1.get_top_arc()
+        if node1.position.strand == STRAND_FORWARD:
+            lookup1 = node1.position._chr,node1.position.pos-insert_size,node1.position.pos
+        else:
+            lookup1 = node1.position._chr,node1.position.pos,node1.position.pos+insert_size
+        
+        print
+        print node2 
+        if node2.position.strand == STRAND_FORWARD:
+            lookup2 = node2.position._chr,node2.position.pos-insert_size,node2.position.pos
+        else:
+            lookup2 = node2.position._chr,node2.position.pos,node2.position.pos+insert_size
+        
+        
+        print "LOOKUP1:",lookup1
+        print "LOOKUP2:",lookup2
+        
+        
         #print
         #print node2
         #print node2.arcs
@@ -443,16 +475,26 @@ class IntronDecomposition:
             
             # Find introns etc:
             for internal_arc in self.find_cigar_arcs(r):
-                pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                     internal_arc[0],
-                                     not r.is_reverse)
-                pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                     internal_arc[1],
-                                     not r.is_reverse)
+                if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
+                    pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                         internal_arc[0],
+                                         r.is_reverse)
+                    pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                         internal_arc[1],
+                                         r.is_reverse)
+                else:
+                    pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                         internal_arc[0],
+                                         not r.is_reverse)
+                    pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                         internal_arc[1],
+                                         not r.is_reverse)
                 
                 c.insert_entry(pos1,pos2,internal_arc[2],True)
         
         # Merge arcs somehow, label nodes
+        
+        # emperical evidence showed ~230bp? look into this by picking a few examples
         c.prune(400+126-12)
 
     def find_cigar_arcs(self,read):
