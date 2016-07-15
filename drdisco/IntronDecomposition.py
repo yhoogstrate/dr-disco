@@ -11,6 +11,7 @@ Tries to figure out within a discordant RNA-Seq read alignment:
 
 import logging,re
 import pysam
+from intervaltree_bio import GenomeIntervalTree
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 
@@ -303,7 +304,6 @@ class Arc:
         """
         
         score = 0
-        
         #print self._types
         
         if self._types.has_key('spanning_paired'):
@@ -434,8 +434,27 @@ class BreakPosition:
 
 class Chain:
     def __init__(self,pysam_fh):
-        self.idx = {}
+        self.idxtree = GenomeIntervalTree()
+        #self.idx = {}
         self.pysam_fh = pysam_fh
+    
+    def create_node(self,pos):
+        """
+        Creates the Node but does not overwrite it
+        """
+        # see if position exists in idx
+        if len(self.idxtree[pos._chr][pos.pos]) == 0:
+            self.idxtree[pos._chr].addi(pos.pos,pos.pos+1,{})
+        
+        # make sure the strand is added
+        if not list(self.idxtree[pos._chr][pos.pos])[0][2].has_key(pos.strand):
+            list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand] = Node(pos)
+    
+    def get_node_reference(self,pos):
+        try:
+            return list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand]
+        except:
+            return None
     
     def insert_entry(self,pos1,pos2,_type):
         """
@@ -444,15 +463,13 @@ class Chain:
          - Checks if Arc exists between them
         """
         
-        key1 = str(pos1)
-        if not self.idx.has_key(key1):
-            self.idx[key1] = Node(pos1)
+        self.create_node(pos1)
+        self.create_node(pos2)
         
-        key2 = str(pos2)
-        if not self.idx.has_key(key2):
-            self.idx[key2] = Node(pos2)
+        node1 = self.get_node_reference(pos1)
+        node2 = self.get_node_reference(pos2)
         
-        self.idx[key1].add_arc(self.idx[key2],_type)
+        node1.add_arc(node2,_type)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional arc between read and sa-tag in the Chain
@@ -530,39 +547,51 @@ class Chain:
             raise Exception("Fatal Error, RG: "+rg)
     
     def __iter__(self):
-        for key in sorted(self.idx):
-            yield self.idx[key]
+        for key in self.idxtree:
+            for element in self.idxtree[key]:
+                for strand in sorted(element[2].keys()):
+                    yield element[2][strand]
     
     def print_chain(self):
-        for key in sorted(self.idx):
-            print key, self.idx[key].str2()
+        for node in self:
+            key = node.position
+            print key, node.str2()
 
-    def prune_pos(self,insert_size,node1):
-        pass
+    def prune_pos(self, insert_size, node1, node2):
+        print insert_size
+        print node1
+        print node2
     
     def get_start_point(self):
+        """
+        Returns the chain with the higest number of counts
+        """
         maxscore = -1
         node1 = None
         node2 = None
         
         for node in self:
-            print node.get_top_arc()
             _score, _arc, _node1, _node2 = node.get_top_arc()
             if _arc != None and _score > maxscore:
                 maxscore = _score
-                node1 
+                node1  = _node1
+                node2  = _node2
         
-        #print node1
-        #print node2
-        
-        return (node1, node2)
+        if node1 != None:
+            return (node1, node2)
+        else:
+            return None
     
     def prune(self,insert_size):
-        
+        """
+        Does some 'clever' tricks to merge arcs together and reduce data points
+        """
         self.print_chain()
         
-        print self.get_start_point()
-        # do some clever tricks to merge arcs together and reduce data points
+        init = self.get_start_point()
+        if init != None:
+            self.prune_pos(insert_size, init[0], init[1])
+            
 
 
 class IntronDecomposition:
