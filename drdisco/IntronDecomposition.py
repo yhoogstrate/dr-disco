@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
@@ -242,9 +242,6 @@ class CigarAlignment:
         if len(cigtup1_aligned) != len(cigtup2_aligned):
             raise Exception("Lengths of aligned cigarstring tuples are different - error has taken place in the alignment",cigtup1_aligned,cigtup2_aligned)
         
-        print cigtup1_aligned
-        print cigtup2_aligned
-        
         c1 = []
         c2 = []
         
@@ -265,20 +262,8 @@ class CigarAlignment:
         
         c1_r = 1.0 * c1_l / c1_total
         c2_r = 1.0 * c2_l / c2_total
-        
-        print c1_l
-        print c2_l
-        print
-        print c1_total
-        print c2_total
-        print
-        print c1_r
-        print c2_r
-        print
-        print 
-        
-        if c1_r > c2_r:
-            print "!!"
+
+        if c1_r >= c2_r:
             return STRAND_FORWARD
         else:
             return STRAND_REVERSE
@@ -502,6 +487,10 @@ class Chain:
         else:
             raise Exception("Fatal Error, RG: "+rg)
     
+    def __iter__(self):
+        for key in sorted(self.idx):
+            yield self.idx[key]
+    
     def print_chain(self):
         for key in sorted(self.idx):
             print key, self.idx[key].str2()
@@ -512,9 +501,25 @@ class Chain:
             
             #print "k:",key, " | ".join([str(arc) for arc in self.idx[key].arcs])
             #str(self.idx[key].arcs)
-
-    def prune(self):
-        self.print_chain()
+    
+    def prune_pos(self,insert_size,node1):
+        pass
+    
+    def get_start_point(self):
+        maxscore = -1
+        node1 = None
+        node2 = None
+        
+        for node in self:
+            print ">",node
+        
+        print node1
+        print node2
+        
+        return (node1, node2)
+    
+    def prune(self,insert_size):
+        print self.get_start_point()
         # do some clever tricks to merge arcs together and reduce data points
 
 
@@ -532,6 +537,7 @@ class IntronDecomposition:
             for pg in bam_fh.header['PG']:
                 if pg['ID'] == 'drdisco_fix_chimeric':
                     return bam_fh
+        
         raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
 
     def annotate_genes(self,gene_set):
@@ -614,11 +620,10 @@ class IntronDecomposition:
                                      internal_arc[1],
                                      not r.is_reverse)
                 
-                ##Re-enable
-                ##c.insert_entry(pos1,pos2,internal_arc[2])
+                c.insert_entry(pos1,pos2,internal_arc[2])
         
         # Merge arcs somehow, label nodes
-        c.prune()
+        c.prune(400)
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
