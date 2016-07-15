@@ -282,6 +282,9 @@ class CigarAlignment:
 
 class Arc:
     def __init__(self,_target):
+        if not isinstance(_target, Node):
+            raise Exception("_trget must be a Node")
+        
         self._target = _target
         self._types = {}
     
@@ -290,6 +293,29 @@ class Arc:
             self._types[_type] = 0
         
         self._types[_type] += 1
+    
+    def get_score(self):
+        """Based on this function, the start point is determined
+        
+        Currently it's implemented as sum(split reads)
+        
+        Later on spanning reads will be added, softclips will be added, etc.
+        """
+        
+        score = 0
+        
+        #print self._types
+        
+        if self._types.has_key('spanning_paired'):
+            score += self._types['spanning_paired']*3
+        
+        if self._types.has_key('spanning_singleton'):
+            score += self._types['spanning_singleton']*2
+        
+        #if self._types.has_key('spannin'):
+        #    score += self._types['spanning_singleton']*2
+        
+        return score
 
 
 
@@ -302,9 +328,21 @@ class Node:
         skey = str(arc._target)
         
         if not self.arcs.has_key(skey):
-            self.arcs[skey] = Arc(skey)
+            self.arcs[skey] = Arc(arc._target)
         
         self.arcs[skey].add_type(arc_type)
+    
+    def get_top_arc(self):
+        maxscore = -1
+        top_arc = None
+        
+        for arc in self:
+            score = arc.get_score()
+            if score > maxscore:
+                maxscore = score
+                top_arc = arc
+        
+        return (maxscore, top_arc, self, top_arc._target)
     
     def add_arc(self,node2,arc_type,do_vice_versa=True):
         if do_vice_versa:
@@ -312,6 +350,10 @@ class Node:
         
         arc = Arc(node2)
         self.insert_arc(arc,arc_type)
+    
+    def __iter__(self):
+        for k in sorted(self.arcs.keys()):
+            yield self.arcs[k]
     
     def __str__(self):
         return str(self.position)
@@ -494,14 +536,7 @@ class Chain:
     def print_chain(self):
         for key in sorted(self.idx):
             print key, self.idx[key].str2()
-            
-            #print self.idx[key].arcs
-            #print str(self.idx[key].arcs)
-            #print [str(x) for x in self.idx[key].arcs.values()]
-            
-            #print "k:",key, " | ".join([str(arc) for arc in self.idx[key].arcs])
-            #str(self.idx[key].arcs)
-    
+
     def prune_pos(self,insert_size,node1):
         pass
     
@@ -511,14 +546,21 @@ class Chain:
         node2 = None
         
         for node in self:
-            print ">",node
+            print node.get_top_arc()
+            _score, _arc, _node1, _node2 = node.get_top_arc()
+            if _arc != None and _score > maxscore:
+                maxscore = _score
+                node1 
         
-        print node1
-        print node2
+        #print node1
+        #print node2
         
         return (node1, node2)
     
     def prune(self,insert_size):
+        
+        self.print_chain()
+        
         print self.get_start_point()
         # do some clever tricks to merge arcs together and reduce data points
 
