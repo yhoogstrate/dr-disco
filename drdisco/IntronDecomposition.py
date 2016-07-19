@@ -57,23 +57,6 @@ class Arc:
         
         return score
 
-    def get_breakpoint_direction(self):
-        """Do some kind of majority vote to figure out whether the reads
-        were on the left or right side of the node:
-        
-        (STRAND_FORWARD)
-            -----|
-        ---------|
-           ------|
-
-        or
-        
-        |...
-        |.....
-        |.......
-        (STRAND_REVERSE)
-        
-        """
 
 
 class Node:
@@ -321,6 +304,53 @@ class Chain:
                 for strand in sorted(element[2].keys()):
                     yield element[2][strand]
     
+    def pos_to_range(self,pos,insert_size,exclude_itself):
+        if pos.strand == STRAND_FORWARD:
+            for _pos in range(pos.pos,(pos.pos-insert_size)-1,-1):
+                if exclude_itself and _pos == pos.pos:
+                    continue
+                else:
+                    yield (pos._chr, _pos)
+        else:
+            for _pos in range(pos.pos,(pos.pos+insert_size)+1,1):
+                if exclude_itself and _pos == pos.pos:
+                    continue
+                else:
+                    yield (pos._chr, _pos)
+        
+    
+    def search_arcs_between(self,pos1, pos2, insert_size):
+        """
+        Searches for reads inbetween two regions (e.g. break + ins. size)
+        
+        @todo: correct for splice junctions
+        """
+        
+        #print
+        #print pos1
+        #if pos1.strand == STRAND_FORWARD:
+            #lookup1 = pos1._chr,pos1.pos-insert_size,pos1.pos,"<-"
+        #else:
+            #lookup1 = pos1._chr,pos1.pos,pos1.pos+insert_size,"->"
+        
+        #print
+        #print pos2 
+        #if pos2.strand == STRAND_FORWARD:
+            #lookup2 = pos2._chr,pos2.pos-insert_size,pos2.pos,"<-"
+        #else:
+            #lookup2 = pos2._chr,pos2.pos,pos2.pos+insert_size,"->"
+        
+        
+        print "LOOKUP1:",pos1
+        for x in self.pos_to_range(pos1,insert_size,True):
+            print "\t",x
+        print "LOOKUP2:",self.pos_to_range(pos2,insert_size,True)
+        
+        
+        #print
+        #print node2
+        #print node2.arcs
+    
     def print_chain(self):
         for node in self:
             key = node.position
@@ -332,29 +362,7 @@ class Chain:
         node1 = arc._origin
         node2 = arc._target
         
-        
-        print
-        print node1 
-        if node1.position.strand == STRAND_FORWARD:
-            lookup1 = node1.position._chr,node1.position.pos-insert_size,node1.position.pos
-        else:
-            lookup1 = node1.position._chr,node1.position.pos,node1.position.pos+insert_size
-        
-        print
-        print node2 
-        if node2.position.strand == STRAND_FORWARD:
-            lookup2 = node2.position._chr,node2.position.pos-insert_size,node2.position.pos
-        else:
-            lookup2 = node2.position._chr,node2.position.pos,node2.position.pos+insert_size
-        
-        
-        print "LOOKUP1:",lookup1
-        print "LOOKUP2:",lookup2
-        
-        
-        #print
-        #print node2
-        #print node2.arcs
+        self.search_arcs_between(node1.position, node2.position, insert_size)
     
     def get_start_point(self):
         """
@@ -495,7 +503,8 @@ class IntronDecomposition:
         # Merge arcs somehow, label nodes
         
         # emperical evidence showed ~230bp? look into this by picking a few examples
-        c.prune(400+126-12)
+        #c.prune(400+126-12)
+        c.prune(5)
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
