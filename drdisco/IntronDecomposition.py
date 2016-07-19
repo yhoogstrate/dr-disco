@@ -56,7 +56,26 @@ class Arc:
                 score += self._types[_type]*scoring_table[_type]
         
         return score
+    
+    def in_range(self,_range):
+        if _range[0] > _range[1]:
+            _max = _range[0]
+            _min = _range[1]
+        else:
+            _min = _range[0]
+            _max = _range[1]
+        
+        return (
+                (self._origin.position.pos >= _min) and (self._origin.position.pos <= _max) or
+                (self._target.position.pos >= _min) and (self._target.position.pos <= _max)
+                )
 
+    
+    def __str__(self):
+        typestring = []
+        for _t in self._types:
+            typestring.append(str(_t)+":"+str(self._types[_t]))
+        return str(self._origin) + "->" + str(self._target) + ":("+','.join(typestring)+")"
 
 
 class Node:
@@ -163,11 +182,12 @@ class BreakPosition:
      string function of break points:
      chr1:3/4 and chr2:5/6
     """
+
     def __init__(self,_chr,position_0_based,strand):
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
-    
+
     def __str__(self):
         if self.strand == STRAND_FORWARD:
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(+)"
@@ -304,19 +324,23 @@ class Chain:
                 for strand in sorted(element[2].keys()):
                     yield element[2][strand]
     
-    def pos_to_range(self,pos,insert_size,exclude_itself):
+    def get_range(self,pos,insert_size):
         if pos.strand == STRAND_FORWARD:
-            for _pos in range(pos.pos,(pos.pos-insert_size)-1,-1):
-                if exclude_itself and _pos == pos.pos:
-                    continue
-                else:
-                    yield (pos._chr, _pos)
+            return (pos.pos,(pos.pos-insert_size)-1,-1)
         else:
-            for _pos in range(pos.pos,(pos.pos+insert_size)+1,1):
-                if exclude_itself and _pos == pos.pos:
-                    continue
-                else:
-                    yield (pos._chr, _pos)
+            return (pos.pos,(pos.pos+insert_size)+1,1)
+    
+
+    def pos_to_range(self,pos,_range,exclude_itself):
+        print _range
+        print _range[0]
+        print _range[1]
+        print _range[2]
+        for _pos in range(_range[0], _range[1], _range[2]):
+            if exclude_itself and _pos == pos.pos:
+                continue
+            else:
+                yield BreakPosition(pos._chr, _pos, pos.strand)
         
     
     def search_arcs_between(self,pos1, pos2, insert_size):
@@ -342,14 +366,28 @@ class Chain:
         
         
         print "LOOKUP1:",pos1
-        for x in self.pos_to_range(pos1,insert_size,True):
-            print "\t",x
-        print "LOOKUP2:",self.pos_to_range(pos2,insert_size,True)
+        range1 = self.get_range(pos1,insert_size)
+        for pos_i in self.pos_to_range(pos1,range1,True):
+            node_i = self.get_node_reference(pos_i)
+            if node_i != None:
+                for arc in node_i.arcs.values():
+                    if arc.in_range(range1):
+                        print ">>>> ",str(arc)
+                    else:
+                        print "XXXX ",str(node_i)," :: ",str(arc)
         
-        
-        #print
-        #print node2
-        #print node2.arcs
+        print "LOOKUP2:",pos2
+        range2 = self.get_range(pos2,insert_size)
+        print range2
+        for pos_i in self.pos_to_range(pos2,range2,True):
+            node_i = self.get_node_reference(pos_i)
+            if node_i != None:
+                for arc in node_i.arcs.values():
+                    if arc.in_range(range2):
+                        print ">>>> ",str(arc)
+                    else:
+                        print "XXXX ",str(node_i)," :: ",str(arc)
+
     
     def print_chain(self):
         for node in self:
@@ -504,7 +542,7 @@ class IntronDecomposition:
         
         # emperical evidence showed ~230bp? look into this by picking a few examples
         #c.prune(400+126-12)
-        c.prune(5)
+        c.prune(25)
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
