@@ -543,10 +543,11 @@ class Chain:
             
             candidate = None
             candidate = self.get_start_point()
-            print " >> " , candidate
 
         
         self.print_chain()
+        
+        return candidates
     
     def prune_arc(self, insert_size, arc):
         ## @todo make somehow only 
@@ -679,7 +680,7 @@ class IntronDecomposition:
         # emperical evidence showed ~230bp? look into this by picking a few examples
         #c.prune(400+126-12)
         # max obs = 418 for now
-        c.prune(450)
+        return c.prune(450)
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:

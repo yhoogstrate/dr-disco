@@ -33,6 +33,22 @@ class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
         print("\n")
         
+        input_file_a =    "tests/detect-intronic/test_terg_01.sub_01.filtered.fixed.bam"
+        input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        
+        bps = FusionCatcher(input_file_f,"")
+        for bp in bps:
+            ic = IntronDecomposition(bp)
+            #ic.annotate_genes(gobj)
+            candidates = ic.decompose(input_file_a)
+            
+            self.assertEqual(str(candidates[0][0]), "chr21:39877811/39877812(+)->chr21:42873374/42873375(-):(spanning_paired_1:3)")
+            self.assertEqual(candidates[0][1], 1.0)
+
+
+    def test_02(self):
+        print("\n")
+        
         input_file_a =    "tests/detect-intronic/test_terg_01.sub_02.filtered.fixed.bam"
         input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
@@ -40,11 +56,26 @@ class TestIntronicBreakDetection(unittest.TestCase):
         for bp in bps:
             ic = IntronDecomposition(bp)
             #ic.annotate_genes(gobj)
-            ic.decompose(input_file_a)
+            candidates = ic.decompose(input_file_a)
             
-            #decomposed_bp = bp.decompose(input_file_a)
-            #print(decomposed_bp)
-            return True
+            self.assertEqual(str(candidates[0][0]), "chr21:39877811/39877812(+)->chr21:42873374/42873375(-):(discordant_mates:3,spanning_paired_1:4)")
+            self.assertEqual(candidates[0][1], 1.0)
+
+
+    def test_03(self):
+        print("\n")
+        
+        input_file_a =    "tests/detect-intronic/test_terg_01.sub_03.filtered.fixed.bam"
+        input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        
+        bps = FusionCatcher(input_file_f,"")
+        for bp in bps:
+            ic = IntronDecomposition(bp)
+            #ic.annotate_genes(gobj)
+            candidates = ic.decompose(input_file_a)
+            
+
+
 
 
 def main():
