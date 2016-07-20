@@ -27,7 +27,8 @@ class Arc:
                'spanning_paired_2': 3,
                'discordant_mates': 2,
                'spanning_singleton_1': 2, 
-               'spanning_singleton_2': 2}
+               'spanning_singleton_2': 2,
+               'silent_mate': 0}
     
     def __init__(self,_origin,_target):
         if not isinstance(_target, Node) or not isinstance(_origin, Node):
@@ -140,6 +141,7 @@ class Node:
         else:
             raise Exception("Invalid usage of function")
         
+        self.arcs[skey] = None
         del(self.arcs[skey])
     
     def __iter__(self):
@@ -352,7 +354,8 @@ class Chain:
         node1.remove_arc(arc,"by-target")
         node2.remove_arc(arc,"by-origin")
 
-        del(arc)
+        # Not necessary
+        #del(arc)
         
         if node1.get_top_arc()[0] == None:
             self.remove_node(node1)
@@ -499,6 +502,7 @@ class Chain:
         return (1.0 * arcs_inbetween / total_arcs)
 
     def print_chain(self):
+        print "**************************************************************"
         for node in self:
             key = node.position
             print key, node.str2()
@@ -507,7 +511,7 @@ class Chain:
         """
         Returns the chain with the higest number of counts
         """
-        maxscore = -1
+        maxscore = 0
         arc = None
         
         for node in self:
@@ -525,13 +529,22 @@ class Chain:
         """
         Does some 'clever' tricks to merge arcs together and reduce data points
         """
-        #self.print_chain()
+        self.print_chain()
         
-        init = self.get_start_point()
-        if init != None:
-            ratio = self.prune_arc(insert_size, init)
+        candidates = []
         
-        print init,ratio
+        candidate = self.get_start_point()
+        while candidate != None:
+            ratio = self.prune_arc(insert_size, candidate)
+            candidates.append((candidate, ratio))
+            
+            self.remove_arc(candidate)
+            self.print_chain()
+            
+            candidate = None
+            candidate = self.get_start_point()
+            print " >> " , candidate
+
         
         self.print_chain()
     
