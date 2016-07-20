@@ -12,3 +12,4 @@ tmp/
 *.swp
 .coverage
 /htmlcov/*
+/*.R

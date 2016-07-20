@@ -38,9 +38,13 @@ class Arc:
         self._types = {}
     
     def merge_arc(self,arc):
-        """
-            #for _type in c_arc.get_score('discordant_mates')
-        """
+        print "merging arc:" , arc
+        for _type in arc._types:
+            if _type in ["discordant_mates"]:
+                self.add_type(_type)
+            else:
+                raise Exception("Not sure what to do here yet...")
+        
     
     def add_type(self,_type):
         if not self._types.has_key(_type):
@@ -128,6 +132,16 @@ class Node:
         
         arc = Arc(self,node2)
         self.insert_arc(arc,arc_type)
+    
+    def remove_arc(self,arc,idx):
+        if idx == "by-target":
+            skey = str(arc._target)
+        elif idx == "by-origin":
+            skey = str(arc._origin)
+        else:
+            raise Exception("Invalid usage of function")
+        
+        del(self.arcs[skey])
     
     def __iter__(self):
         for k in sorted(self.arcs.keys()):
@@ -328,9 +342,29 @@ class Chain:
                     #pos1 = BreakPosition(parsed_SA_tag[0],
                                         #bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                         #STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-            
+        
         else:
             raise Exception("Fatal Error, RG: "+rg)
+    
+    def remove_arc(self, arc):
+        node1 = arc._origin
+        node2 = arc._target
+        
+        node1.remove_arc(arc,"by-target")
+        node2.remove_arc(arc,"by-origin")
+
+        del(arc)
+        
+        print "n1:",node1.str2()
+        print "n2:",node2.str2()
+        
+        if node1.get_top_arc()[0] == None:
+            self.remove_node(node1)
+
+        if node2.get_top_arc()[0] == None:
+            self.remove_node(node2)
+        
+        asdasda
     
     def __iter__(self):
         for key in self.idxtree:
@@ -441,7 +475,7 @@ class Chain:
         node2 = arc._target
         
         for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
-            arc.merge(c_arc)
+            arc.merge_arc(c_arc)
             self.remove_arc(c_arc)
     
 
