@@ -38,7 +38,6 @@ class Arc:
         self._types = {}
     
     def merge_arc(self,arc):
-        print "merging arc:" , arc
         for _type in arc._types:
             if _type in ["discordant_mates"]:
                 self.add_type(_type)
@@ -424,7 +423,6 @@ class Chain:
             #lookup2 = pos2._chr,pos2.pos,pos2.pos+insert_size,"->"
         
         
-
         range1 = self.get_range(pos1,insert_size)
         range2 = self.get_range(pos2,insert_size)
         for pos_i in self.pos_to_range(pos1,range1,True):
@@ -444,8 +442,62 @@ class Chain:
                         #print ">>>> ",str(arc)
                     #else:
                         #print "XXXX ",str(node_i)," :: ",str(arc)
-
     
+    def arcs_ratio_between(self,pos1, pos2, insert_size):
+        """
+        Searches for reads inbetween two regions (e.g. break + ins. size)
+        and returns the ratio of uniq reads that fall within this range
+        """
+        
+        included = ['discordant_mates', 'spanning_paired_1', 'spanning_paired_2']
+        excluded = ['cigar_soft_clip','silent_mate']
+        
+        total_arcs = 0
+        arcs_inbetween = 0
+
+        range1 = self.get_range(pos1,insert_size)
+        range2 = self.get_range(pos2,insert_size)
+        for pos_i in self.pos_to_range(pos1,range1,False):
+            node_i = self.get_node_reference(pos_i)
+            if node_i != None:
+                for arc in node_i.arcs.values():
+                    for _type in arc._types.keys():
+                        if _type in included:
+                            if arc.target_in_range(range2):
+                                arcs_inbetween += arc._types[_type]
+                                total_arcs += arc._types[_type]
+                            else:
+                                # The in-range ones are counted twice
+                                total_arcs += 2*arc._types[_type]
+                        
+                        elif _type in excluded:# weird types; cigar types
+                            continue
+                        else:
+                            raise Exception("To be implemented: %s", _type)
+                    
+        
+        range2 = self.get_range(pos2,insert_size)
+        range1 = self.get_range(pos1,insert_size)
+        for pos_i in self.pos_to_range(pos2,range2,False):
+            node_i = self.get_node_reference(pos_i)
+            if node_i != None:
+                for arc in node_i.arcs.values():
+                    for _type in arc._types.keys():
+                        if _type in included:
+                            if arc.target_in_range(range1):
+                                arcs_inbetween += arc._types[_type]
+                                total_arcs += arc._types[_type]
+                            else:
+                                # The in-range ones are counted twice
+                                total_arcs += 2*arc._types[_type]
+                        
+                        elif _type in excluded:# weird types; cigar types
+                            continue
+                        else:
+                            raise Exception("To be implemented: %s", _type)
+
+        return (1.0 * arcs_inbetween / total_arcs)
+
     def print_chain(self):
         for node in self:
             key = node.position
@@ -473,11 +525,15 @@ class Chain:
         """
         Does some 'clever' tricks to merge arcs together and reduce data points
         """
-        self.print_chain()
+        #self.print_chain()
         
         init = self.get_start_point()
         if init != None:
-            self.prune_arc(insert_size, init)
+            ratio = self.prune_arc(insert_size, init)
+        
+        print init,ratio
+        
+        self.print_chain()
     
     def prune_arc(self, insert_size, arc):
         ## @todo make somehow only 
@@ -485,10 +541,17 @@ class Chain:
         node1 = arc._origin
         node2 = arc._target
         
+        ratio = self.arcs_ratio_between(node1.position, node2.position, insert_size)
+        
         for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
+            arc_complement = node2.arcs[str(node1)]
+            
             arc.merge_arc(c_arc)
+            arc_complement.merge_arc(c_arc)
+            
             self.remove_arc(c_arc)
-    
+        
+        return ratio
 
 class IntronDecomposition:
     def __init__(self,break_point):
@@ -595,13 +658,15 @@ class IntronDecomposition:
                                          internal_arc[1],
                                          not r.is_reverse)
                 
-                c.insert_entry(pos1,pos2,internal_arc[2],True)
+                ## @todo in future
+                ##c.insert_entry(pos1,pos2,internal_arc[2],True)
         
         # Merge arcs somehow, label nodes
         
         # emperical evidence showed ~230bp? look into this by picking a few examples
         #c.prune(400+126-12)
-        c.prune(250)
+        # max obs = 418 for now
+        c.prune(450)
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
