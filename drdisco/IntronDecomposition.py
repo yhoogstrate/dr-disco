@@ -23,6 +23,12 @@ class Arc:
     Connection between two genomic locations
      - Also contains different types of evidence
     """
+    scoring_table={'spanning_paired_1': 3,
+               'spanning_paired_2': 3,
+               'discordant_mates': 2,
+               'spanning_singleton_1': 2, 
+               'spanning_singleton_2': 2}
+    
     def __init__(self,_origin,_target):
         if not isinstance(_target, Node) or not isinstance(_origin, Node):
             raise Exception("_origin and _target must be a Node")
@@ -31,13 +37,24 @@ class Arc:
         self._target = _target
         self._types = {}
     
+    def merge_arc(self,arc):
+        """
+            #for _type in c_arc.get_score('discordant_mates')
+        """
+    
     def add_type(self,_type):
         if not self._types.has_key(_type):
             self._types[_type] = 0
         
         self._types[_type] += 1
     
-    def get_score(self):
+    def get_score(self,_type):  
+        if not self._types.has_key(_type):
+            return 0
+        else:
+            return self._types[_type]*self.scoring_table[_type]
+    
+    def get_scores(self):
         """Based on this function, the start point is determined
         
         Currently it's implemented as sum(split reads)
@@ -46,28 +63,25 @@ class Arc:
         """
         
         score = 0
-        scoring_table={'spanning_paired_1': 3,
-                       'spanning_paired_2': 3,
-                       'spanning_singleton_1': 2, 
-                       'spanning_singleton_2': 2}
+
         
-        for _type in scoring_table.keys():
-            if self._types.has_key(_type):
-                score += self._types[_type]*scoring_table[_type]
+        for _type in self.scoring_table.keys():
+            score += self.get_score(_type)
         
         return score
     
-    def in_range(self,_range):
+    def target_in_range(self,_range):
         if _range[0] > _range[1]:
             _max = _range[0]
             _min = _range[1]
         else:
             _min = _range[0]
             _max = _range[1]
-        
+            
         return (
-                (self._origin.position.pos >= _min) and (self._origin.position.pos <= _max) or
-                (self._target.position.pos >= _min) and (self._target.position.pos <= _max)
+                #(self._origin.position.pos >= _min) and (self._origin.position.pos <= _max)
+                 #or 
+                         (self._target.position.pos >= _min) and (self._target.position.pos <= _max)
                 )
 
     
@@ -98,7 +112,7 @@ class Node:
         top_arc = None
         
         for arc in self:
-            score = arc.get_score()
+            score = arc.get_scores()
             if score > maxscore:
                 maxscore = score
                 top_arc = arc
@@ -332,10 +346,6 @@ class Chain:
     
 
     def pos_to_range(self,pos,_range,exclude_itself):
-        print _range
-        print _range[0]
-        print _range[1]
-        print _range[2]
         for _pos in range(_range[0], _range[1], _range[2]):
             if exclude_itself and _pos == pos.pos:
                 continue
@@ -365,28 +375,30 @@ class Chain:
             #lookup2 = pos2._chr,pos2.pos,pos2.pos+insert_size,"->"
         
         
-        print "LOOKUP1:",pos1
+
         range1 = self.get_range(pos1,insert_size)
+        range2 = self.get_range(pos2,insert_size)
         for pos_i in self.pos_to_range(pos1,range1,True):
             node_i = self.get_node_reference(pos_i)
             if node_i != None:
                 for arc in node_i.arcs.values():
-                    if arc.in_range(range1):
-                        print ">>>> ",str(arc)
-                    else:
-                        print "XXXX ",str(node_i)," :: ",str(arc)
+                    #@todo check if strand matters here
+                    if arc.target_in_range(range2):
+                        yield arc
+                        #print "Prune with:"
+                        #print ">>>> ",str(arc)
         
-        print "LOOKUP2:",pos2
-        range2 = self.get_range(pos2,insert_size)
-        print range2
-        for pos_i in self.pos_to_range(pos2,range2,True):
-            node_i = self.get_node_reference(pos_i)
-            if node_i != None:
-                for arc in node_i.arcs.values():
-                    if arc.in_range(range2):
-                        print ">>>> ",str(arc)
-                    else:
-                        print "XXXX ",str(node_i)," :: ",str(arc)
+        #print "LOOKUP2:",pos2
+        
+        #print range2
+        #for pos_i in self.pos_to_range(pos2,range2,True):
+            #node_i = self.get_node_reference(pos_i)
+            #if node_i != None:
+                #for arc in node_i.arcs.values():
+                    #if arc.in_range(range2):
+                        #print ">>>> ",str(arc)
+                    #else:
+                        #print "XXXX ",str(node_i)," :: ",str(arc)
 
     
     def print_chain(self):
@@ -394,14 +406,6 @@ class Chain:
             key = node.position
             print key, node.str2()
 
-    def prune_arc(self, insert_size, arc):
-        ## @todo make somehow only 
-        #if 
-        node1 = arc._origin
-        node2 = arc._target
-        
-        self.search_arcs_between(node1.position, node2.position, insert_size)
-    
     def get_start_point(self):
         """
         Returns the chain with the higest number of counts
@@ -429,7 +433,17 @@ class Chain:
         init = self.get_start_point()
         if init != None:
             self.prune_arc(insert_size, init)
-
+    
+    def prune_arc(self, insert_size, arc):
+        ## @todo make somehow only 
+        #if 
+        node1 = arc._origin
+        node2 = arc._target
+        
+        for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
+            arc.merge(c_arc)
+            self.remove_arc(c_arc)
+    
 
 class IntronDecomposition:
     def __init__(self,break_point):
@@ -542,7 +556,7 @@ class IntronDecomposition:
         
         # emperical evidence showed ~230bp? look into this by picking a few examples
         #c.prune(400+126-12)
-        c.prune(25)
+        c.prune(250)
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
