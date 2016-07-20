@@ -10,8 +10,8 @@ Tries to figure out within a discordant RNA-Seq read alignment:
 #http://www.samformat.info/sam-format-flag
 
 import logging,re
-import pysam
-from intervaltree_bio import GenomeIntervalTree
+import pysam,copy
+from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
@@ -355,17 +355,32 @@ class Chain:
 
         del(arc)
         
-        print "n1:",node1.str2()
-        print "n2:",node2.str2()
-        
         if node1.get_top_arc()[0] == None:
             self.remove_node(node1)
 
         if node2.get_top_arc()[0] == None:
             self.remove_node(node2)
-        
-        asdasda
     
+    def remove_node(self,node):
+        pos = node.position
+        element = self.idxtree[pos._chr][pos.pos]
+        
+        root_element = list(element)[0]
+        new_element = Interval(root_element[0],root_element[1],{x:root_element[2][x] for x in root_element[2].keys() if x != pos.strand})
+        
+        # First remove the root element
+        self.idxtree[pos._chr].remove(root_element)
+        
+        # Delete node
+        del(root_element[2][pos.strand])
+        
+        # Weird error
+        #del(root_element)
+        
+        ## Re-insert if necessary
+        if len(new_element[2]) > 0:
+            self.idxtree[pos._chr].add(new_element)
+            
     def __iter__(self):
         for key in self.idxtree:
             for element in sorted(self.idxtree[key]):
@@ -419,12 +434,8 @@ class Chain:
                     #@todo check if strand matters here
                     if arc.target_in_range(range2):
                         yield arc
-                        #print "Prune with:"
-                        #print ">>>> ",str(arc)
         
-        #print "LOOKUP2:",pos2
-        
-        #print range2
+        #print "LOOKUP2:",pos2,range2
         #for pos_i in self.pos_to_range(pos2,range2,True):
             #node_i = self.get_node_reference(pos_i)
             #if node_i != None:
