@@ -468,6 +468,19 @@ class Chain:
     def search_arcs_between(self,pos1, pos2, insert_size):
         """Searches for reads inbetween two regions (e.g. break + ins. size)
         
+        return types:
+         - ('both', obj)
+         
+         - ('pos1', obj)
+         - ('pos2', obj)
+        
+        pos1 and pos2 are in either pos1 or pos2 but not in both (xor)
+         -> these are useful for cigar_ type arcs and expansion of arcs
+        with other arcs (e.g. splicing)
+        
+        those with type both are adding condince to the existing arc and
+        simply making them heavier
+        
         @todo: correct for splice junctions
         """
         
@@ -494,17 +507,19 @@ class Chain:
                 for arc in node_i.arcs.values():
                     #@todo check if strand matters here
                     if arc.target_in_range(range2):
-                        yield arc
+                        yield ('both',arc)
+                    else:
+                        yield('pos1',arc)
         
-        #print "LOOKUP2:",pos2,range2
-        #for pos_i in self.pos_to_range(pos2,range2,True):
-            #node_i = self.get_node_reference(pos_i)
-            #if node_i != None:
-                #for arc in node_i.arcs.values():
-                    #if arc.in_range(range2):
-                        #print ">>>> ",str(arc)
-                    #else:
-                        #print "XXXX ",str(node_i)," :: ",str(arc)
+        for pos_i in self.pos_to_range(pos2,range2,True):
+            node_i = self.get_node_reference(pos_i)
+            if node_i != None:
+                for arc in node_i.arcs.values():
+                    if arc.target_in_range(range1):
+                        yield ('both',arc)
+                    else:
+                        yield('pos2',arc)
+    
     
     def arcs_ratio_between(self,pos1, pos2, insert_size):
         """
@@ -606,15 +621,15 @@ class Chain:
             
             self.remove_arc(candidate)
             
-            self.print_chain()
+        #    self.print_chain()
             
             candidate = None
             candidate = self.get_start_point()
              
             i += 1
         
-        for candidate in candidates:
-            print candidate[0]
+        #for candidate in candidates:
+        #    print candidate[0]
         return candidates
     
     def prune_arc(self, insert_size, arc):
@@ -626,12 +641,16 @@ class Chain:
         ratio = self.arcs_ratio_between(node1.position, node2.position, insert_size)
         
         for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
-            arc_complement = node2.arcs[str(node1.position)]
-            
-            arc.merge_arc(c_arc)
-            arc_complement.merge_arc(c_arc)
-            
-            self.remove_arc(c_arc)
+            if c_arc[0] == "both":
+                arc_complement = node2.arcs[str(node1.position)]
+                
+                arc.merge_arc(c_arc[1])
+                arc_complement.merge_arc(c_arc[1])
+                
+                self.remove_arc(c_arc[1])
+            else:
+                # 1 directional linked arc, e.g. splicing event?
+                pass
         
         return ratio
 
