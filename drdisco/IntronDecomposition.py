@@ -135,11 +135,14 @@ class Node:
     
     def remove_arc(self,arc,idx):
         if idx == "by-target":
-            skey = str(arc._target)
+            skey = str(arc._target.position)
         elif idx == "by-origin":
-            skey = str(arc._origin)
+            skey = str(arc._origin.position)
         else:
             raise Exception("Invalid usage of function")
+        
+        if not self.arcs.has_key(skey):
+            raise Exception("Unknown key: %s", skey)
         
         self.arcs[skey] = None
         del(self.arcs[skey])
@@ -151,13 +154,16 @@ class Node:
     def __str__(self):
         out  = str(self.position)
         
+        a = 0
         sc = 0
         hc = 0
         
         for sarc in self.arcs:
             arc = self.arcs[sarc]
             filtered_arcs = {x:arc._types[x] for x in sorted(arc._types.keys()) if x not in ['cigar_soft_clip','cigar_hard_clip']}
-            if len(filtered_arcs) > 0:
+            len_arcs = len(filtered_arcs)
+            a += len_arcs
+            if len_arcs > 0:
                 out += "\n\t-> "+str(arc._target.position)+" "+str(filtered_arcs)
             
             if arc._types.has_key('cigar_soft_clip'):
@@ -166,10 +172,13 @@ class Node:
             if arc._types.has_key('cigar_hard_clip'):
                 hc += arc._types['cigar_hard_clip']
         
-        out += "\n\t-> incoming soft-clips: "+str(sc)
-        out += "\n\t-> incoming hard-clips: "+str(hc)
-        
-        return out+"\n"
+        if (a+sc+hc) > 0:
+            out += "\n\t-> incoming soft-clips: "+str(sc)
+            out += "\n\t-> incoming hard-clips: "+str(hc)
+            
+            return out+"\n"
+        else:
+            return ""
 
 def bam_parse_alignment_offset(cigartuple):
     pos = 0
@@ -417,8 +426,7 @@ class Chain:
         
     
     def search_arcs_between(self,pos1, pos2, insert_size):
-        """
-        Searches for reads inbetween two regions (e.g. break + ins. size)
+        """Searches for reads inbetween two regions (e.g. break + ins. size)
         
         @todo: correct for splice junctions
         """
@@ -539,8 +547,7 @@ class Chain:
             return None
     
     def prune(self,insert_size):
-        """
-        Does some 'clever' tricks to merge arcs together and reduce data points
+        """Does some 'clever' tricks to merge arcs together and reduce data points
         """
         self.print_chain()
         
@@ -548,19 +555,20 @@ class Chain:
         
         candidate = self.get_start_point()
         i = 1
-        while candidate != None and i < 2:
+        while candidate != None:
+            if i > 5:
+                raise Exception("Recusion depth errr")
+            
             ratio = self.prune_arc(insert_size, candidate)
             candidates.append((candidate, ratio))
             
             self.remove_arc(candidate)
-            self.print_chain()
+            
             
             candidate = None
             candidate = self.get_start_point()
-            
+             
             i += 1
-        
-        self.print_chain()
         
         return candidates
     
@@ -573,7 +581,6 @@ class Chain:
         ratio = self.arcs_ratio_between(node1.position, node2.position, insert_size)
         
         for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
-            print node2.arcs.keys()
             arc_complement = node2.arcs[str(node1.position)]
             
             arc.merge_arc(c_arc)
@@ -583,11 +590,14 @@ class Chain:
         
         return ratio
 
+
+
 class IntronDecomposition:
     def __init__(self,break_point):
         self.logger = logging.getLogger(self.__class__.__name__)
         
         self.break_point = break_point
+        self.chain = None
     
     def test_disco_alignment(self,alignment_file):
         # Make sure the header exists indicating that the BAM file was
@@ -599,12 +609,6 @@ class IntronDecomposition:
                     return bam_fh
         
         raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
-
-    def annotate_genes(self,gene_set):
-        pass
-    
-    def is_exonic(self,read,gene):
-        pass
     
     def get_insert_size(self,pos1,pos2):
         if pos1[0] == pos2[0]:
@@ -620,26 +624,17 @@ class IntronDecomposition:
         
         return sa_tags
     
-    def decompose(self,alignment_file):
-        pysam_fh = self.test_disco_alignment(alignment_file)
-        
-        lpos = self.break_point.get_left_position(True)
-        rpos = self.break_point.get_right_position(True)
-        
-        chain_left = []
-        chain_right = []
-        
-        c = Chain(pysam_fh)
-        
-        #@todo move loop into a function insert_tree() ?
-        for r in pysam_fh.fetch(lpos[0],lpos[1]):
+    
+    def insert_chain(self,pysam_fh, region):
+        for r in pysam_fh.fetch(region[0],region[1],region[2]):
+        #for r in pysam_fh.fetch(region[0],region[1]):
             sa = self.parse_SA(r.get_tag('SA'))
             _chr = pysam_fh.get_reference_name(r.reference_id)
             insert_size = self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
             
             if r.get_tag('RG') == 'discordant_mates':
                 if abs(insert_size) >= 400:
-                    c.insert(r,sa[0])
+                    self.chain.insert(r,sa[0])
             
             elif r.get_tag('RG') == 'silent_mate':
                 # usually in a exon?
@@ -662,16 +657,14 @@ class IntronDecomposition:
                     
                     broken_mate = sa[0]
                 
-                c.insert(r,broken_mate)
+                self.chain.insert(r,broken_mate)
             
             elif r.get_tag('RG') in ['spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2']:
                 read = r
-                c.insert(r,sa[0])
+                self.chain.insert(r,sa[0])
 
             else:
                 raise Exception("Unknown type read: '"+str(r.get_tag('RG'))+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
-            
-            print lpos,rpos,r
             
             # Find introns etc:
             for internal_arc in self.find_cigar_arcs(r):
@@ -690,15 +683,29 @@ class IntronDecomposition:
                                          internal_arc[1],
                                          not r.is_reverse)
                 
-                ## @todo in future
-                c.insert_entry(pos1,pos2,internal_arc[2],True)
+                self.chain.insert_entry(pos1,pos2,internal_arc[2],True)
+    
+    def decompose(self,alignment_file):
+        pysam_fh = self.test_disco_alignment(alignment_file)
+        
+        lpos = self.break_point.get_left_position(True)
+        rpos = self.break_point.get_right_position(True)
+        
+        self.chain = Chain(pysam_fh)
+        
+        # Solve it somehow like this:
+        #self.insert_tree(pysam_fh, lpos())
+        tmprss2 = ['chr21',42834478,42882085]
+        erg = ['chr21',39737183,40035618]
+        self.insert_chain(pysam_fh, tmprss2)
+        self.insert_chain(pysam_fh, erg)
         
         # Merge arcs somehow, label nodes
         
         # emperical evidence showed ~230bp? look into this by picking a few examples
         #c.prune(400+126-12)
         # max obs = 418 for now
-        return c.prune(450)
+        return self.chain.prune(450)
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
