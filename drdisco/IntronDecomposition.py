@@ -19,8 +19,7 @@ from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 
 
 class Arc:
-    """
-    Connection between two genomic locations
+    """Connection between two genomic locations
      - Also contains different types of evidence
     """
     scoring_table={'spanning_paired_1': 3,
@@ -91,9 +90,10 @@ class Arc:
     
     def __str__(self):
         typestring = []
-        for _t in self._types:
+        for _t in sorted(self._types.keys()):
             typestring.append(str(_t)+":"+str(self._types[_t]))
-        return str(self._origin) + "->" + str(self._target) + ":("+','.join(typestring)+")"
+        
+        return str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
 
 
 class Node:
@@ -104,7 +104,7 @@ class Node:
         self.arcs = {}
     
     def insert_arc(self,arc,arc_type):
-        skey = str(arc._target)
+        skey = str(arc._target.position)
         
         if not self.arcs.has_key(skey):
             self.arcs[skey] = arc
@@ -149,14 +149,25 @@ class Node:
             yield self.arcs[k]
     
     def __str__(self):
-        return str(self.position)
-    
-    def str2(self):
-        out = ""
+        out  = str(self.position)
+        
+        sc = 0
+        hc = 0
         
         for sarc in self.arcs:
             arc = self.arcs[sarc]
-            out += "\n\t-> "+str(arc._target)+" "+str(arc._types)
+            filtered_arcs = {x:arc._types[x] for x in sorted(arc._types.keys()) if x not in ['cigar_soft_clip','cigar_hard_clip']}
+            if len(filtered_arcs) > 0:
+                out += "\n\t-> "+str(arc._target.position)+" "+str(filtered_arcs)
+            
+            if arc._types.has_key('cigar_soft_clip'):
+                sc += arc._types['cigar_soft_clip']
+
+            if arc._types.has_key('cigar_hard_clip'):
+                hc += arc._types['cigar_hard_clip']
+        
+        out += "\n\t-> incoming soft-clips: "+str(sc)
+        out += "\n\t-> incoming hard-clips: "+str(hc)
         
         return out+"\n"
 
@@ -171,7 +182,8 @@ def bam_parse_alignment_offset(cigartuple):
             H	BAM_CHARD_CLIP	5
             P	BAM_CPAD	6
             =	BAM_CEQUAL	7
-            X	BAM_CDIFF	8"""
+            X	BAM_CDIFF	8
+            """
         
         if chunk[0] in [0,2,3]:
             pos += chunk[1]
@@ -504,8 +516,9 @@ class Chain:
     def print_chain(self):
         print "**************************************************************"
         for node in self:
-            key = node.position
-            print key, node.str2()
+            _str = str(node)
+            if len(_str.strip()) > 0:
+                print _str
 
     def get_start_point(self):
         """
@@ -534,7 +547,8 @@ class Chain:
         candidates = []
         
         candidate = self.get_start_point()
-        while candidate != None:
+        i = 1
+        while candidate != None and i < 2:
             ratio = self.prune_arc(insert_size, candidate)
             candidates.append((candidate, ratio))
             
@@ -543,7 +557,8 @@ class Chain:
             
             candidate = None
             candidate = self.get_start_point()
-
+            
+            i += 1
         
         self.print_chain()
         
@@ -558,7 +573,8 @@ class Chain:
         ratio = self.arcs_ratio_between(node1.position, node2.position, insert_size)
         
         for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
-            arc_complement = node2.arcs[str(node1)]
+            print node2.arcs.keys()
+            arc_complement = node2.arcs[str(node1.position)]
             
             arc.merge_arc(c_arc)
             arc_complement.merge_arc(c_arc)
@@ -655,6 +671,8 @@ class IntronDecomposition:
             else:
                 raise Exception("Unknown type read: '"+str(r.get_tag('RG'))+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
             
+            print lpos,rpos,r
+            
             # Find introns etc:
             for internal_arc in self.find_cigar_arcs(r):
                 if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
@@ -673,7 +691,7 @@ class IntronDecomposition:
                                          not r.is_reverse)
                 
                 ## @todo in future
-                ##c.insert_entry(pos1,pos2,internal_arc[2],True)
+                c.insert_entry(pos1,pos2,internal_arc[2],True)
         
         # Merge arcs somehow, label nodes
         
