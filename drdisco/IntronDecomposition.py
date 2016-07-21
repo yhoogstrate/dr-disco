@@ -484,24 +484,13 @@ class Chain:
         @todo: correct for splice junctions
         """
         
-        #print
-        #print pos1
-        #if pos1.strand == STRAND_FORWARD:
-            #lookup1 = pos1._chr,pos1.pos-insert_size,pos1.pos,"<-"
-        #else:
-            #lookup1 = pos1._chr,pos1.pos,pos1.pos+insert_size,"->"
-        
-        #print
-        #print pos2 
-        #if pos2.strand == STRAND_FORWARD:
-            #lookup2 = pos2._chr,pos2.pos-insert_size,pos2.pos,"<-"
-        #else:
-            #lookup2 = pos2._chr,pos2.pos,pos2.pos+insert_size,"->"
-        
+        ## Issue: pos1 and pos2 are unstranded important, while 'both'
+        ## must be in the same orientation
         
         range1 = self.get_range(pos1,insert_size)
         range2 = self.get_range(pos2,insert_size)
         for pos_i in self.pos_to_range(pos1,range1,True):
+            print ">>",pos_i
             node_i = self.get_node_reference(pos_i)
             if node_i != None:
                 for arc in node_i.arcs.values():
@@ -512,13 +501,17 @@ class Chain:
                         yield('pos1',arc)
         
         for pos_i in self.pos_to_range(pos2,range2,True):
+            print ">>",pos_i
             node_i = self.get_node_reference(pos_i)
             if node_i != None:
                 for arc in node_i.arcs.values():
-                    if arc.target_in_range(range1):
-                        yield ('both',arc)
-                    else:
+                    if not arc.target_in_range(range1):
                         yield('pos2',arc)
+                    
+                    #if arc.target_in_range(range1):
+                    #    yield ('both',arc)
+                    #else:
+                    #    yield('pos2',arc)
     
     
     def arcs_ratio_between(self,pos1, pos2, insert_size):
@@ -642,15 +635,21 @@ class Chain:
         
         for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
             if c_arc[0] == "both":
+                ## These types of arcs fall within the same space / inst. size
+                ## they make the arcs heavier
+                print c_arc[0], c_arc[1]
                 arc_complement = node2.arcs[str(node1.position)]
                 
                 arc.merge_arc(c_arc[1])
                 arc_complement.merge_arc(c_arc[1])
                 
                 self.remove_arc(c_arc[1])
+                
+                
             else:
                 # 1 directional linked arc, e.g. splicing event?
-                pass
+                ## for each one if this type, a recursive pruning has to take place!!!
+                print c_arc[0], c_arc[1]
         
         return ratio
 
