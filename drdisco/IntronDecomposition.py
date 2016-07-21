@@ -600,17 +600,21 @@ class Chain:
             if i > 5:
                 raise Exception("Recusion depth errr")
             
+            #@todo reverse order; candidate, insert_size
             ratio = self.prune_arc(insert_size, candidate)
             candidates.append((candidate, ratio))
             
             self.remove_arc(candidate)
             
+            self.print_chain()
             
             candidate = None
             candidate = self.get_start_point()
              
             i += 1
         
+        for candidate in candidates:
+            print candidate[0]
         return candidates
     
     def prune_arc(self, insert_size, arc):
