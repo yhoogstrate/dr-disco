@@ -287,7 +287,47 @@ class Chain:
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional arc between read and sa-tag in the Chain
-        determines the type of arc by @RG tag (done by dr-disco fix-chimeric)"""
+        determines the type of arc by @RG tag (done by dr-disco fix-chimeric)
+        
+        
+        Strands of reads... magical...
+        -------------------------------
+        spanning_paired_1	71M41S		+:
+
+             [==========>
+                 [======>
+                    [===>
+
+        spanning_paired_2	71S41M		+:
+                               [=======>
+                               [=====>
+                               [===>
+
+        (silent_mate is 2nd in pair)
+
+
+
+        spanning_paired_1	95M31S		-:
+            <==========]
+              <========]
+              <========]
+               <=======]
+                <======]
+
+        spanning_paired_2	95S31M		-:
+                               <==========]
+                               <========]
+                               <========]
+                               <=======]
+                               <======]
+
+        spanning_pair is second in pair
+
+
+        This means that for:
+         - spanning_paired_1 the breakpoint is at: start + offset
+         - spanning_paired_2 the breakpoint is at: start
+        regardless of the strand (+/-)"""
         # Type:
         # 2. 'discordant_read'
         # 3. 'split_read'
@@ -312,7 +352,7 @@ class Chain:
         
         elif rg in ["spanning_paired_1","spanning_singleton_1"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 bam_parse_alignment_end(read),
+                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
                                  not read.is_reverse)
             
             pos2 = BreakPosition(parsed_SA_tag[0],
@@ -327,7 +367,7 @@ class Chain:
                                  read.is_reverse)
             
             pos2 = BreakPosition(parsed_SA_tag[0],
-                                 bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
+                                 parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,False)
@@ -527,6 +567,7 @@ class Chain:
             _str = str(node)
             if len(_str.strip()) > 0:
                 print _str
+        print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
     def get_start_point(self):
         """
