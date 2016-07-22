@@ -27,7 +27,9 @@ class Arc:
                'discordant_mates': 2,
                'spanning_singleton_1': 2, 
                'spanning_singleton_2': 2,
-               'silent_mate': 0}
+               'silent_mate': 0,
+               'cigar_splice_junction': 0
+               }
     
     def __init__(self,_origin,_target):
         if not isinstance(_target, Node) or not isinstance(_origin, Node):
@@ -36,6 +38,7 @@ class Arc:
         self._origin = _origin
         self._target = _target
         self._types = {}
+        self._arcs = []#Bypassing classical chain
     
     def merge_arc(self,arc):
         for _type in arc._types:
@@ -51,11 +54,18 @@ class Arc:
         
         self._types[_type] += 1
     
-    def get_score(self,_type):  
+    def get_count(self, _type):
+        
         if not self._types.has_key(_type):
             return 0
         else:
-            return self._types[_type]*self.scoring_table[_type]
+            return self._types[_type]
+        
+    def get_score(self,_type):  
+        if not self.scoring_table.has_key(_type):
+            raise Exception("Not implemented _type: %s", _type)
+        else:
+            return self.get_count(_type)*self.scoring_table[_type]
     
     def get_scores(self):
         """Based on this function, the start point is determined
@@ -67,7 +77,6 @@ class Arc:
         
         score = 0
 
-        
         for _type in self.scoring_table.keys():
             score += self.get_score(_type)
         
@@ -86,14 +95,22 @@ class Arc:
                  #or 
                          (self._target.position.pos >= _min) and (self._target.position.pos <= _max)
                 )
-
+    
+    def add_arc(self, arc):
+        """Adds an arc to an arc to create a separate sub network used
+        for decomposition"""
+        self._arcs.append(arc)
     
     def __str__(self):
         typestring = []
         for _t in sorted(self._types.keys()):
             typestring.append(str(_t)+":"+str(self._types[_t]))
         
-        return str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
+        out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
+        for arc in self._arcs:
+            out += "\n\t\t<->   "+str(arc)
+        
+        return out
 
 
 class Node:
@@ -661,8 +678,7 @@ class Chain:
             if i > 5:
                 raise Exception("Recusion depth errr")
             
-            #@todo reverse order; candidate, insert_size
-            ratio = self.prune_arc(insert_size, candidate)
+            ratio = self.prune_arc(candidate, insert_size)
             candidates.append((candidate, ratio))
             
             self.remove_arc(candidate)
@@ -674,11 +690,13 @@ class Chain:
              
             i += 1
         
-        #for candidate in candidates:
-        #    print candidate[0]
+        for candidate in candidates:
+            print candidate[0]
+        
         return candidates
     
-    def prune_arc(self, insert_size, arc):
+    #@todo ADD RECURSION DEPTH LIMIT
+    def prune_arc(self, arc, insert_size):
         ## @todo make somehow only 
         #if 
         node1 = arc._origin
@@ -698,7 +716,27 @@ class Chain:
                 
                 
         for c_arc in self.search_arcs_adjacent(node1.position, node2.position, insert_size):
-            print c_arc[0],c_arc[1]
+            # @todo see if we can merge by other types of Arcs too..
+            if c_arc[1].get_count('cigar_splice_junction') > 0:
+                #if c_arc[0] == 'pos1':
+                #    print "merge it with node1"
+                #elif c_arc[0] == 'pos2':
+                #    print "merge it with node2"
+                #else:
+                #    raise Exception("Unknown type: %s", c_arc[0])
+                arc_complement = node2.arcs[str(node1.position)]
+                
+                arc.add_arc(c_arc[1])
+                arc_complement.add_arc(c_arc[1])
+                
+                self.remove_arc(c_arc[1])
+                
+                self.prune_arc(c_arc[1], insert_size)
+                
+                # if recursion depth not reached:
+                # self.prune_arc(c_arc[1],isize)
+                # else:
+                # raise exception max rec. depth reached
         
         return ratio
 
