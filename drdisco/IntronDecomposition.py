@@ -450,8 +450,13 @@ class Chain:
                 for strand in sorted(element[2].keys()):
                     yield element[2][strand]
     
-    def get_range(self,pos,insert_size):
-        if pos.strand == STRAND_FORWARD:
+    def get_range(self,pos,insert_size,inverse_strand):
+        if inverse_strand:
+            comp_strand = STRAND_REVERSE
+        else:
+            comp_strand = STRAND_FORWARD
+        
+        if pos.strand == comp_strand:
             return (pos.pos,(pos.pos-insert_size)-1,-1)
         else:
             return (pos.pos,(pos.pos+insert_size)+1,1)
@@ -487,32 +492,80 @@ class Chain:
         ## Issue: pos1 and pos2 are unstranded important, while 'both'
         ## must be in the same orientation
         
-        range1 = self.get_range(pos1,insert_size)
-        range2 = self.get_range(pos2,insert_size)
+        range1 = self.get_range(pos1,insert_size,False)
+        range2 = self.get_range(pos2,insert_size,False)
         for pos_i in self.pos_to_range(pos1,range1,True):
-            print ">>",pos_i
             node_i = self.get_node_reference(pos_i)
             if node_i != None:
                 for arc in node_i.arcs.values():
-                    #@todo check if strand matters here
+                    ##@todo check if strand matters here
                     if arc.target_in_range(range2):
-                        yield ('both',arc)
-                    else:
-                        yield('pos1',arc)
-        
-        for pos_i in self.pos_to_range(pos2,range2,True):
-            print ">>",pos_i
-            node_i = self.get_node_reference(pos_i)
-            if node_i != None:
-                for arc in node_i.arcs.values():
-                    if not arc.target_in_range(range1):
-                        yield('pos2',arc)
-                    
+                        #yield ('both',arc)
+                        yield (arc)
+                    #else:
+                        #yield('pos1',arc)
+
+    
+        #for pos_i in self.pos_to_range(pos2,range2,True):
+            #node_i = self.get_node_reference(pos_i)
+            #if node_i != None:
+                #for arc in node_i.arcs.values():
+                    #if not arc.target_in_range(range1):
+                        #yield('pos2',arc)
+                     
                     #if arc.target_in_range(range1):
                     #    yield ('both',arc)
                     #else:
                     #    yield('pos2',arc)
+
+
+        
     
+    def search_arcs_adjacent(self,pos1, pos2, insert_size):
+        """Searches for reads inbetween two regions (e.g. break + ins. size)
+        
+        return types:
+         
+         - ('pos1', obj)
+         - ('pos2', obj)
+        
+        pos1 and pos2 are in either pos1 or pos2 but not in both (xor)
+         -> these are useful for cigar_ type arcs and expansion of arcs
+        with other arcs (e.g. splicing)
+        
+        those with type both are adding condince to the existing arc and
+        simply making them heavier
+        
+        @todo: correct for splice junctions
+        """
+        
+        ## Issue: pos1 and pos2 are unstranded important, while 'both'
+        ## must be in the same orientation
+        
+        i = 0
+        
+        range1 = self.get_range(pos1,insert_size,True)
+        range2 = self.get_range(pos2,insert_size,True)
+        for pos_i in self.pos_to_range(pos1,range1,False):
+            for strand in [STRAND_FORWARD, STRAND_REVERSE]:
+                pos_i.strand = strand
+                node_i = self.get_node_reference(pos_i)
+                if node_i != None:
+                    for arc in node_i.arcs.values():
+                        #@todo check if strand matters here
+                        if arc.target_in_range(range2):
+                            yield ('both',arc)
+                        else:
+                            yield('pos1',arc)
+        
+        for pos_i in self.pos_to_range(pos2,range2,True):
+            for strand in [STRAND_FORWARD, STRAND_REVERSE]:
+                pos_i.strand = strand
+                node_i = self.get_node_reference(pos_i)
+                if node_i != None:
+                    for arc in node_i.arcs.values():
+                            yield('pos2',arc)
+        
     
     def arcs_ratio_between(self,pos1, pos2, insert_size):
         """
@@ -526,8 +579,8 @@ class Chain:
         total_arcs = 0
         arcs_inbetween = 0
 
-        range1 = self.get_range(pos1,insert_size)
-        range2 = self.get_range(pos2,insert_size)
+        range1 = self.get_range(pos1,insert_size,False)
+        range2 = self.get_range(pos2,insert_size,False)
         for pos_i in self.pos_to_range(pos1,range1,False):
             node_i = self.get_node_reference(pos_i)
             if node_i != None:
@@ -547,8 +600,8 @@ class Chain:
                             raise Exception("To be implemented: %s", _type)
                     
         
-        range2 = self.get_range(pos2,insert_size)
-        range1 = self.get_range(pos1,insert_size)
+        range2 = self.get_range(pos2,insert_size,False)
+        range1 = self.get_range(pos1,insert_size,False)
         for pos_i in self.pos_to_range(pos2,range2,False):
             node_i = self.get_node_reference(pos_i)
             if node_i != None:
@@ -634,22 +687,18 @@ class Chain:
         ratio = self.arcs_ratio_between(node1.position, node2.position, insert_size)
         
         for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
-            if c_arc[0] == "both":
-                ## These types of arcs fall within the same space / inst. size
-                ## they make the arcs heavier
-                print c_arc[0], c_arc[1]
-                arc_complement = node2.arcs[str(node1.position)]
-                
-                arc.merge_arc(c_arc[1])
-                arc_complement.merge_arc(c_arc[1])
-                
-                self.remove_arc(c_arc[1])
+            ## These types of arcs fall within the same space / inst. size
+            ## they make the arcs heavier
+            arc_complement = node2.arcs[str(node1.position)]
+            
+            arc.merge_arc(c_arc)
+            arc_complement.merge_arc(c_arc)
+            
+            self.remove_arc(c_arc)
                 
                 
-            else:
-                # 1 directional linked arc, e.g. splicing event?
-                ## for each one if this type, a recursive pruning has to take place!!!
-                print c_arc[0], c_arc[1]
+        for c_arc in self.search_arcs_adjacent(node1.position, node2.position, insert_size):
+            print c_arc[0],c_arc[1]
         
         return ratio
 
@@ -729,22 +778,54 @@ class IntronDecomposition:
             else:
                 raise Exception("Unknown type read: '"+str(r.get_tag('RG'))+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
             
-            # Find introns etc:
+            """Find introns etc:
+            
+            Example 1: 
+            
+            5S10M15N10M2S
+            
+            S S S S S | | | | | | | | |---------------| | | | | | | | | S S
+            
+ soft-clip: <========]
+                                                                       [==>
+            Softclip are usually one directional, from the sequenced base until
+            the end. If it is before the first M/= flag, it's direction should
+            be '-', otherwise '+'
+ 
+splice-junc:                           <=============>
+
+
+ 
+   
+            
+            
+            """
             for internal_arc in self.find_cigar_arcs(r):
-                if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
+                #@todo return Arc object instead of tuple
+                if internal_arc[2] in ['cigar_splice_junction']:
                     pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                          internal_arc[0],
-                                         r.is_reverse)
+                                         STRAND_FORWARD)
                     pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                          internal_arc[1],
-                                         r.is_reverse)
+                                         STRAND_REVERSE)
+                elif internal_arc[2] in ['cigar_soft_clip']:
+                    if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
+                        pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                             internal_arc[0],
+                                             r.is_reverse)
+                        pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                             internal_arc[1],
+                                             r.is_reverse)
+                    else:
+                        pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                             internal_arc[0],
+                                             not r.is_reverse)
+                        pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                             internal_arc[1],
+                                             not r.is_reverse)
                 else:
-                    pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                         internal_arc[0],
-                                         not r.is_reverse)
-                    pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                         internal_arc[1],
-                                         not r.is_reverse)
+                    raise Exception("Arc type not implemented: %s", internal_arc)
                 
                 self.chain.insert_entry(pos1,pos2,internal_arc[2],True)
     
@@ -804,4 +885,3 @@ class IntronDecomposition:
                     yield (offset , (offset + chunk[1]) , tt[chunk[0]])
             
             offset += chunk[1]
-
