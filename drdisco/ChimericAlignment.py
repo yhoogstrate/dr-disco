@@ -376,16 +376,29 @@ class ChimericAlignment:
             for a in mates_updated:
                 all_reads_updated.append(a)
         
-        elif n_s >= 2:
+        elif n_s == 2:
             reads_updated,mates_updated = self.fix_chain(singletons,bam_file,[])
             
             ca = CigarAlignment(reads_updated[0].cigar,reads_updated[1].cigar)
-            if ca.get_order() == STRAND_FORWARD:
-                self.set_read_group([reads_updated[0]],'spanning_singleton_1')
-                self.set_read_group([reads_updated[1]],'spanning_singleton_2')
-            else:
+            
+            #if ca.get_order() == STRAND_FORWARD:
+            #    if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
+            #        self.set_read_group([reads_updated[0]],'spanning_singleton_1r')
+            #        self.set_read_group([reads_updated[1]],'spanning_singleton_2')
+            #    elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
+            #        self.set_read_group([reads_updated[0]],'spanning_singleton_2r')
+            #        self.set_read_group([reads_updated[1]],'spanning_singleton_1')
+            #    else:
+            #        raise Exception("Unknown strand order for singletons: %s\n%s\n", reads_updated[0], reads_updated[1])
+            #else:
+            if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
+                self.set_read_group([reads_updated[0]],'spanning_singleton_1_r')
+                self.set_read_group([reads_updated[1]],'spanning_singleton_2_r')
+            elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
                 self.set_read_group([reads_updated[0]],'spanning_singleton_2')
                 self.set_read_group([reads_updated[1]],'spanning_singleton_1')
+            else:
+                raise Exception("Unknown strand order for singletons: %s\n%s\n", reads_updated[0], reads_updated[1])
             
             self.fix_alignment_score(reads_updated)
             
@@ -446,10 +459,15 @@ class ChimericAlignment:
         sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
         header = sam_file_discordant.header
         header['RG'] = [
-            {'ID':'spanning_singleton','DS':'This read was aligned to two locations but no aligned mate'},
             {'ID':'discordant_mates','DS':'This read has discordant mate pair'},
-            {'ID':'spanning_paired','DS':'This read was aligned to two locations and also has an aligned mate'},
-            {'ID':'silent_mate','DS':'Reads of this type are not discordant while their mate is'}]
+            {'ID':'silent_mate','DS':'Reads of this type are not discordant while their mate is'},
+            {'ID':'spanning_paired_1','DS':'This read was aligned to two locations and also has an aligned mate'},
+            {'ID':'spanning_paired_2','DS':'This read was aligned to two locations and also has an aligned mate'},
+            {'ID':'spanning_singleton_1','DS':'This read was aligned to two locations but no aligned mate'},
+            {'ID':'spanning_singleton_1_r','DS':'This read was aligned to two locations but no aligned mate'},
+            {'ID':'spanning_singleton_2','DS':'This read was aligned to two locations but no aligned mate'},
+            {'ID':'spanning_singleton_2_r','DS':'This read was aligned to two locations but no aligned mate'}
+            ]
         header['PG'] = [
             {'ID':'drdisco_fix_chimeric','PN':'drdisco fix-chimeric','CL':'','VN':__version__}
         ]

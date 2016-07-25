@@ -36,6 +36,8 @@ class Arc:
         if not isinstance(_target, Node) or not isinstance(_origin, Node):
             raise Exception("_origin and _target must be a Node")
         
+        #self._strand = STRAND_UNDETERMINED
+        
         self._origin = _origin
         self._target = _target
         self._types = {}
@@ -497,24 +499,9 @@ class Chain:
     def search_arcs_between(self,pos1, pos2, insert_size):
         """Searches for reads inbetween two regions (e.g. break + ins. size)
         
-        return types:
-         - ('both', obj)
-         
-         - ('pos1', obj)
-         - ('pos2', obj)
-        
-        pos1 and pos2 are in either pos1 or pos2 but not in both (xor)
-         -> these are useful for cigar_ type arcs and expansion of arcs
-        with other arcs (e.g. splicing)
-        
-        those with type both are adding condince to the existing arc and
-        simply making them heavier
-        
-        @todo: correct for splice junctions
+        @todo: correct for splice junction width
         """
         
-        ## Issue: pos1 and pos2 are unstranded important, while 'both'
-        ## must be in the same orientation
         
         range1 = self.get_range(pos1,insert_size,False)
         range2 = self.get_range(pos2,insert_size,False)
@@ -522,12 +509,26 @@ class Chain:
             node_i = self.get_node_reference(pos_i)
             if node_i != None:
                 for arc in node_i.arcs.values():
-                    ##@todo check if strand matters here
+                    """Although I still don't understand why this happens
+                    I found about ~25% of the split reads to be in reverse
+                    strand:
+                    
+                    <========]   $ ... $   <====]
+                      <======]   $ ... $   <======]
+                        <====]   $ ... $   <========]
+                    <========]   $ ... $   <====]
+                      <======]   $ ... $   <======]
+                        <====]   $ ... $   <========]
+                        
+                       [=====>   $ ... $   [========>
+                      <======]   $ ... $   <========]
+                    
+                    but this almost only seem to happen for 'spanning_singleton_[1/2]' type reads.
+                    The most likely reason is that for spanning singletons the direction
+                    depends on whether it was the first or second mate.
+                    """
                     if arc.target_in_range(range2):
-                        #yield ('both',arc)
                         yield (arc)
-                    #else:
-                        #yield('pos1',arc)
 
     
         #for pos_i in self.pos_to_range(pos2,range2,True):
