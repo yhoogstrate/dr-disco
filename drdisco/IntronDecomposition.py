@@ -45,6 +45,18 @@ class Arc:
         self._types = {}
         self._arcs = []#Bypassing classical chain
     
+    def get_complement(self):
+        """
+        complement = self._target.arcs[str(self._origin.position)]
+        
+        if complement == self:
+            raise Exception("err")
+        
+        return complement
+        """
+
+        return self._target.arcs[str(self._origin.position)]
+    
     def merge_arc(self,arc):
         """Merges discordant_mates arcs
         """
@@ -99,6 +111,10 @@ class Arc:
             score += self.get_score(_type)
         
         return score
+    
+    def get_splice_score(self):
+        #@todo use 
+        return (self.get_count('cigar_splice_junction'),0)
     
     def target_in_range(self,_range):
         if _range[0] > _range[1]:
@@ -470,12 +486,6 @@ class Chain:
         node1 = arc._origin
         node2 = arc._target
         
-        print
-        print ">>",arc
-        print
-        print "**",node1
-        print "++",node2
-        
         node1.remove_arc(arc,"by-target")
         node2.remove_arc(arc,"by-origin")
 
@@ -713,10 +723,22 @@ class Chain:
                 maxscore = _score
                 arc = _arc
         
-        if arc != None:
-            return arc
-        else:
-            return None
+        return arc
+    
+    def get_start_splice_junc(self):
+        """Returns the chain with the higest number of counts
+        """
+        maxscore = (0,0)
+        arc = None
+        
+        for node in self:
+            for _arc in node:
+                score = (_arc.get_count('cigar_splice_junction'),_arc.get_count('cigar_soft_clip'))
+                if score[0] > maxscore[0] or (score[0] == maxscore[0] and score[1] > maxscore[1]):
+                    arc = _arc
+                    maxscore = score
+        
+        return arc
     
     def prune(self,insert_size):
         """Does some 'clever' tricks to merge arcs together and reduce data points
@@ -810,7 +832,33 @@ class Chain:
         """
         
         return ratio
-
+    
+    def merge_splice_juncs(self,uncertainty):
+        print " Merge all splice junctions that have a maximum offset of: %s"+ str(uncertainty)
+        self.print_chain()
+        
+        init = self.get_start_splice_junc()
+        init_c = init.get_complement()
+        
+        #print self.get_range()
+        
+        for node in self:
+            for junc in node:
+                if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
+                    if (junc._origin.position.pos >= init._origin.position.pos - uncertainty) and \
+                       (junc._origin.position.pos <= init._origin.position.pos + uncertainty) and \
+                       (junc._target.position.pos >= init._target.position.pos + uncertainty) and \
+                       (junc._target.position.pos >= init._target.position.pos + uncertainty):
+                        print "M: ",init,junc
+                    else:
+                        print "x",junc
+                        print junc._origin.position.pos - init._origin.position.pos , "<= 3"
+                        print junc._origin.position.pos - init._origin.position.pos , "<= 3"
+                        print junc._target.position.pos - init._target.position.pos , "<= 3"
+                        print junc._target.position.pos - init._target.position.pos , "<= 3"
+    
+    def join(self,thicker_arcs,uncertainty):
+        self.merge_splice_juncs(uncertainty)
 
 
 class IntronDecomposition:
@@ -955,7 +1003,10 @@ splice-junc:                           <=============>
         # emperical evidence showed ~230bp? look into this by picking a few examples
         #c.prune(400+126-12)
         # max obs = 418 for now
-        return self.chain.prune(450)
+        thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
+        self.chain.join(thicker_arcs,3) # Merges arcs by splice junctions and other junctions
+        
+        return thicker_arcs
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
