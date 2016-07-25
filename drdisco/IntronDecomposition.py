@@ -712,9 +712,7 @@ class Chain:
     def prune(self,insert_size):
         """Does some 'clever' tricks to merge arcs together and reduce data points
         """
-        self.print_chain()
-        import sys
-        sys.exit()
+        #self.print_chain()
         
         candidates = []
         
@@ -775,17 +773,17 @@ class Chain:
                 #else:
                 #    raise Exception("Unknown type: %s", c_arc[0])
                 
-                complement_arc = self.get_node_reference(c_arc[1]._target.position).arcs[str(c_arc[1]._origin.position)]
+                #complement_arc = self.get_node_reference(c_arc[1]._target.position).arcs[str(c_arc[1]._origin.position)]
                 
                 arc.add_arc(c_arc[1])
-                arc.add_arc(complement_arc)
+                #arc.add_arc(complement_arc)
                 
                 #arc_complement.add_arc(c_arc[1])
                 
                 self.remove_arc(c_arc[1])# Removes bi-directional
                 
                 self.prune_arc(c_arc[1], insert_size)
-                self.prune_arc(complement_arc, insert_size)
+                #self.prune_arc(complement_arc, insert_size)
                 
                 # @todo pruning needs to be done also to node2 instead
                 # of to the 2 splice junctions?
