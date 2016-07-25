@@ -23,7 +23,7 @@ class Arc:
      - Also contains different types of evidence
     """
     scoring_table={
-               'cigar_splice_junction': 1,
+               'cigar_splice_junction': 0,
                'discordant_mates': 2,
                'silent_mate': 0,
                'spanning_paired_1': 3,
@@ -51,6 +51,7 @@ class Arc:
         for _type in arc._types:
             if _type in [
                     "discordant_mates",
+                    "spanning_paired_2",
                     "spanning_singleton_1",
                     "spanning_singleton_2",
                     "spanning_singleton_1_r",
@@ -469,6 +470,12 @@ class Chain:
         node1 = arc._origin
         node2 = arc._target
         
+        print
+        print ">>",arc
+        print
+        print "**",node1
+        print "++",node2
+        
         node1.remove_arc(arc,"by-target")
         node2.remove_arc(arc,"by-origin")
 
@@ -717,7 +724,7 @@ class Chain:
         candidates = []
         candidate = self.get_start_point()
         
-        print candidate
+        #print candidate
         
         i = 1
         while candidate != None:
@@ -731,13 +738,12 @@ class Chain:
             
         #    self.print_chain()
             
-            candidate = None
             candidate = self.get_start_point()
              
             i += 1
         
         
-        self.print_chain()
+        #self.print_chain()
         
         for candidate in candidates:
             print candidate[0]
@@ -757,14 +763,20 @@ class Chain:
             ## These types of arcs fall within the same space / inst. size
             ## they make the arcs heavier
             arc_complement = node2.arcs[str(node1.position)]
+            arc.merge_arc(c_arc)
+            arc.merge_arc(arc_complement)
             
-            if arc.merge_arc(c_arc) or arc_complement.merge_arc(c_arc):
-                try:
-                    self.remove_arc(c_arc)
-                except:
-                    self.print_chain()
-                    raise Exception("Asd")
+            self.remove_arc(c_arc)
+            
+            #self.remove_arc(arc_complement)
+            #if arc.merge_arc(c_arc) or arc_complement.merge_arc(c_arc):
+            #    try:
+            #        self.remove_arc(c_arc)
+            #    except:
+            #        self.print_chain()
+            #        raise Exception("Error")
         
+        """
         for c_arc in self.search_arcs_adjacent(node1.position, node2.position, insert_size):
             # @todo see if we can merge by other types of Arcs too..
             if c_arc[1].get_count('cigar_splice_junction') > 0:
@@ -795,6 +807,7 @@ class Chain:
                 # self.prune_arc(c_arc[1],isize)
                 # else:
                 # raise exception max rec. depth reached
+        """
         
         return ratio
 
@@ -865,7 +878,9 @@ class IntronDecomposition:
                     
                     broken_mate = sa[0]
                 
-                self.chain.insert(r,broken_mate)
+                #@todo silent mates do not make pairs but are one directional
+                # in their input - has to be fixed in order to allow arc_merging
+                #self.chain.insert(r,broken_mate)
             
             elif r.get_tag('RG') in ['spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2', 'spanning_singleton_1_r', 'spanning_singleton_2_r']:
                 read = r
