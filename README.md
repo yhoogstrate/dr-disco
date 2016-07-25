@@ -7,17 +7,30 @@ Installation
 ------------
 None yet, please make sure pysam 0.9, and click are avaiable to python, e.g. using `pip install ...`. Also samtools >= 1.3 is required.
 
-Usage
------
+Usage: dr-disco fix
+-------------------
 If you have as input file `....Chimeric.out.sam`, you should run Dr. Disco as follows:
 
 ```
 samtools view -bS '....Chimeric.out.sam' > '....Chimeric.out.bam' ;
-./fix-chimeric-out-bam.py '....Chimeric.out.bam' '....Chimeric.fixed.bam'
+```
+```
+Usage: dr-disco fix [OPTIONS] OUTPUT_BAM_FILE INPUT_BAM/SAM_FILE
+
+Options:
+  -t, --temp-dir PATH  Pathin which temporary files will be stored (default:
+                       /tmp)
+  --help               Show this message and exit.
 ```
 
-If you have bam files in advance, you can proceed with:
+Usage: dr-disco intronic
+------------------------
+To estimate break points at the intronic level, you can proceed with:
 
 ```
-./fix-chimeric-out-bam.py '....Chimeric.out.bam' '....Chimeric.fixed.bam'
+Usage: dr-disco intronic [OPTIONS] OUTPUT_FILE FUSION_CANDIDATES_INPUT_FILE
+                         BAM_INPUT_FILE
+
+Options:
+  --help  Show this message and exit.
 ```
