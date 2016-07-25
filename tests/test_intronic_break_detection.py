@@ -75,11 +75,11 @@ class TestIntronicBreakDetection(unittest.TestCase):
         bps = FusionCatcher(input_file_f,"")
         for bp in bps:
             break
-            
+    
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
         candidates = ic.decompose(input_file_a)
-        self.assertEqual(str(candidates[0][0]), 'chr21:39817544/39817545(-)->chr21:42880007/42880008(+):(spanning_paired_1:5)\n\t\t<->   chr21:39817326/39817327(-)->chr21:39795483/39795484(+):(cigar_splice_junction:2)')
+        self.assertEqual(str(candidates[0][0]), 'chr21:39817544/39817545(-)->chr21:42880007/42880008(+):(spanning_paired_1:5)')
 
 
     def test_04(self):
@@ -91,7 +91,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         bps = FusionCatcher(input_file_f,"")
         for bp in bps:
             break
-            
+    
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
         candidates = ic.decompose(input_file_a)

@@ -23,13 +23,15 @@ class Arc:
      - Also contains different types of evidence
     """
     scoring_table={
-               'cigar_splice_junction': 0,
+               'cigar_splice_junction': 1,
                'discordant_mates': 2,
                'silent_mate': 0,
                'spanning_paired_1': 3,
                'spanning_paired_2': 3,
                'spanning_singleton_1': 2, 
-               'spanning_singleton_2': 2
+               'spanning_singleton_2': 2,
+               'spanning_singleton_1_r': 1,
+               'spanning_singleton_2_r': 1
                }
     
     def __init__(self,_origin,_target):
@@ -204,7 +206,8 @@ class Node:
             if arc._types.has_key('cigar_hard_clip'):
                 hc += arc._types['cigar_hard_clip']
         
-        if (a+sc+hc) > 0:
+        #if (a+sc+hc) > 0:
+        if a > 0:
             out += "\n\t-> incoming soft-clips: "+str(sc)
             out += "\n\t-> incoming hard-clips: "+str(hc)
             
@@ -400,7 +403,7 @@ class Chain:
             
             pos2 = BreakPosition(parsed_SA_tag[0],
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,False)
         
@@ -692,8 +695,7 @@ class Chain:
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
     def get_start_point(self):
-        """
-        Returns the chain with the higest number of counts
+        """Returns the chain with the higest number of counts
         """
         maxscore = 0
         arc = None
@@ -712,11 +714,11 @@ class Chain:
     def prune(self,insert_size):
         """Does some 'clever' tricks to merge arcs together and reduce data points
         """
-        #self.print_chain()
-        
         candidates = []
-        
         candidate = self.get_start_point()
+        
+        print candidate
+        
         i = 1
         while candidate != None:
             if i > 15:
@@ -782,7 +784,7 @@ class Chain:
                 
                 self.remove_arc(c_arc[1])# Removes bi-directional
                 
-                self.prune_arc(c_arc[1], insert_size)
+                #self.prune_arc(c_arc[1], insert_size)
                 #self.prune_arc(complement_arc, insert_size)
                 
                 # @todo pruning needs to be done also to node2 instead
