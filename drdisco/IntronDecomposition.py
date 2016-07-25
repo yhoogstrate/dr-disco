@@ -47,7 +47,13 @@ class Arc:
         """Merges discordant_mates arcs
         """
         for _type in arc._types:
-            if _type in ["discordant_mates"]:
+            if _type in [
+                    "discordant_mates",
+                    "spanning_singleton_1",
+                    "spanning_singleton_2",
+                    "spanning_singleton_1_r",
+                    "spanning_singleton_2_r"
+                    ]:
                 self.add_type(_type)
                 return True
             elif _type in ['silent_mate']:
@@ -386,6 +392,17 @@ class Chain:
                                  STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,False)
+
+        elif rg in ["spanning_singleton_1_r"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 read.reference_start,
+                                 not read.is_reverse)
+            
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                                 parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg,False)
         
         elif rg in ["spanning_paired_2","spanning_singleton_2"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -394,6 +411,17 @@ class Chain:
             
             pos2 = BreakPosition(parsed_SA_tag[0],
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg,False)
+        
+        elif rg in ["spanning_singleton_2_r"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                 read.is_reverse)
+            
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                                 parsed_SA_tag[1],
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,False)
@@ -598,7 +626,15 @@ class Chain:
         and returns the ratio of uniq reads that fall within this range
         """
         
-        included = ['discordant_mates', 'spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2']
+        included = [
+            'discordant_mates',
+            'spanning_paired_1',
+            'spanning_paired_2',
+            'spanning_singleton_1',
+            'spanning_singleton_2',
+            'spanning_singleton_1_r',
+            'spanning_singleton_2_r'
+            ]
         excluded = ['cigar_soft_clip', 'silent_mate', 'cigar_splice_junction']
         
         total_arcs = 0
@@ -676,7 +712,9 @@ class Chain:
     def prune(self,insert_size):
         """Does some 'clever' tricks to merge arcs together and reduce data points
         """
-        #self.print_chain()
+        self.print_chain()
+        import sys
+        sys.exit()
         
         candidates = []
         
@@ -721,7 +759,11 @@ class Chain:
             arc_complement = node2.arcs[str(node1.position)]
             
             if arc.merge_arc(c_arc) or arc_complement.merge_arc(c_arc):
-                self.remove_arc(c_arc)
+                try:
+                    self.remove_arc(c_arc)
+                except:
+                    self.print_chain()
+                    raise Exception("Asd")
         
         for c_arc in self.search_arcs_adjacent(node1.position, node2.position, insert_size):
             # @todo see if we can merge by other types of Arcs too..
@@ -825,7 +867,7 @@ class IntronDecomposition:
                 
                 self.chain.insert(r,broken_mate)
             
-            elif r.get_tag('RG') in ['spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2']:
+            elif r.get_tag('RG') in ['spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2', 'spanning_singleton_1_r', 'spanning_singleton_2_r']:
                 read = r
                 self.chain.insert(r,sa[0])
 
@@ -848,11 +890,6 @@ class IntronDecomposition:
  
 splice-junc:                           <=============>
 
-
- 
-   
-            
-            
             """
             for internal_arc in self.find_cigar_arcs(r):
                 #@todo return Arc object instead of tuple
