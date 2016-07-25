@@ -22,13 +22,14 @@ class Arc:
     """Connection between two genomic locations
      - Also contains different types of evidence
     """
-    scoring_table={'spanning_paired_1': 3,
-               'spanning_paired_2': 3,
+    scoring_table={
+               'cigar_splice_junction': 0,
                'discordant_mates': 2,
-               'spanning_singleton_1': 2, 
-               'spanning_singleton_2': 2,
                'silent_mate': 0,
-               'cigar_splice_junction': 0
+               'spanning_paired_1': 3,
+               'spanning_paired_2': 3,
+               'spanning_singleton_1': 2, 
+               'spanning_singleton_2': 2
                }
     
     def __init__(self,_origin,_target):
@@ -41,11 +42,17 @@ class Arc:
         self._arcs = []#Bypassing classical chain
     
     def merge_arc(self,arc):
+        """Merges discordant_mates arcs
+        """
         for _type in arc._types:
             if _type in ["discordant_mates"]:
                 self.add_type(_type)
+                return True
+            elif _type in ['silent_mate']:
+                continue
             else:
-                raise Exception("Not sure what to do here yet...")
+                raise Exception("Not sure what to do here with type: %s", _type)
+        return False
         
     
     def add_type(self,_type):
@@ -590,8 +597,8 @@ class Chain:
         and returns the ratio of uniq reads that fall within this range
         """
         
-        included = ['discordant_mates', 'spanning_paired_1', 'spanning_paired_2']
-        excluded = ['cigar_soft_clip','silent_mate']
+        included = ['discordant_mates', 'spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2']
+        excluded = ['cigar_soft_clip', 'silent_mate', 'cigar_splice_junction']
         
         total_arcs = 0
         arcs_inbetween = 0
@@ -675,7 +682,7 @@ class Chain:
         candidate = self.get_start_point()
         i = 1
         while candidate != None:
-            if i > 5:
+            if i > 15:
                 raise Exception("Recusion depth errr")
             
             ratio = self.prune_arc(candidate, insert_size)
@@ -712,12 +719,9 @@ class Chain:
             ## they make the arcs heavier
             arc_complement = node2.arcs[str(node1.position)]
             
-            arc.merge_arc(c_arc)
-            arc_complement.merge_arc(c_arc)
-            
-            self.remove_arc(c_arc)
-                
-                
+            if arc.merge_arc(c_arc) or arc_complement.merge_arc(c_arc):
+                self.remove_arc(c_arc)
+        
         for c_arc in self.search_arcs_adjacent(node1.position, node2.position, insert_size):
             # @todo see if we can merge by other types of Arcs too..
             if c_arc[1].get_count('cigar_splice_junction') > 0:
