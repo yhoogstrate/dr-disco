@@ -963,6 +963,13 @@ splice-junc:                           <=============>
                     pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                          internal_arc[1],
                                          STRAND_REVERSE)
+                    
+                    if str(pos1) == "chr21:39795484/39795485(+)":
+                        print str(pos1),"==","chr21:39795484/39795485(+)"
+                        print r
+                        import sys
+                        sys.exit()
+                    
                 elif internal_arc[2] in ['cigar_soft_clip']:
                     if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
                         pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
@@ -1038,6 +1045,10 @@ splice-junc:                           <=============>
             if chunk[0] in tt.keys():
                 # Small softclips occur all the time - introns and 
                 # deletions of that size shouldn't add weight anyway
+                
+                if chunk[0] in [4,5]:
+                    offset -= chunk[1]
+                
                 if chunk[1] > 3:
                     yield (offset , (offset + chunk[1]) , tt[chunk[0]])
             
