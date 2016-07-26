@@ -43,7 +43,10 @@ class Arc:
         self._origin = _origin
         self._target = _target
         self._types = {}
-        self._arcs = []#Bypassing classical chain
+        
+        #Bypassing classical chain
+        self._left_arcs = []
+        self._right_arcs = []
     
     def get_complement(self):
         """
@@ -131,20 +134,19 @@ class Arc:
                          (self._target.position.pos >= _min) and (self._target.position.pos <= _max)
                 )
     
-    def add_arc(self, arc):
-        """Adds an arc to an arc to create a separate sub network used
-        for decomposition"""
-        self._arcs.append(arc)
-    
     def __str__(self):
         typestring = []
         for _t in sorted(self._types.keys()):
             typestring.append(str(_t)+":"+str(self._types[_t]))
         
         out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
-        for arc in self._arcs:
-            out += "\n\t\t<->   "+str(arc)
         
+        for arc in self._left_arcs:
+            out += "\n\t\t<-   "+str(arc)
+        
+        for arc in self._right_arcs:
+            out += "\n\t\t->   "+str(arc)
+            
         return out
 
 
@@ -899,64 +901,46 @@ thick arcs:
                 j += 1
                 
                 if j > i:# Avoid unnecessary comparisons
-                    left_junc = (9999999, None)
-                    right_junc = (9999999, None)
+                    left_junc = (999999999, None)
+                    right_junc = (999999999, None)
                     
                     for node in self:
                         for splice_junc in node:
                             if splice_junc.get_count('cigar_splice_junction') > 0:
-                                p1 = [str(arc1[0]._origin.position), str(arc2[0]._origin.position)]
-                                p2 = [str(arc1[0]._target.position), str(arc2[0]._target.position)]
-                                
                                 dist_origin1 = abs(splice_junc._origin.position.get_dist(arc1[0]._origin.position))
                                 dist_origin2 = abs(splice_junc._target.position.get_dist(arc2[0]._origin.position))
-                                
                                 sq_dist_origin = pow(dist_origin1, 2) +pow(dist_origin2, 2)
                                 
-                                #dist_target1 = abs(arc1[0]._target.position.pos - splice_junc._origin.position.pos)
-                                #dist_target2 = abs(arc2[0]._target.position.pos - splice_junc._target.position.pos)
                                 dist_target1 = abs(splice_junc._origin.position.get_dist(arc1[0]._target.position))
                                 dist_target2 = abs(splice_junc._target.position.get_dist(arc2[0]._target.position))
-                                
-                                #print dist_target1,"::",dist_target1n
-                                #print dist_target2,"::",dist_target2n
-                                #print
-                                
                                 sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
 
-                                #@todo AND direction AND chromosome fit
-                                # -> BreakPosition.get_dist(BreakPosition)
                                 if dist_origin1 < 450 and dist_origin2 < 450 and sq_dist_origin < left_junc[0]:
-                                    print p1," in range ",splice_junc._origin.position, ",", splice_junc._target.position, ' => ',dist_origin1, "&&" , dist_origin2 ,"\tr^2:" , sq_dist_origin , " >> ", math.sqrt(sq_dist_origin)
-                                    print 
-                                    print "   ---"
-                                    print "   i:",i,"   j:",j
-                                    print "  a1", arc1[0]
-                                    print "  a2", arc2[0]
-                                    print "   s", splice_junc
-                                    print "   ---"
-                                    print
-                                    
-                                    left_junc = (sq_dist_origin, left_junc)
+                                    left_junc = (sq_dist_origin, splice_junc)
 
                                 if dist_target1 < 450 and dist_target2 < 450 and sq_dist_target < right_junc[0]:
-                                    print p2," in range ",splice_junc._origin.position, ",", splice_junc._target.position, ' => ',  dist_target1 , "&&" , dist_target2
-                                    print 
-                                    print "   ---"
-                                    print "   i:",i,"   j:",j
-                                    print "  a1", arc1[0]
-                                    print "  a2", arc2[0]
-                                    print "   s", splice_junc
-                                    print "   ---"
-                                    print
-                                    
-                                    right_junc = (sq_dist_target, left_junc)
+                                    right_junc = (sq_dist_target, splice_junc)
                     
                     if left_junc[1] != None:
-                        print "MERGE LEFT JUNC INTO ARC1/ARC2"
+                        left_junc_c = left_junc[1].get_complement()
+                        
+                        arc1[0]._left_arcs.append(left_junc[1])
+                        arc1[0]._left_arcs.append(left_junc_c)
+                        
+                        arc2[0]._left_arcs.append(left_junc[1])
+                        arc2[0]._left_arcs.append(left_junc_c)
                     
                     if right_junc[1] != None:
-                        print "MERGE RIGHT JUNC INTO ARC1/ARC2"
+                        right_junc_c = right_junc[1].get_complement()
+                        
+                        arc1[0]._right_arcs.append(right_junc[1])
+                        arc1[0]._right_arcs.append(right_junc_c)
+                        
+                        arc2[0]._right_arcs.append(right_junc[1])
+                        arc2[0]._right_arcs.append(right_junc_c)
+        
+        
+        print arc1[0]
 
 
 class IntronDecomposition:
