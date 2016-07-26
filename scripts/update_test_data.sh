@@ -82,7 +82,7 @@ target_alignment="tests/detect-intronic/test_terg_01.sub_04.filtered.fixed.bam" 
 samtools view "$target_alignment" | cut -f 1 | sort | uniq > "/tmp/readnames.txt" &&
 sed -i.bak -e ':a' -e 'N' -e '$!ba' -e 's/\n/|/g' "/tmp/readnames.txt" &&
 samtools view "$corrected_alignment" | grep -P $(cat "/tmp/readnames.txt") > "/tmp/body.sam" &&
-cat "$headerfile" "/tmp/body.sam" > "/tmp/alignment_new.sam" &&
+cat "$headerfile" "tests/detect-intronic/test_terg_01.sub_04.filtered.splice-offset.sam" "/tmp/body.sam" > "/tmp/alignment_new.sam" &&
 samtools view -bS "/tmp/alignment_new.sam" > "/tmp/alignment_new.unsorted.bam" &&
 samtools sort -o "/tmp/alignment_new.sorted.bam" "/tmp/alignment_new.unsorted.bam" &&
 rm "$target_alignment".bai &&

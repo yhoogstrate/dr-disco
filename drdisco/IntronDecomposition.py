@@ -67,7 +67,8 @@ class Arc:
                     "spanning_singleton_1",
                     "spanning_singleton_2",
                     "spanning_singleton_1_r",
-                    "spanning_singleton_2_r"
+                    "spanning_singleton_2_r",
+                    "cigar_splice_junction",
                     ]:
                 self.add_type(_type)
                 return True
@@ -834,32 +835,56 @@ class Chain:
         return ratio
     
     def merge_splice_juncs(self,uncertainty):
-        print " Merge all splice junctions that have a maximum offset of: %s"+ str(uncertainty)
         self.print_chain()
         
         init = self.get_start_splice_junc()
         init_c = init.get_complement()
         
-        #print self.get_range()
-        
         for node in self:
             for junc in node:
                 if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
-                    if (junc._origin.position.pos >= init._origin.position.pos - uncertainty) and \
-                       (junc._origin.position.pos <= init._origin.position.pos + uncertainty) and \
-                       (junc._target.position.pos >= init._target.position.pos + uncertainty) and \
-                       (junc._target.position.pos >= init._target.position.pos + uncertainty):
-                        print "M: ",init,junc
-                    else:
-                        print "x",junc
-                        print junc._origin.position.pos - init._origin.position.pos , "<= 3"
-                        print junc._origin.position.pos - init._origin.position.pos , "<= 3"
-                        print junc._target.position.pos - init._target.position.pos , "<= 3"
-                        print junc._target.position.pos - init._target.position.pos , "<= 3"
+                    d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
+                    d_target = abs(junc._target.position.pos - init._target.position.pos)
+                    if d_origin <= uncertainty and d_target <= uncertainty:
+                        init.merge_arc(junc)
+                        init_c.merge_arc(junc.get_complement())
+                        
+                        self.remove_arc(junc)
+                        
+                        self.print_chain()
     
-    def join(self,thicker_arcs,uncertainty):
-        self.merge_splice_juncs(uncertainty)
+    def join(self,thicker_arcs):
+        """thicker arcs go across the break point:
+        
+ splice juncs:
+               -------  -------                                            -----
+             ||       ||       ||        |          $ ... $       |      ||     ||
 
+thick arcs:
+                                ------------------------------------------
+                       ---------------------------------------------------
+                       ----------------------------------------------------------
+              -------------------------------------------------------------------
+        
+        
+        Thus to merge the splice juncs in between the arcs:
+        
+        for arc1 in arcs:
+            for arc2 in arcs (if arc2 != arc1):
+                for junction in splice_junctions:
+                    if dist( [arc1.start , arc2.start] , [junction.start , junction.end] ) < acceptable:
+                        insert junction into arc1 and arc2
+                    elif dist( [arc1.end , arc2.end] , [junction.start , junction.end] ) < acceptable:
+                        insert junction into arc1 and arc2
+        """
+        for arc1 in thicker_arcs:
+            # See if they're one or bi-directional
+            #print arc[0]
+            
+            #for node in self:
+            #    for splice_junction in node:
+            #        if splice_junction.get_count('cigar_splice_junction') > 0:
+            #            print arc[0] , " ?? " , splice_junction
 
 class IntronDecomposition:
     def __init__(self,break_point):
@@ -964,12 +989,6 @@ splice-junc:                           <=============>
                                          internal_arc[1],
                                          STRAND_REVERSE)
                     
-                    if str(pos1) == "chr21:39795484/39795485(+)":
-                        print str(pos1),"==","chr21:39795484/39795485(+)"
-                        print r
-                        import sys
-                        sys.exit()
-                    
                 elif internal_arc[2] in ['cigar_soft_clip']:
                     if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
                         pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
@@ -1011,7 +1030,8 @@ splice-junc:                           <=============>
         #c.prune(400+126-12)
         # max obs = 418 for now
         thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
-        self.chain.join(thicker_arcs,3) # Merges arcs by splice junctions and other junctions
+        self.chain.merge_splice_juncs(3)
+        self.chain.join(thicker_arcs) # Merges arcs by splice junctions and other junctions
         
         return thicker_arcs
 
