@@ -878,9 +878,9 @@ thick arcs:
                         insert junction into arc1 and arc2
         """
         i = -1
-        j = -1
         for arc1 in thicker_arcs:
             i += 1
+            j = -1
             for arc2 in thicker_arcs:
                 j += 1
                 
