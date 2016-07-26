@@ -145,7 +145,7 @@ class Arc:
             out += "\n\t\t<-   "+str(arc)+":: "+str(self._left_arcs[arc])
         
         for arc in self._right_arcs:
-            out += "\n\t\t->   "+str(arc)
+            out += "\n\t\t<-   "+str(arc)+":: "+str(self._right_arcs[arc])
             
         return out
 
@@ -927,8 +927,17 @@ thick arcs:
                         #arc1[0]._left_arcs.append((str(left_junc[1]),str(left_junc_c)))
                         #arc2[0]._left_arcs.append((left_junc[1],left_junc_c))
                         
-                        arc1[0]._left_arcs[str(arc2[0]._origin.position)] = "*"+str(left_junc[1])
-                        arc2[0]._left_arcs[str(arc1[0]._origin.position)] = left_junc[1]
+                        key1 = str(arc1[0])
+                        key2 = str(arc2[0])
+                        
+                        if not arc1[0]._left_arcs.has_key(key2):
+                            arc1[0]._left_arcs[key2] = []
+                        
+                        if not arc2[0]._left_arcs.has_key(key1):
+                            arc2[0]._left_arcs[key1] = []
+                        
+                        arc1[0]._left_arcs[key2].append(left_junc[1])
+                        arc2[0]._left_arcs[key1].append(left_junc[1])
                     
                     if right_junc[1] != None:
                         right_junc_c = right_junc[1].get_complement()
