@@ -298,6 +298,19 @@ class BreakPosition:
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
         else:    
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(?)"
+    
+    def get_dist(self, other_bp):
+        if not isinstance(other_bp, BreakPosition):
+            raise Exception("Wrong data type used")
+        
+        if self.strand != other_bp.strand or self._chr != other_bp._chr:
+            # chr1 has 249 000 000 bp - by replacing all digits by 9 is
+            # must be larger than any Hs chr reflecting natural distances
+            # in a way that interchromosomal breaks are 'larger' than
+            # intrachromosomal ones
+            return 999999999
+        else:
+            return other_bp.pos - self.pos
 
 
 class Chain:
@@ -894,12 +907,21 @@ thick arcs:
                             if splice_junc.get_count('cigar_splice_junction') > 0:
                                 p1 = [str(arc1[0]._origin.position), str(arc2[0]._origin.position)]
                                 p2 = [str(arc1[0]._target.position), str(arc2[0]._target.position)]
-                                dist_origin1 = abs(arc1[0]._origin.position.pos - splice_junc._origin.position.pos)
-                                dist_origin2 = abs(arc2[0]._origin.position.pos - splice_junc._target.position.pos)
+                                
+                                dist_origin1 = abs(splice_junc._origin.position.get_dist(arc1[0]._origin.position))
+                                dist_origin2 = abs(splice_junc._target.position.get_dist(arc2[0]._origin.position))
+                                
                                 sq_dist_origin = pow(dist_origin1, 2) +pow(dist_origin2, 2)
                                 
-                                dist_target1 = abs(arc1[0]._target.position.pos - splice_junc._origin.position.pos)
-                                dist_target2 = abs(arc2[0]._target.position.pos - splice_junc._target.position.pos)
+                                #dist_target1 = abs(arc1[0]._target.position.pos - splice_junc._origin.position.pos)
+                                #dist_target2 = abs(arc2[0]._target.position.pos - splice_junc._target.position.pos)
+                                dist_target1 = abs(splice_junc._origin.position.get_dist(arc1[0]._target.position))
+                                dist_target2 = abs(splice_junc._target.position.get_dist(arc2[0]._target.position))
+                                
+                                #print dist_target1,"::",dist_target1n
+                                #print dist_target2,"::",dist_target2n
+                                #print
+                                
                                 sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
 
                                 #@todo AND direction AND chromosome fit
@@ -909,9 +931,9 @@ thick arcs:
                                     print 
                                     print "   ---"
                                     print "   i:",i,"   j:",j
-                                    print "  ", arc1[0]
-                                    print "  ", arc2[0]
-                                    print "  ", splice_junc
+                                    print "  a1", arc1[0]
+                                    print "  a2", arc2[0]
+                                    print "   s", splice_junc
                                     print "   ---"
                                     print
                                     
@@ -922,9 +944,9 @@ thick arcs:
                                     print 
                                     print "   ---"
                                     print "   i:",i,"   j:",j
-                                    print "  ", arc1[0]
-                                    print "  ", arc2[0]
-                                    print "  ", splice_junc
+                                    print "  a1", arc1[0]
+                                    print "  a2", arc2[0]
+                                    print "   s", splice_junc
                                     print "   ---"
                                     print
                                     
@@ -935,14 +957,7 @@ thick arcs:
                     
                     if right_junc[1] != None:
                         print "MERGE RIGHT JUNC INTO ARC1/ARC2"
-                    
-            # See if they're one or bi-directional
-            #print arc[0]
-            
-            #for node in self:
-            #    for splice_junction in node:
-            #        if splice_junction.get_count('cigar_splice_junction') > 0:
-            #            print arc[0] , " ?? " , splice_junction
+
 
 class IntronDecomposition:
     def __init__(self,break_point):
