@@ -142,10 +142,10 @@ class Arc:
         out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
         
         for arc in self._left_arcs:
-            out += "\n\t\t<-   "+str(arc)+":: "+str(self._left_arcs[arc])
+            out += "\n\t\t<-   "+str(self._left_arcs)
         
         for arc in self._right_arcs:
-            out += "\n\t\t<-   "+str(arc)+":: "+str(self._right_arcs[arc])
+            out += "\n\t\t<-   "+str(self._right_arcs)
             
         return out
 
@@ -301,18 +301,18 @@ class BreakPosition:
         else:    
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(?)"
     
-    def get_dist(self, other_bp):
+    def get_dist(self, other_bp, strand_specific):
         if not isinstance(other_bp, BreakPosition):
             raise Exception("Wrong data type used")
         
-        if self.strand != other_bp.strand or self._chr != other_bp._chr:
+        if (not strand_specific or self.strand == other_bp.strand) and self._chr == other_bp._chr:
+            return other_bp.pos - self.pos
+        else:
             # chr1 has 249 000 000 bp - by replacing all digits by 9 is
             # must be larger than any Hs chr reflecting natural distances
             # in a way that interchromosomal breaks are 'larger' than
             # intrachromosomal ones
             return 999999999
-        else:
-            return other_bp.pos - self.pos
 
 
 class Chain:
@@ -904,31 +904,32 @@ thick arcs:
                     left_junc = (999999999, None)
                     right_junc = (999999999, None)
                     
+                    #if arc1[0] == arc2[0]:
+                    #    raise Exception("Match with itself?")
+                    
                     for node in self:
                         for splice_junc in node:
                             if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?450?
-                                dist_origin1 = abs(splice_junc._origin.position.get_dist(arc1[0]._origin.position))
-                                dist_origin2 = abs(splice_junc._target.position.get_dist(arc2[0]._origin.position))
-                                sq_dist_origin = pow(dist_origin1, 2) +pow(dist_origin2, 2)
+                                if arc1[0]._origin.position.strand == arc1[0]._origin.position.strand:
+                                    dist_origin1 = abs(splice_junc._origin.position.get_dist(arc1[0]._origin.position, False))
+                                    dist_origin2 = abs(splice_junc._target.position.get_dist(arc2[0]._origin.position, False))
+                                    sq_dist_origin = pow(dist_origin1, 2) +pow(dist_origin2, 2)
+                                    
+                                    if dist_origin1 < 450 and dist_origin2 < 450 and sq_dist_origin < left_junc[0]:
+                                        left_junc = (sq_dist_origin, splice_junc)
                                 
-                                dist_target1 = abs(splice_junc._origin.position.get_dist(arc1[0]._target.position))
-                                dist_target2 = abs(splice_junc._target.position.get_dist(arc2[0]._target.position))
-                                sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
+                                if arc1[0]._target.position.strand == arc2[0]._target.position.strand:
+                                    dist_target1 = abs(splice_junc._origin.position.get_dist(arc1[0]._target.position, False))
+                                    dist_target2 = abs(splice_junc._target.position.get_dist(arc2[0]._target.position, False))
+                                    sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
 
-                                if dist_origin1 < 450 and dist_origin2 < 450 and sq_dist_origin < left_junc[0]:
-                                    left_junc = (sq_dist_origin, splice_junc)
 
-                                if dist_target1 < 450 and dist_target2 < 450 and sq_dist_target < right_junc[0]:
-                                    right_junc = (sq_dist_target, splice_junc)
+                                    if dist_target1 < 450 and dist_target2 < 450 and sq_dist_target < right_junc[0]:
+                                        right_junc = (sq_dist_target, splice_junc)
                     
                     if left_junc[1] != None:
-                        #left_junc_c = left_junc[1].get_complement()
-                        
-                        #arc1[0]._left_arcs.append((str(left_junc[1]),str(left_junc_c)))
-                        #arc2[0]._left_arcs.append((left_junc[1],left_junc_c))
-                        
-                        key1 = str(arc1[0])
-                        key2 = str(arc2[0])
+                        key1 = arc1[0]
+                        key2 = arc2[0]
                         
                         if not arc1[0]._left_arcs.has_key(key2):
                             arc1[0]._left_arcs[key2] = []
@@ -936,8 +937,8 @@ thick arcs:
                         if not arc2[0]._left_arcs.has_key(key1):
                             arc2[0]._left_arcs[key1] = []
                         
-                        arc1[0]._left_arcs[key2].append(left_junc[1])
-                        arc2[0]._left_arcs[key1].append(left_junc[1])
+                        arc1[0]._left_arcs[key2].append(str(left_junc[1]))
+                        arc2[0]._left_arcs[key1].append(str(left_junc[1]))
                     
                     if right_junc[1] != None:
                         right_junc_c = right_junc[1].get_complement()
@@ -946,6 +947,20 @@ thick arcs:
                         arc2[0]._right_arcs.append((right_junc[1],right_junc_c))
         
         
+        """
+chr21:39846044/39846045(-)->chr21:42879876/42879877(+):(spanning_paired_1:2)
+		<-   chr21:39817544/39817545(+)->chr21:42879876/42879877(-):(spanning_paired_1:1):: ['chr21:39845975/39845976(-)->chr21:39817544/39817545(+):(cigar_splice_junction:2)']
+		<-   chr21:39817544/39817545(+)->chr21:42878371/42878372(-):(spanning_paired_1:1):: ['chr21:39845975/39845976(-)->chr21:39817544/39817545(+):(cigar_splice_junction:2)']
+
+Here the following two are considered identical:
+chr21:39846044/39846045(-)->chr21:42879876/42879877(+):(spanning_paired_1:2)
+chr21:39817544/39817545(+)->chr21:42879876/42879877(-):(spanning_paired_1:1)
+Using splice junc arc: chr21:39845975/39845976(-)->chr21:39817544/39817545(+):(cigar_splice_junction:2)
+
+However, the strands of arc1's and arc2's left pos must be identical
+ - Update BreakPos::get_dist() by having strand_aspecific
+
+        """
         for arc  in thicker_arcs:
             print arc[0]
 
