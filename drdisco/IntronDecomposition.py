@@ -877,7 +877,39 @@ thick arcs:
                     elif dist( [arc1.end , arc2.end] , [junction.start , junction.end] ) < acceptable:
                         insert junction into arc1 and arc2
         """
+        i = -1
+        j = -1
         for arc1 in thicker_arcs:
+            i += 1
+            for arc2 in thicker_arcs:
+                j += 1
+                
+                if j > i:# Avoid unnecessary comparisons
+                    for node in self:
+                        for splice_junc in node:
+                            if splice_junc.get_count('cigar_splice_junction') > 0:
+                                p1 = [str(arc1[0]._origin.position), str(arc2[0]._origin.position)]
+                                p2 = [str(arc1[0]._target.position), str(arc2[0]._target.position)]
+                                dist_origin1 = abs(arc1[0]._origin.position.pos - splice_junc._origin.position.pos)
+                                dist_origin2 = abs(arc2[0]._origin.position.pos - splice_junc._origin.position.pos)
+                                
+                                dist_target1 = abs(arc1[0]._target.position.pos - splice_junc._target.position.pos)
+                                dist_target2 = abs(arc2[0]._target.position.pos - splice_junc._target.position.pos)
+                                print p1," in range ",splice_junc._origin.position, ",", splice_junc._target.position, ' => ',dist_origin1, "&&" , dist_origin2
+                                print p2," in range ",splice_junc._origin.position, ",", splice_junc._target.position, ' => ',  dist_target1 , "&&" , dist_target2
+                                print
+                                if dist_origin1 == 0 and dist_origin2 == 0:
+                                    print "   ---"
+                                    print "   i:",i,"   j:",j
+                                    print "  ", arc1[0]
+                                    print "  ", arc2[0]
+                                    print "  ", splice_junc
+                                    print "   ---"
+                                    print
+                                
+                                #dist_start = []
+                                #dist_end = []
+                    
             # See if they're one or bi-directional
             #print arc[0]
             
