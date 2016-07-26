@@ -9,7 +9,7 @@ Tries to figure out within a discordant RNA-Seq read alignment:
 
 #http://www.samformat.info/sam-format-flag
 
-import logging,re
+import logging,re,math
 import pysam,copy
 from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
@@ -881,24 +881,32 @@ thick arcs:
         for arc1 in thicker_arcs:
             i += 1
             j = -1
+            
             for arc2 in thicker_arcs:
                 j += 1
                 
                 if j > i:# Avoid unnecessary comparisons
+                    left_junc = (9999999, None)
+                    right_junc = (9999999, None)
+                    
                     for node in self:
                         for splice_junc in node:
                             if splice_junc.get_count('cigar_splice_junction') > 0:
                                 p1 = [str(arc1[0]._origin.position), str(arc2[0]._origin.position)]
                                 p2 = [str(arc1[0]._target.position), str(arc2[0]._target.position)]
                                 dist_origin1 = abs(arc1[0]._origin.position.pos - splice_junc._origin.position.pos)
-                                dist_origin2 = abs(arc2[0]._origin.position.pos - splice_junc._origin.position.pos)
+                                dist_origin2 = abs(arc2[0]._origin.position.pos - splice_junc._target.position.pos)
+                                sq_dist_origin = pow(dist_origin1, 2) +pow(dist_origin2, 2)
                                 
-                                dist_target1 = abs(arc1[0]._target.position.pos - splice_junc._target.position.pos)
+                                dist_target1 = abs(arc1[0]._target.position.pos - splice_junc._origin.position.pos)
                                 dist_target2 = abs(arc2[0]._target.position.pos - splice_junc._target.position.pos)
-                                print p1," in range ",splice_junc._origin.position, ",", splice_junc._target.position, ' => ',dist_origin1, "&&" , dist_origin2
-                                print p2," in range ",splice_junc._origin.position, ",", splice_junc._target.position, ' => ',  dist_target1 , "&&" , dist_target2
-                                print
-                                if dist_origin1 == 0 and dist_origin2 == 0:
+                                sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
+
+                                #@todo AND direction AND chromosome fit
+                                # -> BreakPosition.get_dist(BreakPosition)
+                                if dist_origin1 < 450 and dist_origin2 < 450 and sq_dist_origin < left_junc[0]:
+                                    print p1," in range ",splice_junc._origin.position, ",", splice_junc._target.position, ' => ',dist_origin1, "&&" , dist_origin2 ,"\tr^2:" , sq_dist_origin , " >> ", math.sqrt(sq_dist_origin)
+                                    print 
                                     print "   ---"
                                     print "   i:",i,"   j:",j
                                     print "  ", arc1[0]
@@ -906,9 +914,27 @@ thick arcs:
                                     print "  ", splice_junc
                                     print "   ---"
                                     print
-                                
-                                #dist_start = []
-                                #dist_end = []
+                                    
+                                    left_junc = (sq_dist_origin, left_junc)
+
+                                if dist_target1 < 450 and dist_target2 < 450 and sq_dist_target < right_junc[0]:
+                                    print p2," in range ",splice_junc._origin.position, ",", splice_junc._target.position, ' => ',  dist_target1 , "&&" , dist_target2
+                                    print 
+                                    print "   ---"
+                                    print "   i:",i,"   j:",j
+                                    print "  ", arc1[0]
+                                    print "  ", arc2[0]
+                                    print "  ", splice_junc
+                                    print "   ---"
+                                    print
+                                    
+                                    right_junc = (sq_dist_target, left_junc)
+                    
+                    if left_junc[1] != None:
+                        print "MERGE LEFT JUNC INTO ARC1/ARC2"
+                    
+                    if right_junc[1] != None:
+                        print "MERGE RIGHT JUNC INTO ARC1/ARC2"
                     
             # See if they're one or bi-directional
             #print arc[0]
