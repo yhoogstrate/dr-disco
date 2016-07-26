@@ -1040,16 +1040,41 @@ splice-junc:                           <=============>
         }
         
         offset = read.reference_start
+        left_clipping = True
+        
         for chunk in read.cigar:
                           # D N S H
             if chunk[0] in tt.keys():
                 # Small softclips occur all the time - introns and 
                 # deletions of that size shouldn't add weight anyway
                 
-                if chunk[0] in [4,5]:
+                """
+                1S 5M means:
+                startpoint-1 , startpoint => Softclip 
+                
+                5M 2S means:
+                startpoint +5, startpoint +5+2 => softclip
+                
+                In the first case, which I call left_clipping, the junction
+                occurs before the start position and it needs to be corrected
+                for
+                
+                @todo it's still a buggy implementation because the following
+                is theoretically possible too:
+                
+                5H 10S 5M
+                
+                in that case, the first arc should be -15,-10 and the
+                second -10,0. Maybe soft- and hard clipping should
+                be merged together?
+                """
+                if chunk[0] in [4,5] and left_clipping:
                     offset -= chunk[1]
                 
                 if chunk[1] > 3:
                     yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+            
+            if chunk[0] not in [4,5]:
+                left_clipping = False
             
             offset += chunk[1]
