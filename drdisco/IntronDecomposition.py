@@ -45,8 +45,8 @@ class Arc:
         self._types = {}
         
         #Bypassing classical chain
-        self._left_arcs = []
-        self._right_arcs = []
+        self._left_arcs = {}
+        self._right_arcs = {}
     
     def get_complement(self):
         """
@@ -142,7 +142,7 @@ class Arc:
         out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
         
         for arc in self._left_arcs:
-            out += "\n\t\t<-   "+str(arc)
+            out += "\n\t\t<-   "+str(arc)+":: "+str(self._left_arcs[arc])
         
         for arc in self._right_arcs:
             out += "\n\t\t->   "+str(arc)
@@ -906,7 +906,7 @@ thick arcs:
                     
                     for node in self:
                         for splice_junc in node:
-                            if splice_junc.get_count('cigar_splice_junction') > 0:
+                            if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?450?
                                 dist_origin1 = abs(splice_junc._origin.position.get_dist(arc1[0]._origin.position))
                                 dist_origin2 = abs(splice_junc._target.position.get_dist(arc2[0]._origin.position))
                                 sq_dist_origin = pow(dist_origin1, 2) +pow(dist_origin2, 2)
@@ -922,25 +922,23 @@ thick arcs:
                                     right_junc = (sq_dist_target, splice_junc)
                     
                     if left_junc[1] != None:
-                        left_junc_c = left_junc[1].get_complement()
+                        #left_junc_c = left_junc[1].get_complement()
                         
-                        arc1[0]._left_arcs.append(left_junc[1])
-                        arc1[0]._left_arcs.append(left_junc_c)
+                        #arc1[0]._left_arcs.append((str(left_junc[1]),str(left_junc_c)))
+                        #arc2[0]._left_arcs.append((left_junc[1],left_junc_c))
                         
-                        arc2[0]._left_arcs.append(left_junc[1])
-                        arc2[0]._left_arcs.append(left_junc_c)
+                        arc1[0]._left_arcs[str(arc2[0]._origin.position)] = "*"+str(left_junc[1])
+                        arc2[0]._left_arcs[str(arc1[0]._origin.position)] = left_junc[1]
                     
                     if right_junc[1] != None:
                         right_junc_c = right_junc[1].get_complement()
                         
-                        arc1[0]._right_arcs.append(right_junc[1])
-                        arc1[0]._right_arcs.append(right_junc_c)
-                        
-                        arc2[0]._right_arcs.append(right_junc[1])
-                        arc2[0]._right_arcs.append(right_junc_c)
+                        arc1[0]._right_arcs.append((right_junc[1],right_junc_c))
+                        arc2[0]._right_arcs.append((right_junc[1],right_junc_c))
         
         
-        print arc1[0]
+        for arc  in thicker_arcs:
+            print arc[0]
 
 
 class IntronDecomposition:
