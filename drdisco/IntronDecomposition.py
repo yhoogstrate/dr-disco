@@ -153,6 +153,20 @@ class Node:
         self.arcs = {}
         self.splice_arcs = {}
     
+    def rfind_connected_sjuncs(self,left_nodes):
+        """Recursively finds all nodes that are connected by splice junctions"""
+        results = set([])
+        for node in self.splice_arcs.keys():
+            if node not in left_nodes:
+                results.add(node)
+        
+        results_all = set(results).union(left_nodes)
+        for node in results:
+            for child in node.rfind_connected_sjuncs(set(results).union(left_nodes)):
+                results_all.add(child)
+        
+        return results_all
+    
     def insert_arc(self,arc,arc_type):
         skey = str(arc._target.position)
         
@@ -915,8 +929,8 @@ thick arcs:
                                         left_junc = (sq_dist_origin, splice_junc)
                         
                         if left_junc[1] != None:
-                            node1.splice_arcs[str(node2.position)] = left_junc
-                            node2.splice_arcs[str(node1.position)] = left_junc
+                            node1.splice_arcs[node2] = left_junc
+                            node2.splice_arcs[node1] = left_junc
                             
                             #added_splice_junctions.add(left_junc[1])
 
@@ -943,21 +957,29 @@ thick arcs:
                                         right_junc = (sq_dist_target, splice_junc)
                         
                         if right_junc[1] != None:
-                            node1.splice_arcs[str(node2.position)] = right_junc
-                            node2.splice_arcs[str(node1.position)] = right_junc
+                            node1.splice_arcs[node2] = right_junc
+                            node2.splice_arcs[node1] = right_junc
                             
                             #added_splice_junctions.add(right_junc[1])
         
-        for arc in thicker_arcs:
-            print arc[0]
-        
-        # Pull largest scoring network down
-        
-        return True
+        return thicker_arcs
     
-    def join(self,thicker_arcs, insert_size):
-        self.rejoin_splice_juncs(thicker_arcs, insert_size)
-        return False
+    def extract_subnetworks(self,thicker_arcs):
+        """Make sure this does not suffer from endless recursion
+        """
+        subnetworks = []
+        
+        
+        start_point = thicker_arcs[0][0]
+        
+        left_nodes = set([start_point._origin])
+        right_nodes = set([start_point._target])
+        
+        print start_point
+        start_point._origin.rfind_connected_sjuncs(left_nodes)
+        
+        
+        return subnetworks
 
 
 class IntronDecomposition:
@@ -1105,7 +1127,8 @@ splice-junc:                           <=============>
         # max obs = 418 for now
         thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
         self.chain.merge_splice_juncs(3)
-        self.chain.join(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
+        thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
+        subnets = self.chain.extract_subnetworks(thicker_arcs)
         
         return thicker_arcs
 

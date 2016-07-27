@@ -37,8 +37,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
         bps = FusionCatcher(input_file_f,"")
-        for bp in bps:
-            break
+        bps_i = bps.__iter__()
+        bp = bps_i.next()
         
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
@@ -55,8 +55,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
         bps = FusionCatcher(input_file_f,"")
-        for bp in bps:
-            break
+        bps_i = bps.__iter__()
+        bp = bps_i.next()
         
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
@@ -73,9 +73,9 @@ class TestIntronicBreakDetection(unittest.TestCase):
         input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
         bps = FusionCatcher(input_file_f,"")
-        for bp in bps:
-            break
-    
+        bps_i = bps.__iter__()
+        bp = bps_i.next()
+        
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
         candidates = ic.decompose(input_file_a)
@@ -89,9 +89,9 @@ class TestIntronicBreakDetection(unittest.TestCase):
         input_file_f =    "tests/detect-intronic/test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         
         bps = FusionCatcher(input_file_f,"")
-        for bp in bps:
-            break
-    
+        bps_i = bps.__iter__()
+        bp = bps_i.next()
+        
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
         candidates = ic.decompose(input_file_a)
