@@ -169,9 +169,12 @@ class Node:
         skey = str(arc._target.position)
         
         if not self.arcs.has_key(skey):
-            self.arcs[skey] = arc
+            self.set_arc(arc)
         
         self.arcs[skey].add_type(arc_type)
+    
+    def set_arc(self, arc):
+        self.arcs[str(arc._target.position)] = arc
     
     def get_top_arc(self):
         maxscore = -1
@@ -188,9 +191,9 @@ class Node:
         else:
             return (None, None, None, None)
     
-    def add_arc(self,node2,arc_type,do_vice_versa):
+    def new_arc(self,node2,arc_type,do_vice_versa):
         if do_vice_versa:
-            node2.add_arc(self,arc_type,False)
+            node2.new_arc(self,arc_type,False)
         
         arc = Arc(self,node2)
         self.insert_arc(arc,arc_type)
@@ -359,7 +362,7 @@ class Chain:
         node1 = self.get_node_reference(pos1)
         node2 = self.get_node_reference(pos2)
         
-        node1.add_arc(node2,_type,do_vice_versa)
+        node1.new_arc(node2,_type,do_vice_versa)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional arc between read and sa-tag in the Chain
@@ -505,6 +508,20 @@ class Chain:
         
         else:
             raise Exception("Fatal Error, RG: "+rg)
+    
+    def reinsert_arcs(self, arcs):
+        """Only works for Arcs of which the _origin and _target Node
+        still exists
+        """
+        for arc_t in arcs:
+            arc   = arc_t[0]
+            arc_c = arc_t[2]
+            
+            node1 = arc._origin
+            node2 = arc._target
+            
+            node1.set_arc(arc)
+            node2.set_arc(arc_c)
     
     def remove_arc(self, arc):
         node1 = arc._origin
@@ -730,7 +747,7 @@ class Chain:
                 raise Exception("Recusion depth errr")
             
             ratio = self.prune_arc(candidate, insert_size)
-            candidates.append((candidate, ratio))
+            candidates.append((candidate, ratio, candidate.get_complement()))
             
             self.remove_arc(candidate)
             
@@ -744,7 +761,7 @@ class Chain:
         #self.print_chain()
         
         for candidate in candidates:
-            print candidate[0]
+            print candidate
         
         return candidates
     
@@ -787,10 +804,10 @@ class Chain:
                 
                 #complement_arc = self.get_node_reference(c_arc[1]._target.position).arcs[str(c_arc[1]._origin.position)]
                 
-                arc.add_arc(c_arc[1])
-                #arc.add_arc(complement_arc)
+                arc.new_arc(c_arc[1])
+                #arc.new_arc(complement_arc)
                 
-                #arc_complement.add_arc(c_arc[1])
+                #arc_complement.new_arc(c_arc[1])
                 
                 self.remove_arc(c_arc[1])# Removes bi-directional
                 
@@ -925,13 +942,25 @@ thick arcs:
         left_nodes = set([start_point._origin])
         right_nodes = set([start_point._target])
         
+        ## The original nodes have been emptied, so the most important
+        ## arc's are now separated.
+        
+        ## Let's add Node.insert() inserting Arcs directly
+        
         print start_point
+        print start_point._origin , [start_point._origin]
         print "**",start_point._origin.rfind_connected_sjuncs(left_nodes)
         print "**",start_point._target.rfind_connected_sjuncs(right_nodes)
         
         # All arcs between any of the left and right nodes are valid arcs and have to be extracted
         
+        left_arcs = set([])
+        right_arcs = set([])
         
+        for left_node in left_nodes:
+            print left_node,":"
+            #for arc in left_node:
+            #    print " - ",[arc],arc
         
         return subnetworks
 
@@ -1082,7 +1111,8 @@ splice-junc:                           <=============>
         thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
         self.chain.merge_splice_juncs(3)
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
-        subnets = self.chain.extract_subnetworks(thicker_arcs)
+        #self.chain.reinsert_arcs(thicker_arcs)
+        #subnets = self.chain.extract_subnetworks(thicker_arcs)
         
         return thicker_arcs
 
