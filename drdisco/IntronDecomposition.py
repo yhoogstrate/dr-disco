@@ -43,10 +43,6 @@ class Arc:
         self._origin = _origin
         self._target = _target
         self._types = {}
-        
-        #Bypassing classical chain
-        self._left_arcs = {}
-        self._right_arcs = {}
     
     def get_complement(self):
         """
@@ -141,12 +137,11 @@ class Arc:
         
         out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
         
-        for arc in self._left_arcs:
-            out += "\n\t\t<-   "+str(self._left_arcs)
+        spacer = " "*len(str(self._origin.position))
         
-        for arc in self._right_arcs:
-            out += "\n\t\t<-   "+str(self._right_arcs)
-            
+        for _k in self._origin.splice_arcs.keys():
+            out += "\n"+spacer+"=>"+str(_k)+",score:"+str(self._origin.splice_arcs[_k][1].get_splice_score())
+        
         return out
 
 
@@ -156,6 +151,7 @@ class Node:
     def __init__(self,position):
         self.position = position
         self.arcs = {}
+        self.splice_arcs = {}
     
     def insert_arc(self,arc,arc_type):
         skey = str(arc._target.position)
@@ -869,73 +865,6 @@ class Chain:
                         self.print_chain()
     
     def rejoin_splice_juncs(self, thicker_arcs, insert_size):
-        ## 01 collect all left and right nodes
-        
-        left_nodes = set([])
-        right_nodes = set([])
-        
-        for arc in thicker_arcs:
-            left_nodes.add(arc[0]._origin)
-            right_nodes.add(arc[0]._target)
-        
-        print left_nodes
-        print right_nodes
-        
-        ## 02 look for all left nodes if there is any set (i < j) where
-        ## i and j span a splice junction
-        i = -1
-        for node1 in left_nodes:
-            i += 1
-            j = -1
-            
-            for node2 in left_nodes:
-                j += 1
-                
-                if j > i:# Avoid unnecessary comparisons
-                    print "l:",node1.position,"*",node2.position
-                    if node1.position.strand == node2.position.strand:
-                        print ">> ?"
-                        left_junc = (999999999, None)
-                        
-                        for node in self:
-                            for splice_junc in node:
-                                if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
-                                    dist_origin1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
-                                    dist_origin2 = abs(splice_junc._target.position.get_dist(node2.position, False))
-                                    sq_dist_origin = pow(dist_origin1, 2) +pow(dist_origin2, 2)
-                                    
-                                    if dist_origin1 < insert_size and dist_origin2 < insert_size and sq_dist_origin < left_junc[0]:
-                                        left_junc = (sq_dist_origin, splice_junc)
-                    
-                        print ">>",left_junc
-
-        i = -1
-        for node1 in right_nodes:
-            i += 1
-            j = -1
-            
-            for node2 in right_nodes:
-                j += 1
-                
-                if j > i:# Avoid unnecessary comparisons
-                    print "r:",node1.position,"*",node2.position
-                    if node1.position.strand == node2.position.strand:
-                        print ">> ?"
-                        right_junc = (999999999, None)
-                        
-                        for node in self:
-                            for splice_junc in node:
-                                if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
-                                    dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
-                                    dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
-                                    sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
-
-                                    if dist_target1 < insert_size and dist_target2 < insert_size and sq_dist_target < right_junc[0]:
-                                        right_junc = (sq_dist_target, splice_junc)
-                    
-                        print ">>",right_junc
-    
-    def join(self,thicker_arcs, insert_size):
         """thicker arcs go across the break point:
         
  splice juncs:
@@ -948,91 +877,87 @@ thick arcs:
                        ----------------------------------------------------------
               -------------------------------------------------------------------
         
-        
-        Thus to merge the splice juncs in between the arcs:
-        
-        for arc1 in arcs:
-            for arc2 in arcs (if arc2 != arc1):
-                for junction in splice_junctions:
-                    if dist( [arc1.start , arc2.start] , [junction.start , junction.end] ) < acceptable:
-                        insert junction into arc1 and arc2
-                    elif dist( [arc1.end , arc2.end] , [junction.start , junction.end] ) < acceptable:
-                        insert junction into arc1 and arc2
+        the goal is to add the splice juncs between the nodes
         """
-        self.rejoin_splice_juncs(thicker_arcs, insert_size)
-        return False
+        ## 01 collect all left and right nodes
         
+        #added_splice_junctions = set([])
+        
+        left_nodes = set([])
+        right_nodes = set([])
+        
+        for arc in thicker_arcs:
+            left_nodes.add(arc[0]._origin)
+            right_nodes.add(arc[0]._target)
+        
+        ## 02 look for all left nodes if there is any set (i < j) where
+        ## i and j span a splice junction
         i = -1
-        for arc1 in thicker_arcs:
+        for node1 in left_nodes:
             i += 1
             j = -1
             
-            for arc2 in thicker_arcs:
+            for node2 in left_nodes:
                 j += 1
                 
                 if j > i:# Avoid unnecessary comparisons
-                    left_junc = (999999999, None)
-                    right_junc = (999999999, None)
-                    
-                    #if arc1[0] == arc2[0]:
-                    #    raise Exception("Match with itself?")
-                    
-                    for node in self:
-                        for splice_junc in node:
-                            if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
-                                if arc1[0]._origin.position.strand == arc1[0]._origin.position.strand:
-                                    dist_origin1 = abs(splice_junc._origin.position.get_dist(arc1[0]._origin.position, False))
-                                    dist_origin2 = abs(splice_junc._target.position.get_dist(arc2[0]._origin.position, False))
+                    if node1.position.strand == node2.position.strand:
+                        left_junc = (999999999, None)
+                        
+                        for node in self:
+                            for splice_junc in node:
+                                if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
+                                    dist_origin1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
+                                    dist_origin2 = abs(splice_junc._target.position.get_dist(node2.position, False))
                                     sq_dist_origin = pow(dist_origin1, 2) +pow(dist_origin2, 2)
                                     
                                     if dist_origin1 < insert_size and dist_origin2 < insert_size and sq_dist_origin < left_junc[0]:
                                         left_junc = (sq_dist_origin, splice_junc)
-                                
-                                if arc1[0]._target.position.strand == arc2[0]._target.position.strand:
-                                    dist_target1 = abs(splice_junc._origin.position.get_dist(arc1[0]._target.position, False))
-                                    dist_target2 = abs(splice_junc._target.position.get_dist(arc2[0]._target.position, False))
-                                    sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
+                        
+                        if left_junc[1] != None:
+                            node1.splice_arcs[str(node2.position)] = left_junc
+                            node2.splice_arcs[str(node1.position)] = left_junc
+                            
+                            #added_splice_junctions.add(left_junc[1])
 
+        i = -1
+        for node1 in right_nodes:
+            i += 1
+            j = -1
+            
+            for node2 in right_nodes:
+                j += 1
+                
+                if j > i:# Avoid unnecessary comparisons
+                    if node1.position.strand == node2.position.strand:
+                        right_junc = (999999999, None)
+                        
+                        for node in self:
+                            for splice_junc in node:
+                                if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
+                                    dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
+                                    dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
+                                    sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
 
                                     if dist_target1 < insert_size and dist_target2 < insert_size and sq_dist_target < right_junc[0]:
                                         right_junc = (sq_dist_target, splice_junc)
-                    
-                    if left_junc[1] != None:
-                        key1 = arc1[0]
-                        key2 = arc2[0]
                         
-                        if not arc1[0]._left_arcs.has_key(key2):
-                            arc1[0]._left_arcs[key2] = []
-                        
-                        if not arc2[0]._left_arcs.has_key(key1):
-                            arc2[0]._left_arcs[key1] = []
-                        
-                        arc1[0]._left_arcs[key2].append(str(left_junc[1]))
-                        arc2[0]._left_arcs[key1].append(str(left_junc[1]))
-                    
-                    if right_junc[1] != None:
-                        right_junc_c = right_junc[1].get_complement()
-                        
-                        arc1[0]._right_arcs.append((right_junc[1],right_junc_c))
-                        arc2[0]._right_arcs.append((right_junc[1],right_junc_c))
+                        if right_junc[1] != None:
+                            node1.splice_arcs[str(node2.position)] = right_junc
+                            node2.splice_arcs[str(node1.position)] = right_junc
+                            
+                            #added_splice_junctions.add(right_junc[1])
         
-        
-        """
-chr21:39846044/39846045(-)->chr21:42879876/42879877(+):(spanning_paired_1:2)
-		<-   chr21:39817544/39817545(+)->chr21:42879876/42879877(-):(spanning_paired_1:1):: ['chr21:39845975/39845976(-)->chr21:39817544/39817545(+):(cigar_splice_junction:2)']
-		<-   chr21:39817544/39817545(+)->chr21:42878371/42878372(-):(spanning_paired_1:1):: ['chr21:39845975/39845976(-)->chr21:39817544/39817545(+):(cigar_splice_junction:2)']
-
-Here the following two are considered identical:
-chr21:39846044/39846045(-)->chr21:42879876/42879877(+):(spanning_paired_1:2)
-chr21:39817544/39817545(+)->chr21:42879876/42879877(-):(spanning_paired_1:1)
-Using splice junc arc: chr21:39845975/39845976(-)->chr21:39817544/39817545(+):(cigar_splice_junction:2)
-
-However, the strands of arc1's and arc2's left pos must be identical
- - Update BreakPos::get_dist() by having strand_aspecific
-
-        """
-        for arc  in thicker_arcs:
+        for arc in thicker_arcs:
             print arc[0]
+        
+        # Pull largest scoring network down
+        
+        return True
+    
+    def join(self,thicker_arcs, insert_size):
+        self.rejoin_splice_juncs(thicker_arcs, insert_size)
+        return False
 
 
 class IntronDecomposition:
