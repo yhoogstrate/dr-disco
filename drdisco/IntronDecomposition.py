@@ -71,9 +71,7 @@ class Arc:
                     ]:
                 self.add_type(_type)
                 return True
-            elif _type in ['silent_mate']:
-                continue
-            else:
+            elif _type not in ['silent_mate']:
                 raise Exception("Not sure what to do here with type: %s", _type)
         return False
         
@@ -617,54 +615,6 @@ class Chain:
                     #else:
                     #    yield('pos2',arc)
 
-
-        
-    
-    def search_arcs_adjacent(self,pos1, pos2, insert_size):
-        """Searches for reads inbetween two regions (e.g. break + ins. size)
-        
-        return types:
-         
-         - ('pos1', obj)
-         - ('pos2', obj)
-        
-        pos1 and pos2 are in either pos1 or pos2 but not in both (xor)
-         -> these are useful for cigar_ type arcs and expansion of arcs
-        with other arcs (e.g. splicing)
-        
-        those with type both are adding condince to the existing arc and
-        simply making them heavier
-        
-        @todo: correct for splice junctions
-        """
-        
-        ## Issue: pos1 and pos2 are unstranded important, while 'both'
-        ## must be in the same orientation
-        
-        i = 0
-        
-        range1 = self.get_range(pos1,insert_size,True)
-        range2 = self.get_range(pos2,insert_size,True)
-        for pos_i in self.pos_to_range(pos1,range1,False):
-            for strand in [STRAND_FORWARD, STRAND_REVERSE]:
-                pos_i.strand = strand
-                node_i = self.get_node_reference(pos_i)
-                if node_i != None:
-                    for arc in node_i.arcs.values():
-                        #@todo check if strand matters here
-                        if arc.target_in_range(range2):
-                            yield ('both',arc)
-                        else:
-                            yield('pos1',arc)
-        
-        for pos_i in self.pos_to_range(pos2,range2,True):
-            for strand in [STRAND_FORWARD, STRAND_REVERSE]:
-                pos_i.strand = strand
-                node_i = self.get_node_reference(pos_i)
-                if node_i != None:
-                    for arc in node_i.arcs.values():
-                            yield('pos2',arc)
-        
     
     def arcs_ratio_between(self,pos1, pos2, insert_size):
         """
@@ -976,7 +926,11 @@ thick arcs:
         right_nodes = set([start_point._target])
         
         print start_point
-        start_point._origin.rfind_connected_sjuncs(left_nodes)
+        print "**",start_point._origin.rfind_connected_sjuncs(left_nodes)
+        print "**",start_point._target.rfind_connected_sjuncs(right_nodes)
+        
+        # All arcs between any of the left and right nodes are valid arcs and have to be extracted
+        
         
         
         return subnetworks
