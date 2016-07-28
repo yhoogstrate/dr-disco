@@ -76,6 +76,9 @@ class Arc:
         
     
     def add_type(self,_type):
+        if _type in ["cigar_soft_clip", 'cigar_hard_clip']:
+            raise Exception("Clips shouldn't be added as arcs, but as properties of Nodes")
+        
         if not self._types.has_key(_type):
             self._types[_type] = 0
         
@@ -111,7 +114,10 @@ class Arc:
     
     def get_splice_score(self):
         #@todo use soft/hardclips or the nodes
-        return (self.get_count('cigar_splice_junction'),0)
+        return (self.get_count('cigar_splice_junction'),self.get_clips())
+    
+    def get_clips(self):
+        return self._origin.clips + self._target.clips
     
     def target_in_range(self,_range):
         if _range[0] > _range[1]:
@@ -147,6 +153,7 @@ class Node:
     
     def __init__(self,position):
         self.position = position
+        self.clips = 0
         self.arcs = {}
         self.splice_arcs = {}
     
@@ -169,6 +176,9 @@ class Node:
                     results_all.append(child)
         
         return results_all
+    
+    def add_clip(self):
+        self.clips += 1
     
     def insert_arc(self,arc,arc_type):
         skey = str(arc._target.position)
@@ -225,9 +235,6 @@ class Node:
         out  = str(self.position)
         
         a = 0
-        sc = 0
-        hc = 0
-        
         for sarc in self.arcs:
             arc = self.arcs[sarc]
             filtered_arcs = {x:arc._types[x] for x in sorted(arc._types.keys()) if x not in ['cigar_soft_clip','cigar_hard_clip']}
@@ -235,17 +242,10 @@ class Node:
             a += len_arcs
             if len_arcs > 0:
                 out += "\n\t-> "+str(arc._target.position)+" "+str(filtered_arcs)
-            
-            if arc._types.has_key('cigar_soft_clip'):
-                sc += arc._types['cigar_soft_clip']
 
-            if arc._types.has_key('cigar_hard_clip'):
-                hc += arc._types['cigar_hard_clip']
         
-        #if (a+sc+hc) > 0:
         if a > 0:
-            out += "\n\t-> incoming soft-clips: "+str(sc)
-            out += "\n\t-> incoming hard-clips: "+str(hc)
+            out += "\n\t-> soft/hard clips: "+str(self.clips)
             
             return out+"\n"
         else:
@@ -1088,35 +1088,47 @@ class IntronDecomposition:
 splice-junc:                           <=============>
 
             """
-            for internal_arc in self.find_cigar_arcs(r):
-                #@todo return Arc object instead of tuple
-                if internal_arc[2] in ['cigar_splice_junction']:
-                    pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                         internal_arc[0],
-                                         STRAND_FORWARD)
-                    pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                         internal_arc[1],
-                                         STRAND_REVERSE)
-                    
-                elif internal_arc[2] in ['cigar_soft_clip']:
-                    if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
+            if r.get_tag('RG') != 'silent_mate':
+                for internal_arc in self.find_cigar_arcs(r):
+                    #@todo return Arc object instead of tuple
+                    if internal_arc[2] in ['cigar_splice_junction']:
                         pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                              internal_arc[0],
-                                             r.is_reverse)
+                                             STRAND_FORWARD)
                         pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                              internal_arc[1],
-                                             r.is_reverse)
+                                             STRAND_REVERSE)
+                        
+                    elif internal_arc[2] in ['cigar_soft_clip']:
+                        if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
+                            pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                                 internal_arc[0],
+                                                 r.is_reverse)
+                            pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                                 internal_arc[1],
+                                                 r.is_reverse)
+                        else:
+                            pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                                 internal_arc[0],
+                                                 not r.is_reverse)
+                            pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                                 internal_arc[1],
+                                                 not r.is_reverse)
                     else:
-                        pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                             internal_arc[0],
-                                             not r.is_reverse)
-                        pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                             internal_arc[1],
-                                             not r.is_reverse)
-                else:
-                    raise Exception("Arc type not implemented: %s", internal_arc)
-                
-                self.chain.insert_entry(pos1,pos2,internal_arc[2],True)
+                        raise Exception("Arc type not implemented: %s", internal_arc)
+                    
+                    if internal_arc[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
+                        try:
+                            self.chain.get_node_reference(pos2).add_clip()
+                        except:
+                            # chr21:39817561
+                            print r
+                            print r.cigar
+                            print pos2
+                            import sys
+                            sys.exit()
+                    else:
+                        self.chain.insert_entry(pos1,pos2,internal_arc[2],True)
     
     def decompose(self,alignment_file):
         pysam_fh = self.test_disco_alignment(alignment_file)
@@ -1171,7 +1183,6 @@ splice-junc:                           <=============>
         }
         
         offset = read.reference_start
-        left_clipping = True
         
         for chunk in read.cigar:
                           # D N S H
@@ -1199,13 +1210,10 @@ splice-junc:                           <=============>
                 second -10,0. Maybe soft- and hard clipping should
                 be merged together?
                 """
-                if chunk[0] in [4,5] and left_clipping:
+                if chunk[0] in [4,5]:
                     offset -= chunk[1]
                 
                 if chunk[1] > 3:
                     yield (offset , (offset + chunk[1]) , tt[chunk[0]])
-            
-            if chunk[0] not in [4,5]:
-                left_clipping = False
             
             offset += chunk[1]
