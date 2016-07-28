@@ -942,31 +942,22 @@ thick arcs:
         """
         subnetworks = []
         
-        
         start_point = thicker_arcs[0][0]
         
         left_nodes = [start_point._origin]
         right_nodes = [start_point._target]
         
-        
-        print left_nodes
         ## The original nodes have been emptied, so the most important
         ## arc's are now separated.
-        
-        ## Let's add Node.insert() inserting Arcs directly
-        
         left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
         right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
         
         # All arcs between any of the left and right nodes are valid arcs and have to be extracted
-        print left_nodes
-        
         # Find all direct arcs joined by splice junctions
         for left_node in left_nodes:
             for right_node in right_nodes:
                 if left_node.arcs.has_key(str(right_node.position)):
                     print "Found arc:", (left_node.arcs[str(right_node.position)],right_node.arcs[str(left_node.position)])
-        
         
         
         ## Find all with one indirect step - these might be alternative junctions / exons
@@ -979,6 +970,20 @@ thick arcs:
                 j += 1
                 
                 if i < j:
+                    """
+                    Use some error calculation
+                    
+c = c(1000,1050)
+r2 = sqrt(sum((c - mean(c))^2)) 
+c = c(1000,1050,1100)
+r3 = sqrt(sum((c - mean(c))^2))
+c = c(1000,1050,1100,1150)
+r4 = sqrt(sum((c - mean(c))^2)) 
+c = c(1000,1050,1100,1150,1200)
+r5 = sqrt(sum((c - mean(c))^2))
+
+                    """
+                    
                     #print i,j,[left_node_i],"*",[left_node_j]
                     ## Find similar destinations
                     #print left_node_i.arcs.keys()
@@ -987,8 +992,10 @@ thick arcs:
                     arcs = [(left_node_i.arcs[mt],left_node_j.arcs[mt]) for mt in mutual_targets]
                     
                     for a in arcs:
-                        print a[0]
-                        print a[1]
+                        ## Multiply by splice junction scores!
+                        print "S:",start_point.get_scores()
+                        print a[0],a[0].get_scores()
+                        print a[1],a[1].get_scores()
                         print
                         
         
