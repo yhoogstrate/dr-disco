@@ -137,7 +137,7 @@ class Arc:
         spacer = " "*len(str(self._origin.position))
         
         for _k in self._origin.splice_arcs.keys():
-            out += "\n"+spacer+"=>"+str(_k)+",score:"+str(self._origin.splice_arcs[_k][1].get_splice_score())
+            out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_arcs[_k][1].get_splice_score())
         
         return out
 
@@ -983,8 +983,14 @@ thick arcs:
                     ## Find similar destinations
                     #print left_node_i.arcs.keys()
                     #print left_node_j.arcs.keys()
-                    mutual = set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys())
-                    print 
+                    mutual_targets = set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys())
+                    arcs = [(left_node_i.arcs[mt],left_node_j.arcs[mt]) for mt in mutual_targets]
+                    
+                    for a in arcs:
+                        print a[0]
+                        print a[1]
+                        print
+                        
         
         return subnetworks
 
