@@ -17,7 +17,6 @@ from .CigarAlignment import *
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 
 
-
 class Arc:
     """Connection between two genomic locations
      - Also contains different types of evidence
@@ -111,7 +110,7 @@ class Arc:
         return score
     
     def get_splice_score(self):
-        #@todo use 
+        #@todo use soft/hardclips or the nodes
         return (self.get_count('cigar_splice_junction'),0)
     
     def target_in_range(self,_range):
@@ -153,15 +152,21 @@ class Node:
     
     def rfind_connected_sjuncs(self,left_nodes):
         """Recursively finds all nodes that are connected by splice junctions"""
-        results = set([])
+        
+        results = []
         for node in self.splice_arcs.keys():
             if node not in left_nodes:
-                results.add(node)
+                results.append(node)
         
-        results_all = set(results).union(left_nodes)
+        results_all = [x for x in left_nodes]
+        for x in results:
+            if x not in results_all:
+                results_all.append(x)
+        
         for node in results:
-            for child in node.rfind_connected_sjuncs(set(results).union(left_nodes)):
-                results_all.add(child)
+            for child in node.rfind_connected_sjuncs(results_all):
+                if child not in results_all:
+                    results_all.append(child)
         
         return results_all
     
@@ -740,6 +745,7 @@ class Chain:
         candidate = self.get_start_point()
         
         #print candidate
+        self.print_chain()
         
         i = 1
         while candidate != None:
@@ -758,10 +764,10 @@ class Chain:
             i += 1
         
         
-        #self.print_chain()
+        self.print_chain()
         
-        for candidate in candidates:
-            print candidate
+        #for candidate in candidates:
+        #    print candidate
         
         return candidates
     
@@ -827,7 +833,7 @@ class Chain:
         return ratio
     
     def merge_splice_juncs(self,uncertainty):
-        self.print_chain()
+        #self.print_chain()
         
         init = self.get_start_splice_junc()
         init_c = init.get_complement()
@@ -843,7 +849,7 @@ class Chain:
                         
                         self.remove_arc(junc)
                         
-                        self.print_chain()
+                        #self.print_chain()
     
     def rejoin_splice_juncs(self, thicker_arcs, insert_size):
         """thicker arcs go across the break point:
@@ -939,28 +945,46 @@ thick arcs:
         
         start_point = thicker_arcs[0][0]
         
-        left_nodes = set([start_point._origin])
-        right_nodes = set([start_point._target])
+        left_nodes = [start_point._origin]
+        right_nodes = [start_point._target]
         
+        
+        print left_nodes
         ## The original nodes have been emptied, so the most important
         ## arc's are now separated.
         
         ## Let's add Node.insert() inserting Arcs directly
         
-        print start_point
-        print start_point._origin , [start_point._origin]
-        print "**",start_point._origin.rfind_connected_sjuncs(left_nodes)
-        print "**",start_point._target.rfind_connected_sjuncs(right_nodes)
+        left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
+        right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
         
         # All arcs between any of the left and right nodes are valid arcs and have to be extracted
+        print left_nodes
         
-        left_arcs = set([])
-        right_arcs = set([])
-        
+        # Find all direct arcs joined by splice junctions
         for left_node in left_nodes:
-            print left_node,":"
-            #for arc in left_node:
-            #    print " - ",[arc],arc
+            for right_node in right_nodes:
+                if left_node.arcs.has_key(str(right_node.position)):
+                    print "Found arc:", (left_node.arcs[str(right_node.position)],right_node.arcs[str(left_node.position)])
+        
+        
+        
+        ## Find all with one indirect step - these might be alternative junctions / exons
+        i = -1
+        for left_node_i in left_nodes:
+            j = -1
+            i += 1
+            
+            for left_node_j in left_nodes:
+                j += 1
+                
+                if i < j:
+                    #print i,j,[left_node_i],"*",[left_node_j]
+                    ## Find similar destinations
+                    #print left_node_i.arcs.keys()
+                    #print left_node_j.arcs.keys()
+                    mutual = set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys())
+                    print 
         
         return subnetworks
 
@@ -1111,8 +1135,8 @@ splice-junc:                           <=============>
         thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
         self.chain.merge_splice_juncs(3)
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
-        #self.chain.reinsert_arcs(thicker_arcs)
-        #subnets = self.chain.extract_subnetworks(thicker_arcs)
+        self.chain.reinsert_arcs(thicker_arcs)
+        subnets = self.chain.extract_subnetworks(thicker_arcs)
         
         return thicker_arcs
 
