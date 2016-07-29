@@ -329,7 +329,13 @@ class BreakPosition:
             # in a way that interchromosomal breaks are 'larger' than
             # intrachromosomal ones
             return 999999999
-
+    
+    def get_rmse(self, pos_vec):
+        err = 0
+        for node in pos_vec:
+            pos = node.position
+            err += pow(self.get_dist(pos, True) , 2)
+        return math.sqrt(err)
 
 class Chain:
     def __init__(self,pysam_fh):
@@ -349,6 +355,9 @@ class Chain:
             list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand] = Node(pos)
     
     def get_node_reference(self,pos):
+        if not isinstance(pos, BreakPosition):
+            raise Exception("Wrong data type used")
+        
         try:
             return list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand]
         except:
@@ -988,15 +997,23 @@ r5 = sqrt(sum((c - mean(c))^2))
                     ## Find similar destinations
                     #print left_node_i.arcs.keys()
                     #print left_node_j.arcs.keys()
-                    mutual_targets = set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys())
-                    arcs = [(left_node_i.arcs[mt],left_node_j.arcs[mt]) for mt in mutual_targets]
+                    mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
+                    mutual_targets = [left_node_i.arcs[mt]._target.position for mt in mutual_targets]
+                    print mutual_targets
                     
-                    for a in arcs:
-                        ## Multiply by splice junction scores!
-                        print "S:",start_point.get_scores()
-                        print a[0],a[0].get_scores()
-                        print a[1],a[1].get_scores()
-                        print
+                    for mt in mutual_targets:
+                        print mt
+                        print mt.get_rmse(right_nodes)
+                        a = left_node_i.arcs[str(mt)]
+                        b = left_node_j.arcs[str(mt)]
+                        print a,a.get_scores()
+                        print b,b.get_scores()
+                        #for a in arcs:
+                        #    ## Multiply by splice junction scores!
+                        #    print "S:",start_point.get_scores()
+                        #    print a[0],a[0].get_scores()
+                        #    print a[1],a[1].get_scores()
+                        #    print
                         
         
         return subnetworks
@@ -1129,11 +1146,7 @@ splice-junc:                           <=============>
                             self.chain.get_node_reference(pos2).add_clip()
                         except:
                             # chr21:39817561
-                            print r
-                            print r.cigar
-                            print pos2
-                            import sys
-                            sys.exit()
+                            raise Exception("Node was not found, cigar correctly parsed?")
                     else:
                         self.chain.insert_entry(pos1,pos2,internal_arc[2],True)
     
