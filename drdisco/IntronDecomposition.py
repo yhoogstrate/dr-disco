@@ -1006,8 +1006,24 @@ r5 = sqrt(sum((c - mean(c))^2))
                         print mt.get_rmse(right_nodes)
                         a = left_node_i.arcs[str(mt)]
                         b = left_node_j.arcs[str(mt)]
-                        print a,a.get_scores()
-                        print b,b.get_scores()
+                        sa = a.get_scores()
+                        sb = b.get_scores()
+                        score = sa*sb
+                        
+                        # Average gene size = 10-15kb
+                        # Func:
+                        # y = 125000 - 110123/2^(x/620)
+                        # max_dist = 125000 - 110123/2^( score /620)
+                        # if rmse < max_dist: valid data point
+
+                        
+                        # Dist of > than 40.000 is unacceptable?
+                        # Score of < 6 is unacceptable?
+                        
+                        
+                        # If score > 250, 65.000 is acceptable?
+                        # If score > 500, 100.000 is acceptable?
+                        
                         #for a in arcs:
                         #    ## Multiply by splice junction scores!
                         #    print "S:",start_point.get_scores()
