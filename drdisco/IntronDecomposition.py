@@ -280,6 +280,7 @@ class Node:
             # if rmse < max_rmse: valid data point
             
             max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
+            return (rmse <= max_rmse)
         
         return False
 
@@ -1001,7 +1002,6 @@ thick arcs:
             for right_node in right_nodes:
                 if left_node.arcs.has_key(str(right_node.position)):
                     subarcs.append ( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
-                    subarcs.append ( (right_node.arcs[str(left_node.position)], left_node.arcs[str(right_node.position)]) )
         
         
         ## Find all with one indirect step - these might be alternative junctions / exons
@@ -1075,7 +1075,53 @@ arcs:
                         if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
                             # Add node
                             right_nodes.append(mt)
-
+                            
+                            for arc in mt.arcs.keys():
+                                for l in left_nodes:
+                                    if str(l.position) == arc:
+                                        arc = mt.arcs[arc]
+                                        arc_c = arc.get_complement()
+                                        
+                                        # Make sure order is correct:
+                                        subarcs.append((arc,arc_c))
+        
+        # Do inverse:
+        
+        tmp = left_nodes
+        left_nodes = right_nodes
+        right_nodes = tmp
+        
+        i = -1
+        for left_node_i in left_nodes:
+            j = -1
+            i += 1
+            
+            for left_node_j in left_nodes:
+                j += 1
+                
+                if i < j:
+                    ## Find similar destinations
+                    mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
+                    mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
+                    
+                    for mt in mutual_targets:
+                        if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
+                            # Add node
+                            right_nodes.append(mt)
+                            
+                            for arc in mt.arcs.keys():
+                                for l in left_nodes:
+                                    if str(l.position) == arc:
+                                        arc = mt.arcs[arc]
+                                        arc_c = arc.get_complement()
+                                        
+                                        # Make sure order is correct:
+                                        subarcs.append((arc,arc_c))
+        
+        
+        # pop subarcs from thicker arcs and redo
+        
+        subnet = [left_nodes, right_nodes, subarcs]
         
         return subnetworks
 
