@@ -1083,40 +1083,40 @@ thick arcs:
                                             arc_c = arc.get_complement()
                                             
                                             # Make sure order is correct:
-                                            subarcs.append((arc,arc_c))
+                                            subarcs.append((arc_c,arc))
             
-            # Do inverse:
+            ## Do inverse:
             
-            tmp = left_nodes
-            left_nodes = right_nodes
-            right_nodes = tmp
+            #tmp = left_nodes
+            #left_nodes = right_nodes
+            #right_nodes = tmp
             
-            i = -1
-            for left_node_i in left_nodes:
-                j = -1
-                i += 1
+            #i = -1
+            #for left_node_i in left_nodes:
+                #j = -1
+                #i += 1
                 
-                for left_node_j in left_nodes:
-                    j += 1
+                #for left_node_j in left_nodes:
+                    #j += 1
                     
-                    if i < j:
-                        ## Find similar destinations
-                        mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
-                        mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
+                    #if i < j:
+                        ### Find similar destinations
+                        #mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
+                        #mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
                         
-                        for mt in mutual_targets:
-                            if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
-                                # Add node
-                                right_nodes.append(mt)
+                        #for mt in mutual_targets:
+                            #if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
+                                ## Add node
+                                #right_nodes.append(mt)
                                 
-                                for arc in mt.arcs.keys():
-                                    for l in left_nodes:
-                                        if str(l.position) == arc:
-                                            arc = mt.arcs[arc]
-                                            arc_c = arc.get_complement()
+                                #for arc in mt.arcs.keys():
+                                    #for l in left_nodes:
+                                        #if str(l.position) == arc:
+                                            #arc = mt.arcs[arc]
+                                            #arc_c = arc.get_complement()
                                             
-                                            # Make sure order is correct:
-                                            subarcs.append((arc,arc_c))
+                                            ## Make sure order is correct:
+                                            #subarcs.append((arc,arc_c))
             
             
             # pop subarcs from thicker arcs and redo until thicker arcs is empty
