@@ -982,6 +982,7 @@ thick arcs:
     def extract_subnetworks(self,thicker_arcs):
         """Make sure this does not suffer from endless recursion
         """
+        q = 0
         subnetworks = []
         while len(thicker_arcs) > 0:
             start_point = thicker_arcs[0][0]
@@ -1072,7 +1073,7 @@ thick arcs:
                         mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
                         
                         for mt in mutual_targets:
-                            if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
+                            if mt.is_connected_to((left_node_i, left_node_j), right_nodes):
                                 # Add node
                                 right_nodes.append(mt)
                                 
@@ -1090,38 +1091,19 @@ thick arcs:
             #tmp = left_nodes
             #left_nodes = right_nodes
             #right_nodes = tmp
-            
-            #i = -1
-            #for left_node_i in left_nodes:
-                #j = -1
-                #i += 1
-                
-                #for left_node_j in left_nodes:
-                    #j += 1
-                    
-                    #if i < j:
-                        ### Find similar destinations
-                        #mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
-                        #mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
-                        
-                        #for mt in mutual_targets:
-                            #if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
-                                ## Add node
-                                #right_nodes.append(mt)
-                                
-                                #for arc in mt.arcs.keys():
-                                    #for l in left_nodes:
-                                        #if str(l.position) == arc:
-                                            #arc = mt.arcs[arc]
-                                            #arc_c = arc.get_complement()
-                                            
-                                            ## Make sure order is correct:
-                                            #subarcs.append((arc,arc_c))
+
+            ## Redo code
             
             
+            # remove all the links to the arcs in each of the nodes
+            for node in left_nodes:
+                for arc_u in subarcs:
+                    for arc in arc_u:
+                        key = str(arc._target.position)
+                        if node.arcs.has_key(key):
+                            del(node.arcs[key])
+
             # pop subarcs from thicker arcs and redo until thicker arcs is empty
-            
-            subnet = [left_nodes, right_nodes, subarcs]
             popme = set([])
             for arc in subarcs:
                 for arc2 in thicker_arcs:
@@ -1131,7 +1113,18 @@ thick arcs:
             for pop in popme:
                 thicker_arcs.remove(pop)
             
-            subnetworks.append(subnet)
+            if q == 2:
+                break
+            
+            subnetworks.append(subarcs)
+        
+        
+        for sn in subnetworks:
+            print "sn:"
+            for s in sn:
+                print "  ",s[0]
+        
+        asdasdasd
         
         return subnetworks
 
