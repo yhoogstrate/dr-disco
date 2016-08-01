@@ -970,6 +970,26 @@ thick arcs:
         
         
         ## Find all with one indirect step - these might be alternative junctions / exons
+        """
+        Here we want to add new nodes to `left_nodes` or `right_nodes`
+        using the `guilt-by-association` principle. Sometimes nodes are
+        having arcs to the same nodes of the already existing network,
+        but lack splice junction(s) to those existing network. They're
+        still connected to the network they might be exons that are not
+        taken into account by the aligner (classical example: exon-0 in
+        TMPRSS2). We have to be careful on the other hand, as multimap
+        locations may influence this.
+        
+        Therefore we ideally need a function that adds nodes based on:
+         - Genomic distance to all entries in either `left_nodes` or `right_nodes`
+           * Currently implemented as RMSE on Node::get_dist()
+         - The score of all arcs going to the node
+           * It also needs to correct for imbalance; 4 and 36 reads is less
+             likely than 20 and 20. Solution used multiplication.
+         - Number of arcs relative to the number of nodes.
+           *In case of 3 nodes, it is more likely to have 3 arcs (3/3) instead of 2
+           (2/3). This weight is not yet implemented (01/08/16).
+        """
         i = -1
         for left_node_i in left_nodes:
             j = -1
@@ -1121,9 +1141,14 @@ class IntronDecomposition:
             
  soft-clip: <========]
                                                                        [==>
-            Softclip are usually one directional, from the sequenced base until
+            Softclip are usually one-directional, from the sequenced base until
             the end. If it is before the first M/= flag, it's direction should
-            be '-', otherwise '+'
+            be '-', otherwise '+' as it clips from the end. In principle the
+            soft/hard clips are not arcs but properties of nodes. One particular
+            base may have several soft/hard clips (from different locations but
+            adding weigt to the same node).
+            
+            Splice juncs are bi-directional, and real arcs.
  
 splice-junc:                           <=============>
 
@@ -1221,8 +1246,7 @@ splice-junc:                           <=============>
         offset = read.reference_start
         
         for chunk in read.cigar:
-                          # D N S H
-            if chunk[0] in tt.keys():
+            if chunk[0] in tt.keys():# D N S H
                 # Small softclips occur all the time - introns and 
                 # deletions of that size shouldn't add weight anyway
                 
