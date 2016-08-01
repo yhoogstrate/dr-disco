@@ -251,6 +251,38 @@ class Node:
         else:
             return ""
 
+    def is_connected_to(self, nearby_nodes, complementary_nodes):
+        """The settings in this function may be very important to tune
+        in order to optimize the algorithm
+        
+        @todo's in future, add entropy of nearby nodes using e.g. the
+        cigar strings"""
+        
+        rmse = self.position.get_rmse(complementary_nodes)
+        
+        scores = []
+        for nearby_node in nearby_nodes:
+            p = nearby_node.arcs[str(self.position)]
+            scores.append(p.get_scores())
+        
+        k = len(scores)
+        if k < 2:
+            raise Exception("nearby_nodes contains less than 2 elements with shared Arcs")
+        
+        product = reduce(lambda x,y: x*y, scores)
+        
+        # based on rmse, product and k, determine a True or False
+        if product > (8*k):
+            # Average gene size = 10-15kb
+            # Asymptotic func:
+            # rmse <= 125000 - 110123/2^( product / 620 )
+            # rmse <= 125000 - 120000/2^( product / 1200)
+            # if rmse < max_rmse: valid data point
+            
+            max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
+        
+        return False
+
 def bam_parse_alignment_offset(cigartuple):
     pos = 0
     for chunk in cigartuple:
@@ -989,6 +1021,39 @@ thick arcs:
          - Number of arcs relative to the number of nodes.
            *In case of 3 nodes, it is more likely to have 3 arcs (3/3) instead of 2
            (2/3). This weight is not yet implemented (01/08/16).
+
+
+        Detection of possible candidates
+        --------------------------------
+        
+        nodes:
+        A     B         $ ... $          Y    Z
+splice:  -----
+
+left_nodes:  A, B
+right_nodes: Y, Z
+
+arcs:
+        A-Z (9)
+        B-Z (100)
+        
+        A-Y (2)
+        B-Y (20)
+        
+        For all each left node i, compared with each other left node j,
+        look for nodes they have in common:
+        Y, Z (exclude Z, because it was already in `right_nodes`
+        
+        Then we know for sure that both A and B are also connected to
+        Y, while there is no relation found between Y-Z. However,
+        if the distance between Y-Z is reasonable and there are many
+        reads, it is pretty likely that Y is part of the fusion event
+        as well.
+        
+        Reverse
+        -------
+        Then do this in reverse(d) order, from `right_nodes` to
+        `left_nodes`.
         """
         i = -1
         for left_node_i in left_nodes:
@@ -999,58 +1064,15 @@ thick arcs:
                 j += 1
                 
                 if i < j:
-                    """
-                    Use some error calculation
-                    
-c = c(1000,1050)
-r2 = sqrt(sum((c - mean(c))^2)) 
-c = c(1000,1050,1100)
-r3 = sqrt(sum((c - mean(c))^2))
-c = c(1000,1050,1100,1150)
-r4 = sqrt(sum((c - mean(c))^2)) 
-c = c(1000,1050,1100,1150,1200)
-r5 = sqrt(sum((c - mean(c))^2))
-
-                    """
-                    
-                    #print i,j,[left_node_i],"*",[left_node_j]
                     ## Find similar destinations
-                    #print left_node_i.arcs.keys()
-                    #print left_node_j.arcs.keys()
                     mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
-                    mutual_targets = [left_node_i.arcs[mt]._target.position for mt in mutual_targets]
-                    print mutual_targets
+                    mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
                     
                     for mt in mutual_targets:
-                        print mt
-                        print mt.get_rmse(right_nodes)
-                        a = left_node_i.arcs[str(mt)]
-                        b = left_node_j.arcs[str(mt)]
-                        sa = a.get_scores()
-                        sb = b.get_scores()
-                        score = sa*sb
-                        
-                        # Average gene size = 10-15kb
-                        # Func:
-                        # y = 125000 - 110123/2^(x/620)
-                        # max_dist = 125000 - 110123/2^( score /620)
-                        # if rmse < max_dist: valid data point
+                        if is_connected_to((left_node_i, left_node_j),right_nodes):
+                            # Add node
+                            left_nodes.append(mt)
 
-                        
-                        # Dist of > than 40.000 is unacceptable?
-                        # Score of < 6 is unacceptable?
-                        
-                        
-                        # If score > 250, 65.000 is acceptable?
-                        # If score > 500, 100.000 is acceptable?
-                        
-                        #for a in arcs:
-                        #    ## Multiply by splice junction scores!
-                        #    print "S:",start_point.get_scores()
-                        #    print a[0],a[0].get_scores()
-                        #    print a[1],a[1].get_scores()
-                        #    print
-                        
         
         return subnetworks
 
