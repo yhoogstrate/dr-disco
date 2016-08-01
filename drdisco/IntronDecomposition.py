@@ -983,145 +983,155 @@ thick arcs:
         """Make sure this does not suffer from endless recursion
         """
         subnetworks = []
-        
-        start_point = thicker_arcs[0][0]
-        
-        left_nodes = [start_point._origin]
-        right_nodes = [start_point._target]
-        
-        ## The original nodes have been emptied, so the most important
-        ## arc's are now separated.
-        left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
-        right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
-        
-        subarcs = []
-        
-        # All arcs between any of the left and right nodes are valid arcs and have to be extracted
-        # Find all direct arcs joined by splice junctions
-        for left_node in left_nodes:
-            for right_node in right_nodes:
-                if left_node.arcs.has_key(str(right_node.position)):
-                    subarcs.append ( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
-        
-        
-        ## Find all with one indirect step - these might be alternative junctions / exons
-        """
-        Here we want to add new nodes to `left_nodes` or `right_nodes`
-        using the `guilt-by-association` principle. Sometimes nodes are
-        having arcs to the same nodes of the already existing network,
-        but lack splice junction(s) to those existing network. They're
-        still connected to the network they might be exons that are not
-        taken into account by the aligner (classical example: exon-0 in
-        TMPRSS2). We have to be careful on the other hand, as multimap
-        locations may influence this.
-        
-        Therefore we ideally need a function that adds nodes based on:
-         - Genomic distance to all entries in either `left_nodes` or `right_nodes`
-           * Currently implemented as RMSE on Node::get_dist()
-         - The score of all arcs going to the node
-           * It also needs to correct for imbalance; 4 and 36 reads is less
-             likely than 20 and 20. Solution used multiplication.
-         - Number of arcs relative to the number of nodes.
-           *In case of 3 nodes, it is more likely to have 3 arcs (3/3) instead of 2
-           (2/3). This weight is not yet implemented (01/08/16).
-
-
-        Detection of possible candidates
-        --------------------------------
-        
-        nodes:
-        A     B         $ ... $          Y    Z
-splice:  -----
-
-left_nodes:  A, B
-right_nodes: Y, Z
-
-arcs:
-        A-Z (9)
-        B-Z (100)
-        
-        A-Y (2)
-        B-Y (20)
-        
-        For all each left node i, compared with each other left node j,
-        look for nodes they have in common:
-        Y, Z (exclude Z, because it was already in `right_nodes`
-        
-        Then we know for sure that both A and B are also connected to
-        Y, while there is no relation found between Y-Z. However,
-        if the distance between Y-Z is reasonable and there are many
-        reads, it is pretty likely that Y is part of the fusion event
-        as well.
-        
-        Reverse
-        -------
-        Then do this in reverse(d) order, from `right_nodes` to
-        `left_nodes`.
-        """
-        i = -1
-        for left_node_i in left_nodes:
-            j = -1
-            i += 1
+        while len(thicker_arcs) > 0:
+            start_point = thicker_arcs[0][0]
             
-            for left_node_j in left_nodes:
-                j += 1
-                
-                if i < j:
-                    ## Find similar destinations
-                    mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
-                    mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
-                    
-                    for mt in mutual_targets:
-                        if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
-                            # Add node
-                            right_nodes.append(mt)
-                            
-                            for arc in mt.arcs.keys():
-                                for l in left_nodes:
-                                    if str(l.position) == arc:
-                                        arc = mt.arcs[arc]
-                                        arc_c = arc.get_complement()
-                                        
-                                        # Make sure order is correct:
-                                        subarcs.append((arc,arc_c))
-        
-        # Do inverse:
-        
-        tmp = left_nodes
-        left_nodes = right_nodes
-        right_nodes = tmp
-        
-        i = -1
-        for left_node_i in left_nodes:
-            j = -1
-            i += 1
+            left_nodes = [start_point._origin]
+            right_nodes = [start_point._target]
             
-            for left_node_j in left_nodes:
-                j += 1
+            ## The original nodes have been emptied, so the most important
+            ## arc's are now separated.
+            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
+            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
+            
+            subarcs = []
+            
+            # All arcs between any of the left and right nodes are valid arcs and have to be extracted
+            # Find all direct arcs joined by splice junctions
+            for left_node in left_nodes:
+                for right_node in right_nodes:
+                    if left_node.arcs.has_key(str(right_node.position)):
+                        subarcs.append( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
+            
+            
+            ## Find all with one indirect step - these might be alternative junctions / exons
+            """
+            Here we want to add new nodes to `left_nodes` or `right_nodes`
+            using the `guilt-by-association` principle. Sometimes nodes are
+            having arcs to the same nodes of the already existing network,
+            but lack splice junction(s) to those existing network. They're
+            still connected to the network they might be exons that are not
+            taken into account by the aligner (classical example: exon-0 in
+            TMPRSS2). We have to be careful on the other hand, as multimap
+            locations may influence this.
+            
+            Therefore we ideally need a function that adds nodes based on:
+             - Genomic distance to all entries in either `left_nodes` or `right_nodes`
+               * Currently implemented as RMSE on Node::get_dist()
+             - The score of all arcs going to the node
+               * It also needs to correct for imbalance; 4 and 36 reads is less
+                 likely than 20 and 20. Solution used multiplication.
+             - Number of arcs relative to the number of nodes.
+               *In case of 3 nodes, it is more likely to have 3 arcs (3/3) instead of 2
+               (2/3). This weight is not yet implemented (01/08/16).
+
+
+            Detection of possible candidates
+            --------------------------------
+            
+            nodes:
+            A     B         $ ... $          Y    Z
+    splice:  -----
+
+    left_nodes:  A, B
+    right_nodes: Y, Z
+
+    arcs:
+            A-Z (9)
+            B-Z (100)
+            
+            A-Y (2)
+            B-Y (20)
+            
+            For all each left node i, compared with each other left node j,
+            look for nodes they have in common:
+            Y, Z (exclude Z, because it was already in `right_nodes`
+            
+            Then we know for sure that both A and B are also connected to
+            Y, while there is no relation found between Y-Z. However,
+            if the distance between Y-Z is reasonable and there are many
+            reads, it is pretty likely that Y is part of the fusion event
+            as well.
+            
+            Reverse
+            -------
+            Then do this in reverse(d) order, from `right_nodes` to
+            `left_nodes`.
+            """
+            i = -1
+            for left_node_i in left_nodes:
+                j = -1
+                i += 1
                 
-                if i < j:
-                    ## Find similar destinations
-                    mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
-                    mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
+                for left_node_j in left_nodes:
+                    j += 1
                     
-                    for mt in mutual_targets:
-                        if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
-                            # Add node
-                            right_nodes.append(mt)
-                            
-                            for arc in mt.arcs.keys():
-                                for l in left_nodes:
-                                    if str(l.position) == arc:
-                                        arc = mt.arcs[arc]
-                                        arc_c = arc.get_complement()
-                                        
-                                        # Make sure order is correct:
-                                        subarcs.append((arc,arc_c))
-        
-        
-        # pop subarcs from thicker arcs and redo
-        
-        subnet = [left_nodes, right_nodes, subarcs]
+                    if i < j:
+                        ## Find similar destinations
+                        mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
+                        mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
+                        
+                        for mt in mutual_targets:
+                            if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
+                                # Add node
+                                right_nodes.append(mt)
+                                
+                                for arc in mt.arcs.keys():
+                                    for l in left_nodes:
+                                        if str(l.position) == arc:
+                                            arc = mt.arcs[arc]
+                                            arc_c = arc.get_complement()
+                                            
+                                            # Make sure order is correct:
+                                            subarcs.append((arc,arc_c))
+            
+            # Do inverse:
+            
+            tmp = left_nodes
+            left_nodes = right_nodes
+            right_nodes = tmp
+            
+            i = -1
+            for left_node_i in left_nodes:
+                j = -1
+                i += 1
+                
+                for left_node_j in left_nodes:
+                    j += 1
+                    
+                    if i < j:
+                        ## Find similar destinations
+                        mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
+                        mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
+                        
+                        for mt in mutual_targets:
+                            if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
+                                # Add node
+                                right_nodes.append(mt)
+                                
+                                for arc in mt.arcs.keys():
+                                    for l in left_nodes:
+                                        if str(l.position) == arc:
+                                            arc = mt.arcs[arc]
+                                            arc_c = arc.get_complement()
+                                            
+                                            # Make sure order is correct:
+                                            subarcs.append((arc,arc_c))
+            
+            
+            # pop subarcs from thicker arcs and redo until thicker arcs is empty
+            
+            subnet = [left_nodes, right_nodes, subarcs]
+            popme = set([])
+            for arc in subarcs:
+                for arc2 in thicker_arcs:
+                    if arc[0] == arc2[0] or arc[1] == arc2[0]:
+                        popme.add(arc2)
+            
+            for pop in popme:
+                thicker_arcs.remove(pop)
+            
+            subnetworks.append(subnet)
         
         return subnetworks
 
@@ -1287,6 +1297,15 @@ splice-junc:                           <=============>
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
         subnets = self.chain.extract_subnetworks(thicker_arcs)
+        
+        for s in subnets:
+            print "---- subnet: -----"
+            print s[0]
+            print s[1]
+            print s[2]
+            for s2 in s[2]:
+                print s2[0]
+            print
         
         return thicker_arcs
 
