@@ -1,0 +1,13 @@
+2016-07-25	Youri Hoogstrate	v0.0.3
+	* Improved pruning system in many ways and fixed special behaviour for
+	  spanning_singleton_1/2 by adding spanning_singleton_1/2_r because
+	  half of those were in the opposite strand. The HI-tag was used to
+	  correct for this.
+
+2016-06-15	Youri Hoogstrate	v0.0.2
+	* fix-chimeric makes a destinction between spanning_paired_1 and spanning_paired_2
+	  depending on wether it was the first or second chunk of the broken/split read.
+	  This is also implemented for spanning_singleton_1/2.
+
+2016-06-15	Youri Hoogstrate	v0.0.1
+	* First working prototype with setup tools for fix-chimeric

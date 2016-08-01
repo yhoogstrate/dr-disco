@@ -12,3 +12,7 @@ tmp/
 *.swp
 .coverage
 /htmlcov/*
+/*.R
+/tests/*/*.bai
+.directory
+/.cache
