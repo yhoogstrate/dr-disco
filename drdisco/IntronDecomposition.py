@@ -1092,7 +1092,7 @@ thick arcs:
             #left_nodes = right_nodes
             #right_nodes = tmp
 
-            ## Redo code
+            ### @todo Redo code
             
             
             # remove all the links to the arcs in each of the nodes
@@ -1118,13 +1118,10 @@ thick arcs:
             
             subnetworks.append(subarcs)
         
-        
-        for sn in subnetworks:
-            print "sn:"
-            for s in sn:
-                print "  ",s[0]
-        
-        asdasdasd
+        #for sn in subnetworks:
+        #    print "sn:"
+        #    for s in sn:
+        #        print "  ",s[0]
         
         return subnetworks
 
@@ -1291,16 +1288,14 @@ splice-junc:                           <=============>
         self.chain.reinsert_arcs(thicker_arcs)
         subnets = self.chain.extract_subnetworks(thicker_arcs)
         
-        for s in subnets:
-            print "---- subnet: -----"
-            print s[0]
-            print s[1]
-            print s[2]
-            for s2 in s[2]:
-                print s2[0]
+        s = 1
+        for sn in subnets:
+            print "#fusion-event "+str(s)
+            for arc in sn:
+                print arc[0]
             print
-        
-        return thicker_arcs
+            
+            s += 1
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
