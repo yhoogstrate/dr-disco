@@ -1290,9 +1290,11 @@ splice-junc:                           <=============>
         
         s = 1
         for sn in subnets:
-            print "#fusion-event "+str(s)
+            k = 1
             for arc in sn:
-                print arc[0]
+                print "fusion_event_"+str(s)+"_arc_"+str(k)+" "+arc[0]._origin.position._chr.replace('chr','hs')+" "+str(arc[0]._origin.position.pos)+" "+str(arc[0]._origin.position.pos+1)
+                print "fusion_event_"+str(s)+"_arc_"+str(k)+" "+arc[0]._target.position._chr.replace('chr','hs')+" "+str(arc[0]._target.position.pos)+" "+str(arc[0]._target.position.pos+1)
+                k += 1
             print
             
             s += 1
