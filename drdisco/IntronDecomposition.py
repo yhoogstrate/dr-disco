@@ -993,12 +993,15 @@ thick arcs:
         left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
         right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
         
+        subarcs = []
+        
         # All arcs between any of the left and right nodes are valid arcs and have to be extracted
         # Find all direct arcs joined by splice junctions
         for left_node in left_nodes:
             for right_node in right_nodes:
                 if left_node.arcs.has_key(str(right_node.position)):
-                    print "Found arc:", (left_node.arcs[str(right_node.position)],right_node.arcs[str(left_node.position)])
+                    subarcs.append ( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
+                    subarcs.append ( (right_node.arcs[str(left_node.position)], left_node.arcs[str(right_node.position)]) )
         
         
         ## Find all with one indirect step - these might be alternative junctions / exons
@@ -1069,9 +1072,9 @@ arcs:
                     mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
                     
                     for mt in mutual_targets:
-                        if is_connected_to((left_node_i, left_node_j),right_nodes):
+                        if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
                             # Add node
-                            left_nodes.append(mt)
+                            right_nodes.append(mt)
 
         
         return subnetworks
