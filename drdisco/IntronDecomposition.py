@@ -13,6 +13,7 @@ import logging,re,math
 import pysam,copy
 from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
+from .CircosController import *
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 
@@ -1289,14 +1290,9 @@ splice-junc:                           <=============>
         subnets = self.chain.extract_subnetworks(thicker_arcs)
         
         s = 1
-        for sn in subnets:
-            k = 1
-            for arc in sn:
-                print "fusion_event_"+str(s)+"_arc_"+str(k)+" "+arc[0]._origin.position._chr.replace('chr','hs')+" "+str(arc[0]._origin.position.pos)+" "+str(arc[0]._origin.position.pos+1)
-                print "fusion_event_"+str(s)+"_arc_"+str(k)+" "+arc[0]._target.position._chr.replace('chr','hs')+" "+str(arc[0]._target.position.pos)+" "+str(arc[0]._target.position.pos+1)
-                k += 1
-            print
-            
+        for subnet in subnets:
+            c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
+            c.draw_network("tmp/test.png","tmp/test.svg")
             s += 1
 
     def find_cigar_arcs(self,read):

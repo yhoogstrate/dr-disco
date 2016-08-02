@@ -33,6 +33,11 @@ Usage: dr-disco intronic
 To estimate break points at the intronic level, you can proceed with:
 
 ```
+export CIRCOS_DIR=~/circos-vxx-xx/
+```
+
+Followed by:
+```
 Usage: dr-disco intronic [OPTIONS] OUTPUT_FILE FUSION_CANDIDATES_INPUT_FILE
                          BAM_INPUT_FILE
 
