@@ -371,6 +371,7 @@ class BreakPosition:
             err += pow(self.get_dist(pos, True) , 2)
         return math.sqrt(err)
 
+
 class Chain:
     def __init__(self,pysam_fh):
         self.idxtree = GenomeIntervalTree()
@@ -1289,11 +1290,30 @@ splice-junc:                           <=============>
         self.chain.reinsert_arcs(thicker_arcs)
         subnets = self.chain.extract_subnetworks(thicker_arcs)
         
-        s = 1
+        # If circos:
+        #s = 1
+        #for subnet in subnets:
+        #    c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
+        #    c.draw_network("tmp/test.png","tmp/test.svg")
+        #    s += 1
+        
+        self.filter_subnets(subnets)
+    
+    def filter_subnets(self, subnets):
         for subnet in subnets:
-            c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
-            c.draw_network("tmp/test.png","tmp/test.svg")
-            s += 1
+            score = 0
+            nodes = set([])
+            for dp in subnet:
+                score += dp[0].get_scores()
+                
+                nodes.add(dp[0]._origin)
+                nodes.add(dp[0]._target)
+            
+            clips = 0
+            for n in nodes:
+                clips += n.clips
+            
+            print "score:",score,"   clips:",clips,"   bg: ??"
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
