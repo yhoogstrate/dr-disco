@@ -788,8 +788,7 @@ class Chain:
         candidates = []
         candidate = self.get_start_point()
         
-        #print candidate
-        self.print_chain()
+        #self.print_chain()
         
         i = 1
         while candidate != None:
@@ -801,14 +800,12 @@ class Chain:
             
             self.remove_arc(candidate)
             
-        #    self.print_chain()
-            
             candidate = self.get_start_point()
              
             i += 1
         
         
-        self.print_chain()
+        #self.print_chain()
         
         #for candidate in candidates:
         #    print candidate
@@ -817,62 +814,25 @@ class Chain:
     
     #@todo ADD RECURSION DEPTH LIMIT
     def prune_arc(self, arc, insert_size):
-        ## @todo make somehow only 
-        #if 
+        ## These types of arcs fall within the same space / inst. size
+        ## they make the arcs heavier
+        
         node1 = arc._origin
         node2 = arc._target
         
         ratio = self.arcs_ratio_between(node1.position, node2.position, insert_size)
         
-        for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
-            ## These types of arcs fall within the same space / inst. size
-            ## they make the arcs heavier
-            arc_complement = node2.arcs[str(node1.position)]
-            arc.merge_arc(c_arc)
-            arc.merge_arc(arc_complement)
-            
-            self.remove_arc(c_arc)
-            
-            #self.remove_arc(arc_complement)
-            #if arc.merge_arc(c_arc) or arc_complement.merge_arc(c_arc):
-            #    try:
-            #        self.remove_arc(c_arc)
-            #    except:
-            #        self.print_chain()
-            #        raise Exception("Error")
+        arc_complement = arc.get_complement()
         
-        """
-        for c_arc in self.search_arcs_adjacent(node1.position, node2.position, insert_size):
-            # @todo see if we can merge by other types of Arcs too..
-            if c_arc[1].get_count('cigar_splice_junction') > 0:
-                #if c_arc[0] == 'pos1':
-                #    print "merge it with node1"
-                #elif c_arc[0] == 'pos2':
-                #    print "merge it with node2"
-                #else:
-                #    raise Exception("Unknown type: %s", c_arc[0])
-                
-                #complement_arc = self.get_node_reference(c_arc[1]._target.position).arcs[str(c_arc[1]._origin.position)]
-                
-                arc.new_arc(c_arc[1])
-                #arc.new_arc(complement_arc)
-                
-                #arc_complement.new_arc(c_arc[1])
-                
-                self.remove_arc(c_arc[1])# Removes bi-directional
-                
-                #self.prune_arc(c_arc[1], insert_size)
-                #self.prune_arc(complement_arc, insert_size)
-                
-                # @todo pruning needs to be done also to node2 instead
-                # of to the 2 splice junctions?
-                
-                
-                # if recursion depth not reached:
-                # self.prune_arc(c_arc[1],isize)
-                # else:
-                # raise exception max rec. depth reached
-        """
+        for arc_m in self.search_arcs_between(node1.position, node2.position, insert_size):
+            arc_mc = arc_m.get_complement()
+            
+            arc.merge_arc(arc_m)
+            arc_complement.merge_arc(arc_mc)
+            
+            self.remove_arc(arc_m)
+            # complement is automatically removed after removing the fwd
+            #self.remove_arc(arc_mc)
         
         return ratio
     
@@ -880,20 +840,21 @@ class Chain:
         #self.print_chain()
         
         init = self.get_start_splice_junc()
-        init_c = init.get_complement()
-        
-        for node in self:
-            for junc in node:
-                if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
-                    d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
-                    d_target = abs(junc._target.position.pos - init._target.position.pos)
-                    if d_origin <= uncertainty and d_target <= uncertainty:
-                        init.merge_arc(junc)
-                        init_c.merge_arc(junc.get_complement())
-                        
-                        self.remove_arc(junc)
-                        
-                        #self.print_chain()
+        if init != None:
+            init_c = init.get_complement()
+            
+            for node in self:
+                for junc in node:
+                    if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
+                        d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
+                        d_target = abs(junc._target.position.pos - init._target.position.pos)
+                        if d_origin <= uncertainty and d_target <= uncertainty:
+                            init.merge_arc(junc)
+                            init_c.merge_arc(junc.get_complement())
+                            
+                            self.remove_arc(junc)
+                            
+                            #self.print_chain()
     
     def rejoin_splice_juncs(self, thicker_arcs, insert_size):
         """thicker arcs go across the break point:
@@ -1285,6 +1246,10 @@ splice-junc:                           <=============>
         #c.prune(400+126-12)
         # max obs = 418 for now
         thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
+        for a in thicker_arcs:
+            print a[0]
+            print a[2]
+        
         self.chain.merge_splice_juncs(3)
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
@@ -1298,6 +1263,8 @@ splice-junc:                           <=============>
         #    s += 1
         
         self.filter_subnets(subnets)
+        
+        return subnets
     
     def filter_subnets(self, subnets):
         for subnet in subnets:
