@@ -1246,10 +1246,6 @@ splice-junc:                           <=============>
         #c.prune(400+126-12)
         # max obs = 418 for now
         thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
-        for a in thicker_arcs:
-            print a[0]
-            print a[2]
-        
         self.chain.merge_splice_juncs(3)
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
@@ -1262,12 +1258,17 @@ splice-junc:                           <=============>
         #    c.draw_network("tmp/test.png","tmp/test.svg")
         #    s += 1
         
-        self.filter_subnets(subnets)
+        subnets = self.filter_subnets(subnets)
         
         return subnets
     
     def filter_subnets(self, subnets):
-        for subnet in subnets:
+        new_subnets = []
+        #1. filter based on nodes - if there are shared nodes, exclude sn
+        all_nodes = set([])
+        for i in range(len(subnets)):
+            subnet = subnets[i]
+            rmme = False
             score = 0
             nodes = set([])
             for dp in subnet:
@@ -1278,9 +1279,19 @@ splice-junc:                           <=============>
             
             clips = 0
             for n in nodes:
+                if n in all_nodes:
+                    rmme = True
+                else:
+                    all_nodes.add(n)
+                
                 clips += n.clips
             
-            print "score:",score,"   clips:",clips,"   bg: ??"
+            if rmme:
+                subnets[i] = None
+            else:
+                new_subnets.append({'arcs':subnet, 'clips':clips})
+        
+        return new_subnets
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:

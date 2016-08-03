@@ -44,7 +44,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         #ic.annotate_genes(gobj)
         candidates = ic.decompose(input_file_a)
         
-        self.assertEqual(str(candidates[0][0][0]), "chr21:39877811/39877812(+)->chr21:42873374/42873375(-):(spanning_paired_1:3)")
+        self.assertEqual(str(candidates[0]['arcs'][0][0]), "chr21:39877811/39877812(+)->chr21:42873374/42873375(-):(spanning_paired_1:3)")
         #self.assertEqual(candidates[0][0][1], 1.0)
 
 
@@ -62,7 +62,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         #ic.annotate_genes(gobj)
         candidates = ic.decompose(input_file_a)
         
-        self.assertEqual(str(candidates[0][0][0]), "chr21:39877811/39877812(+)->chr21:42873374/42873375(-):(discordant_mates:3,spanning_paired_1:4)")
+        self.assertEqual(str(candidates[0]['arcs'][0][0]), "chr21:39877811/39877812(+)->chr21:42873374/42873375(-):(discordant_mates:3,spanning_paired_1:4)")
         ##self.assertEqual(candidates[0][1], 1.0)
 
 
@@ -79,7 +79,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
         candidates = ic.decompose(input_file_a)
-        self.assertEqual(str(candidates[0][0][0]), 'chr21:39817544/39817545(-)->chr21:42880007/42880008(+):(spanning_paired_1:5)')
+        
+        self.assertEqual(str(candidates[0]['arcs'][0][0]), 'chr21:39817544/39817545(-)->chr21:42880007/42880008(+):(spanning_paired_1:5)')
 
 
     def test_04(self):
@@ -95,8 +96,12 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
         candidates = ic.decompose(input_file_a)
-        #self.assertEqual(str(candidates[0][0]), '')
-            
+        for c in candidates:
+            for arc in c['arcs']:
+                # Ensure that the opposite arcs have identical scores (although some have paired.._1 and the others paired.._2, the scores must add up
+                self.assertEqual(arc[0].get_scores(), arc[1].get_scores())
+        
+        self.assertEqual(str(candidates[0]['arcs'][0][0]), "chr21:39817544/39817545(-)->chr21:42880007/42880008(+):(spanning_paired_1:67,spanning_singleton_1:2,spanning_singleton_2_r:3)\n                          =>chr21:39846044/39846045(-):score=(2, 8)")
 
 
 
