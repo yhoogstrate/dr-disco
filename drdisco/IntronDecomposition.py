@@ -468,7 +468,7 @@ class Chain:
         # 4. 'silent_mate'
         
         rg = read.get_tag('RG')
-        if rg in ["discordant_mates","silent_mate"]:
+        if rg in ["discordant_mates"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  bam_parse_alignment_end(read),
                                  not read.is_reverse)
@@ -528,41 +528,10 @@ class Chain:
             
             self.insert_entry(pos1,pos2,rg,False)
         
-            #else:
-            #pos2 = BreakPosition(parsed_SA_tag[0],
-            #                    bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-            #                    STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-        
-            #else:
-                #if not read.is_reverse:
-                    #pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                        #read.reference_start,
-                                        #not read.is_reverse)
-                #else:
-                    #pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                        #bam_parse_alignment_end(read),
-                                        #not read.is_reverse)
-                    
-                
-                ### The read is the second in pair, and the SA tag the first...
-                #if parsed_SA_tag[4] != "+":
-                    #print read
-                    #raise Exception("Todo")
-                    ## Most likely code that should do it:
-                    ##
-                    ##pos1 = BreakPosition(parsed_SA_tag[0],
-                    ##                    parsed_SA_tag[1],
-                    ##                    STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-                    ##
-                    ##self.insert_entry(pos1,pos2,rg)
-                    
-                #else:
-                    #pos1 = BreakPosition(parsed_SA_tag[0],
-                                        #bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-                                        #STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-        
-        else:
+        elif rg not in ["silent_mate"]:
             raise Exception("Fatal Error, RG: "+rg)
+        
+        return (pos1, pos2)
     
     def reinsert_arcs(self, arcs):
         """Only works for Arcs of which the _origin and _target Node
@@ -1142,9 +1111,12 @@ class IntronDecomposition:
             _chr = pysam_fh.get_reference_name(r.reference_id)
             insert_size = self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
             
+            pos1 = None
+            pos2 = None
+            
             if r.get_tag('RG') == 'discordant_mates':
                 if abs(insert_size) >= MIN_DISCO_INS_SIZE:
-                    self.chain.insert(r,sa[0])
+                    pos1, pos2 = self.chain.insert(r,sa[0])
             
             elif r.get_tag('RG') == 'silent_mate':
                 # usually in a exon?
@@ -1173,7 +1145,7 @@ class IntronDecomposition:
             
             elif r.get_tag('RG') in ['spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2', 'spanning_singleton_1_r', 'spanning_singleton_2_r']:
                 read = r
-                self.chain.insert(r,sa[0])
+                pos1, pos2 = self.chain.insert(r,sa[0])
 
             else:
                 raise Exception("Unknown type read: '"+str(r.get_tag('RG'))+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
@@ -1200,7 +1172,7 @@ class IntronDecomposition:
 splice-junc:                           <=============>
 
             """
-            if r.get_tag('RG') != 'silent_mate':
+            if pos1 != None and pos2 != None:
                 for internal_arc in self.find_cigar_arcs(r):
                     #@todo return Arc object instead of tuple
                     if internal_arc[2] in ['cigar_splice_junction']:
@@ -1234,7 +1206,7 @@ splice-junc:                           <=============>
                             self.chain.get_node_reference(pos2).add_clip()
                         except:
                             # chr21:39817561
-                            raise Exception("Node was not found, cigar correctly parsed?")
+                            raise Exception("\n\nNode was not found, cigar correctly parsed?\n----------\ninternal arc: "+str(internal_arc)+"\n----------\nqname: "+r.qname+"\ncigar: "+r.cigarstring+"\ntype:  "+r.get_tag('RG')+"\npos:   "+str(pos2))
                     else:
                         self.chain.insert_entry(pos1,pos2,internal_arc[2],True)
     
