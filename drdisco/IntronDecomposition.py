@@ -18,6 +18,12 @@ from .CircosController import *
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 
 
+# parameters
+MIN_DISCO_INS_SIZE = 400
+PRUNE_INS_SIZE = 450
+SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error
+
+
 class Arc:
     """Connection between two genomic locations
      - Also contains different types of evidence
@@ -1089,6 +1095,13 @@ thick arcs:
         return subnetworks
 
 
+class Subnet(Chain):
+    def __init__(self,_id,arcs):
+        self._id = _id
+        self.arcs = arcs
+        self.total_clips = 0
+    
+
 class IntronDecomposition:
     def __init__(self,break_point):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -1130,7 +1143,7 @@ class IntronDecomposition:
             insert_size = self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
             
             if r.get_tag('RG') == 'discordant_mates':
-                if abs(insert_size) >= 400:
+                if abs(insert_size) >= MIN_DISCO_INS_SIZE:
                     self.chain.insert(r,sa[0])
             
             elif r.get_tag('RG') == 'silent_mate':
@@ -1245,9 +1258,9 @@ splice-junc:                           <=============>
         # emperical evidence showed ~230bp? look into this by picking a few examples
         #c.prune(400+126-12)
         # max obs = 418 for now
-        thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
-        self.chain.merge_splice_juncs(3)
-        thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
+        thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
+        self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
+        thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
         subnets = self.chain.extract_subnetworks(thicker_arcs)
         
@@ -1258,12 +1271,14 @@ splice-junc:                           <=============>
         #    c.draw_network("tmp/test.png","tmp/test.svg")
         #    s += 1
         
-        subnets = self.filter_subnets(subnets)
+        subnets = self.filter_subnets_on_identical_nodes(subnets)
+        
         
         return subnets
     
-    def filter_subnets(self, subnets):
+    def filter_subnets_on_identical_nodes(self, subnets):
         new_subnets = []
+        _id = 0
         #1. filter based on nodes - if there are shared nodes, exclude sn
         all_nodes = set([])
         for i in range(len(subnets)):
@@ -1289,7 +1304,10 @@ splice-junc:                           <=============>
             if rmme:
                 subnets[i] = None
             else:
-                new_subnets.append({'arcs':subnet, 'clips':clips})
+                i += 1
+                sn = Subnet(_id, subnet)
+                sn.clips = clips
+                new_subnets.append(sn)
         
         return new_subnets
 
