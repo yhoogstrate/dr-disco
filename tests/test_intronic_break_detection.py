@@ -68,7 +68,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
         bps = FusionCatcher(input_file_f,"")
         bps_i = bps.__iter__()
         bp = bps_i.next()
-        print "vvv"
         
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
@@ -76,8 +75,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
         
         with open(output_file, "w") as fh:
             ic.export(fh)
-        
-        print "^^^"
         
         self.assertEqual(n_candidates, 1)
         self.assertTrue(filecmp.cmp(test_file, output_file))

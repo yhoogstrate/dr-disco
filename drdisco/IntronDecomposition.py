@@ -578,7 +578,6 @@ class Chain:
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            print 
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_1","spanning_singleton_1"]:
@@ -636,7 +635,7 @@ class Chain:
         """
         for arc_t in arcs:
             arc   = arc_t[0]
-            arc_c = arc_t[2]
+            arc_c = arc_t[1]
             
             node1 = arc._origin
             node2 = arc._target
@@ -758,7 +757,6 @@ class Chain:
         """
         Searches for reads inbetween two regions (e.g. break + ins. size)
         and returns the ratio of uniq reads that fall within this range
-        """
         
         included = [
             'discordant_mates',
@@ -816,6 +814,7 @@ class Chain:
                             raise Exception("To be implemented: %s", _type)
 
         return (1.0 * arcs_inbetween / total_arcs)
+        """
 
     def print_chain(self):
         print "**************************************************************"
@@ -867,8 +866,8 @@ class Chain:
             if i > 15:
                 raise Exception("Recusion depth errr")
             
-            ratio = self.prune_arc(candidate, insert_size)
-            candidates.append((candidate, ratio, candidate.get_complement()))
+            self.prune_arc(candidate, insert_size)
+            candidates.append((candidate, candidate.get_complement()))
             
             self.remove_arc(candidate)
             
@@ -892,8 +891,6 @@ class Chain:
         node1 = arc._origin
         node2 = arc._target
         
-        ratio = self.arcs_ratio_between(node1.position, node2.position, insert_size)
-        
         arc_complement = arc.get_complement()
         
         for arc_m in self.search_arcs_between(node1.position, node2.position, insert_size):
@@ -906,7 +903,7 @@ class Chain:
             # complement is automatically removed after removing the fwd
             #self.remove_arc(arc_mc)
         
-        return ratio
+        return None
     
     def merge_splice_juncs(self,uncertainty):
         #self.print_chain()
