@@ -133,6 +133,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         print"\n\n"
         for c in candidates:
             for a in c.arcs:
+                print a
                 print a[0]
             print
 

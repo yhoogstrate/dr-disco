@@ -1065,10 +1065,34 @@ thick arcs:
 
 
 class Subnet(Chain):
+    strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-'}
+    
     def __init__(self,_id,arcs):
         self._id = _id
         self.arcs = arcs
         self.total_clips = 0
+        self.total_score = 0
+    
+    def __str__(self):
+        """Make tabular output"""
+        out = ""
+        node_a = self.arcs[0][0]._origin
+        node_b = self.arcs[0][0]._target
+        
+        out += str(node_a.position._chr)+"\t"
+        out += str(node_a.position.pos)+"\t"
+        out += self.strand_tt[node_a.position.strand]+"\t"
+        
+        out += str(node_b.position._chr)+"\t"
+        out += str(node_b.position.pos)+"\t"
+        out += self.strand_tt[node_b.position.strand]+"\t"
+        
+        out += str(self.total_score)+"\t"
+        out += str(self.total_clips)+"\t"
+        
+        out += str(len(self.arcs))+"\t"
+        
+        return out
     
 
 class IntronDecomposition:
@@ -1244,9 +1268,17 @@ splice-junc:                           <=============>
         #    s += 1
         
         subnets = self.filter_subnets_on_identical_nodes(subnets)
+        self.print_results(subnets)
         
         
         return subnets
+    
+    def print_results(self,subnets):
+        print "---"
+        print "chr-A\tpos-A\tdirection-A\tchr-B\tpos-B\tdirection-B\tscore\tsoft+hardclips\tn-arcs\tn-nodes\tspanning-splice-junctions"
+        for subnet in subnets:
+            print subnet
+        print "---"
     
     def filter_subnets_on_identical_nodes(self, subnets):
         new_subnets = []
@@ -1278,7 +1310,8 @@ splice-junc:                           <=============>
             else:
                 i += 1
                 sn = Subnet(_id, subnet)
-                sn.clips = clips
+                sn.total_clips = clips
+                sn.total_score = score
                 new_subnets.append(sn)
         
         return new_subnets
