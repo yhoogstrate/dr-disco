@@ -9,12 +9,34 @@ Tries to figure out within a discordant RNA-Seq read alignment:
 
 #http://www.samformat.info/sam-format-flag
 
-import logging,re,math
-import pysam,copy
+import logging,re,math,copy,sys
+import pysam
 from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
+from .CircosController import *
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
+
+
+# parameters
+MIN_DISCO_INS_SIZE = 400
+PRUNE_INS_SIZE = 450
+SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error
+
+
+# translation tables:
+strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
+
+
+def entropy(frequency_table):
+    n = sum(frequency_table.values())
+    prob = [float(x)/n for x in frequency_table.values()]
+    
+    entropy = - sum([ p * math.log(p) / math.log(2.0) for p in prob if p > 0 ])
+    if entropy <= 0:
+        return 0.0
+    else:
+        return entropy / (math.log(n) / math.log(2.0))
 
 
 class Arc:
@@ -42,6 +64,63 @@ class Arc:
         self._origin = _origin
         self._target = _target
         self._types = {}
+        
+        # Used for determining entropy
+        self.unique_alignments_idx = {}
+    
+    def get_entropy(self):
+        """Entropy is an important metric/ propery of an arc
+        The assumption is that all reads should be 'different', i.e.
+        have a different start position, different end position,
+        different soft/hardclips etc.
+        
+        It is more probable to find the following alignment in a true
+        fusion gene:
+        
+            <==========]                              (split reads)
+              <========]
+              <========]
+               <=======]
+                <======]
+                               <==========]
+                               <========]
+                               <========]
+                               <=======]
+                               <======]
+       <===========]------------------<===========]    (discordant)
+     <===========]------------------<===========]
+  <===========]------------------<===========]
+        
+        than:
+
+              <========]
+              <========]
+              <========]
+              <========]
+              <========]
+                               <========]
+                               <========]
+                               <========]
+                               <========]
+                               <========]
+        <===========]------------------<===========]    (discordant)
+        <===========]------------------<===========]
+       
+       
+        The easiest way to calculate this is based upon the position plus
+        the cigar strings. However, if some kind of merge strategy
+        will be added, we may find 'M126' for different positions while
+        they have a different meaning. Hence, the combination of the
+        position + the CIGAR string would be the unique key we would like
+        to use for the fequency table.
+        
+        Of course there is some level of saturation; if you have 1.000.000
+        reads there will be reads that are identical because there is simply
+        a limited spanning region (determined by insert size + read length)
+        but calculating the true possiblities has too many degrees of freedom.
+        """
+        
+        return entropy(self.unique_alignments_idx)
     
     def get_complement(self):
         """
@@ -58,6 +137,10 @@ class Arc:
     def merge_arc(self,arc):
         """Merges discordant_mates arcs
         """
+        
+        for alignment_key in arc.unique_alignments_idx:
+            self.add_alignment_key(alignment_key)
+        
         for _type in arc._types:
             if _type in [
                     "discordant_mates",
@@ -73,7 +156,6 @@ class Arc:
             elif _type not in ['silent_mate']:
                 raise Exception("Not sure what to do here with type: %s", _type)
         return False
-        
     
     def add_type(self,_type):
         if _type in ["cigar_soft_clip", 'cigar_hard_clip']:
@@ -83,6 +165,12 @@ class Arc:
             self._types[_type] = 0
         
         self._types[_type] += 1
+    
+    def add_alignment_key(self,alignment_key):
+        if not self.unique_alignments_idx.has_key(alignment_key):
+            self.unique_alignments_idx[alignment_key] = 0
+        
+        self.unique_alignments_idx[alignment_key] += 1
     
     def get_count(self, _type):
         
@@ -140,10 +228,10 @@ class Arc:
         
         out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
         
-        spacer = " "*len(str(self._origin.position))
+        #spacer = " "*len(str(self._origin.position))
         
-        for _k in self._origin.splice_arcs.keys():
-            out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_arcs[_k][1].get_splice_score())
+        #for _k in self._origin.splice_arcs.keys():
+        #    out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_arcs[_k][1].get_splice_score())
         
         return out
 
@@ -180,13 +268,16 @@ class Node:
     def add_clip(self):
         self.clips += 1
     
-    def insert_arc(self,arc,arc_type):
+    def insert_arc(self,arc,arc_type,alignment_key):
         skey = str(arc._target.position)
         
         if not self.arcs.has_key(skey):
             self.set_arc(arc)
         
         self.arcs[skey].add_type(arc_type)
+        
+        if alignment_key != None:# Splice junctions should be skipped for entropy
+            self.arcs[skey].add_alignment_key(alignment_key)
     
     def set_arc(self, arc):
         self.arcs[str(arc._target.position)] = arc
@@ -206,12 +297,12 @@ class Node:
         else:
             return (None, None, None, None)
     
-    def new_arc(self,node2,arc_type,do_vice_versa):
+    def new_arc(self,node2,arc_type,alignment_key,do_vice_versa):
         if do_vice_versa:
-            node2.new_arc(self,arc_type,False)
+            node2.new_arc(self,arc_type,alignment_key,False)
         
         arc = Arc(self,node2)
-        self.insert_arc(arc,arc_type)
+        self.insert_arc(arc,arc_type,alignment_key)
     
     def remove_arc(self,arc,idx):
         if idx == "by-target":
@@ -280,6 +371,7 @@ class Node:
             # if rmse < max_rmse: valid data point
             
             max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
+            return (rmse <= max_rmse)
         
         return False
 
@@ -369,6 +461,7 @@ class BreakPosition:
             err += pow(self.get_dist(pos, True) , 2)
         return math.sqrt(err)
 
+
 class Chain:
     def __init__(self,pysam_fh):
         self.idxtree = GenomeIntervalTree()
@@ -395,11 +488,13 @@ class Chain:
         except:
             return None
     
-    def insert_entry(self,pos1,pos2,_type,do_vice_versa):
+    def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """
          - Checks if Node exists at pos1, otherwise creates one
          - Checks if Node exists at pos2, otherwise creates one
          - Checks if Arc exists between them
+         
+         cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
         """
         
         self.create_node(pos1)
@@ -408,7 +503,17 @@ class Chain:
         node1 = self.get_node_reference(pos1)
         node2 = self.get_node_reference(pos2)
         
-        node1.new_arc(node2,_type,do_vice_versa)
+        if cigarstrs != None:
+            # Hexadec saves more mem
+            short_pos1 = "%0.2X" % pos1.pos#str(pos1.pos)
+            short_pos2 = "%0.2X" % pos2.pos#str(pos2.pos)
+        
+            alignment_key  = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"
+            alignment_key += short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
+            
+            node1.new_arc(node2,_type,alignment_key,do_vice_versa)
+        else:
+            node1.new_arc(node2,_type,None,do_vice_versa)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional arc between read and sa-tag in the Chain
@@ -459,7 +564,7 @@ class Chain:
         # 4. 'silent_mate'
         
         rg = read.get_tag('RG')
-        if rg in ["discordant_mates","silent_mate"]:
+        if rg in ["discordant_mates"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  bam_parse_alignment_end(read),
                                  not read.is_reverse)
@@ -473,7 +578,7 @@ class Chain:
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_1","spanning_singleton_1"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -484,7 +589,7 @@ class Chain:
                                  parsed_SA_tag[1],
                                  STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
 
         elif rg in ["spanning_singleton_1_r"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -495,7 +600,7 @@ class Chain:
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_2","spanning_singleton_2"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -506,7 +611,7 @@ class Chain:
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_singleton_2_r"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -517,43 +622,12 @@ class Chain:
                                  parsed_SA_tag[1],
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
-            #else:
-            #pos2 = BreakPosition(parsed_SA_tag[0],
-            #                    bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-            #                    STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-        
-            #else:
-                #if not read.is_reverse:
-                    #pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                        #read.reference_start,
-                                        #not read.is_reverse)
-                #else:
-                    #pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                        #bam_parse_alignment_end(read),
-                                        #not read.is_reverse)
-                    
-                
-                ### The read is the second in pair, and the SA tag the first...
-                #if parsed_SA_tag[4] != "+":
-                    #print read
-                    #raise Exception("Todo")
-                    ## Most likely code that should do it:
-                    ##
-                    ##pos1 = BreakPosition(parsed_SA_tag[0],
-                    ##                    parsed_SA_tag[1],
-                    ##                    STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-                    ##
-                    ##self.insert_entry(pos1,pos2,rg)
-                    
-                #else:
-                    #pos1 = BreakPosition(parsed_SA_tag[0],
-                                        #bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-                                        #STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-        
-        else:
+        elif rg not in ["silent_mate"]:
             raise Exception("Fatal Error, RG: "+rg)
+        
+        return (pos1, pos2)
     
     def reinsert_arcs(self, arcs):
         """Only works for Arcs of which the _origin and _target Node
@@ -561,7 +635,7 @@ class Chain:
         """
         for arc_t in arcs:
             arc   = arc_t[0]
-            arc_c = arc_t[2]
+            arc_c = arc_t[1]
             
             node1 = arc._origin
             node2 = arc._target
@@ -683,7 +757,6 @@ class Chain:
         """
         Searches for reads inbetween two regions (e.g. break + ins. size)
         and returns the ratio of uniq reads that fall within this range
-        """
         
         included = [
             'discordant_mates',
@@ -741,6 +814,7 @@ class Chain:
                             raise Exception("To be implemented: %s", _type)
 
         return (1.0 * arcs_inbetween / total_arcs)
+        """
 
     def print_chain(self):
         print "**************************************************************"
@@ -785,27 +859,24 @@ class Chain:
         candidates = []
         candidate = self.get_start_point()
         
-        #print candidate
-        self.print_chain()
+        #self.print_chain()
         
         i = 1
         while candidate != None:
             if i > 15:
                 raise Exception("Recusion depth errr")
             
-            ratio = self.prune_arc(candidate, insert_size)
-            candidates.append((candidate, ratio, candidate.get_complement()))
+            self.prune_arc(candidate, insert_size)
+            candidates.append((candidate, candidate.get_complement()))
             
             self.remove_arc(candidate)
-            
-        #    self.print_chain()
             
             candidate = self.get_start_point()
              
             i += 1
         
         
-        self.print_chain()
+        #self.print_chain()
         
         #for candidate in candidates:
         #    print candidate
@@ -814,83 +885,45 @@ class Chain:
     
     #@todo ADD RECURSION DEPTH LIMIT
     def prune_arc(self, arc, insert_size):
-        ## @todo make somehow only 
-        #if 
+        ## These types of arcs fall within the same space / inst. size
+        ## they make the arcs heavier
+        
         node1 = arc._origin
         node2 = arc._target
         
-        ratio = self.arcs_ratio_between(node1.position, node2.position, insert_size)
+        arc_complement = arc.get_complement()
         
-        for c_arc in self.search_arcs_between(node1.position, node2.position, insert_size):
-            ## These types of arcs fall within the same space / inst. size
-            ## they make the arcs heavier
-            arc_complement = node2.arcs[str(node1.position)]
-            arc.merge_arc(c_arc)
-            arc.merge_arc(arc_complement)
+        for arc_m in self.search_arcs_between(node1.position, node2.position, insert_size):
+            arc_mc = arc_m.get_complement()
             
-            self.remove_arc(c_arc)
+            arc.merge_arc(arc_m)
+            arc_complement.merge_arc(arc_mc)
             
-            #self.remove_arc(arc_complement)
-            #if arc.merge_arc(c_arc) or arc_complement.merge_arc(c_arc):
-            #    try:
-            #        self.remove_arc(c_arc)
-            #    except:
-            #        self.print_chain()
-            #        raise Exception("Error")
+            self.remove_arc(arc_m)
+            # complement is automatically removed after removing the fwd
+            #self.remove_arc(arc_mc)
         
-        """
-        for c_arc in self.search_arcs_adjacent(node1.position, node2.position, insert_size):
-            # @todo see if we can merge by other types of Arcs too..
-            if c_arc[1].get_count('cigar_splice_junction') > 0:
-                #if c_arc[0] == 'pos1':
-                #    print "merge it with node1"
-                #elif c_arc[0] == 'pos2':
-                #    print "merge it with node2"
-                #else:
-                #    raise Exception("Unknown type: %s", c_arc[0])
-                
-                #complement_arc = self.get_node_reference(c_arc[1]._target.position).arcs[str(c_arc[1]._origin.position)]
-                
-                arc.new_arc(c_arc[1])
-                #arc.new_arc(complement_arc)
-                
-                #arc_complement.new_arc(c_arc[1])
-                
-                self.remove_arc(c_arc[1])# Removes bi-directional
-                
-                #self.prune_arc(c_arc[1], insert_size)
-                #self.prune_arc(complement_arc, insert_size)
-                
-                # @todo pruning needs to be done also to node2 instead
-                # of to the 2 splice junctions?
-                
-                
-                # if recursion depth not reached:
-                # self.prune_arc(c_arc[1],isize)
-                # else:
-                # raise exception max rec. depth reached
-        """
-        
-        return ratio
+        return None
     
     def merge_splice_juncs(self,uncertainty):
         #self.print_chain()
         
         init = self.get_start_splice_junc()
-        init_c = init.get_complement()
-        
-        for node in self:
-            for junc in node:
-                if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
-                    d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
-                    d_target = abs(junc._target.position.pos - init._target.position.pos)
-                    if d_origin <= uncertainty and d_target <= uncertainty:
-                        init.merge_arc(junc)
-                        init_c.merge_arc(junc.get_complement())
-                        
-                        self.remove_arc(junc)
-                        
-                        #self.print_chain()
+        if init != None:
+            init_c = init.get_complement()
+            
+            for node in self:
+                for junc in node:
+                    if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
+                        d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
+                        d_target = abs(junc._target.position.pos - init._target.position.pos)
+                        if d_origin <= uncertainty and d_target <= uncertainty:
+                            init.merge_arc(junc)
+                            init_c.merge_arc(junc.get_complement())
+                            
+                            self.remove_arc(junc)
+                            
+                            #self.print_chain()
     
     def rejoin_splice_juncs(self, thicker_arcs, insert_size):
         """thicker arcs go across the break point:
@@ -909,10 +942,10 @@ thick arcs:
         """
         ## 01 collect all left and right nodes
         
-        #added_splice_junctions = set([])
+        #added_splice_junctions = set()
         
-        left_nodes = set([])
-        right_nodes = set([])
+        left_nodes = set()
+        right_nodes = set()
         
         for arc in thicker_arcs:
             left_nodes.add(arc[0]._origin)
@@ -981,104 +1014,245 @@ thick arcs:
     def extract_subnetworks(self,thicker_arcs):
         """Make sure this does not suffer from endless recursion
         """
+        q = 0
         subnetworks = []
-        
-        start_point = thicker_arcs[0][0]
-        
-        left_nodes = [start_point._origin]
-        right_nodes = [start_point._target]
-        
-        ## The original nodes have been emptied, so the most important
-        ## arc's are now separated.
-        left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
-        right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
-        
-        subarcs = []
-        
-        # All arcs between any of the left and right nodes are valid arcs and have to be extracted
-        # Find all direct arcs joined by splice junctions
-        for left_node in left_nodes:
-            for right_node in right_nodes:
-                if left_node.arcs.has_key(str(right_node.position)):
-                    subarcs.append ( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
-                    subarcs.append ( (right_node.arcs[str(left_node.position)], left_node.arcs[str(right_node.position)]) )
-        
-        
-        ## Find all with one indirect step - these might be alternative junctions / exons
-        """
-        Here we want to add new nodes to `left_nodes` or `right_nodes`
-        using the `guilt-by-association` principle. Sometimes nodes are
-        having arcs to the same nodes of the already existing network,
-        but lack splice junction(s) to those existing network. They're
-        still connected to the network they might be exons that are not
-        taken into account by the aligner (classical example: exon-0 in
-        TMPRSS2). We have to be careful on the other hand, as multimap
-        locations may influence this.
-        
-        Therefore we ideally need a function that adds nodes based on:
-         - Genomic distance to all entries in either `left_nodes` or `right_nodes`
-           * Currently implemented as RMSE on Node::get_dist()
-         - The score of all arcs going to the node
-           * It also needs to correct for imbalance; 4 and 36 reads is less
-             likely than 20 and 20. Solution used multiplication.
-         - Number of arcs relative to the number of nodes.
-           *In case of 3 nodes, it is more likely to have 3 arcs (3/3) instead of 2
-           (2/3). This weight is not yet implemented (01/08/16).
-
-
-        Detection of possible candidates
-        --------------------------------
-        
-        nodes:
-        A     B         $ ... $          Y    Z
-splice:  -----
-
-left_nodes:  A, B
-right_nodes: Y, Z
-
-arcs:
-        A-Z (9)
-        B-Z (100)
-        
-        A-Y (2)
-        B-Y (20)
-        
-        For all each left node i, compared with each other left node j,
-        look for nodes they have in common:
-        Y, Z (exclude Z, because it was already in `right_nodes`
-        
-        Then we know for sure that both A and B are also connected to
-        Y, while there is no relation found between Y-Z. However,
-        if the distance between Y-Z is reasonable and there are many
-        reads, it is pretty likely that Y is part of the fusion event
-        as well.
-        
-        Reverse
-        -------
-        Then do this in reverse(d) order, from `right_nodes` to
-        `left_nodes`.
-        """
-        i = -1
-        for left_node_i in left_nodes:
-            j = -1
-            i += 1
+        while len(thicker_arcs) > 0:
+            start_point = thicker_arcs[0][0]
             
-            for left_node_j in left_nodes:
-                j += 1
-                
-                if i < j:
-                    ## Find similar destinations
-                    mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
-                    mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
-                    
-                    for mt in mutual_targets:
-                        if mt.is_connected_to((left_node_i, left_node_j),right_nodes):
-                            # Add node
-                            right_nodes.append(mt)
+            left_nodes = [start_point._origin]
+            right_nodes = [start_point._target]
+            
+            ## The original nodes have been emptied, so the most important
+            ## arc's are now separated.
+            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
+            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
+            
+            subarcs = []
+            
+            # All arcs between any of the left and right nodes are valid arcs and have to be extracted
+            # Find all direct arcs joined by splice junctions
+            for left_node in left_nodes:
+                for right_node in right_nodes:
+                    if left_node.arcs.has_key(str(right_node.position)):
+                        subarcs.append( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
+            
+            
+            ## Find all with one indirect step - these might be alternative junctions / exons
+            """
+            Here we want to add new nodes to `left_nodes` or `right_nodes`
+            using the `guilt-by-association` principle. Sometimes nodes are
+            having arcs to the same nodes of the already existing network,
+            but lack splice junction(s) to those existing network. They're
+            still connected to the network they might be exons that are not
+            taken into account by the aligner (classical example: exon-0 in
+            TMPRSS2). We have to be careful on the other hand, as multimap
+            locations may influence this.
+            
+            Therefore we ideally need a function that adds nodes based on:
+             - Genomic distance to all entries in either `left_nodes` or `right_nodes`
+               * Currently implemented as RMSE on Node::get_dist()
+             - The score of all arcs going to the node
+               * It also needs to correct for imbalance; 4 and 36 reads is less
+                 likely than 20 and 20. Solution used multiplication.
+             - Number of arcs relative to the number of nodes.
+               *In case of 3 nodes, it is more likely to have 3 arcs (3/3) instead of 2
+               (2/3). This weight is not yet implemented (01/08/16).
 
+
+            Detection of possible candidates
+            --------------------------------
+            
+            nodes:
+            A     B         $ ... $          Y    Z
+    splice:  -----
+
+    left_nodes:  A, B
+    right_nodes: Y, Z
+
+    arcs:
+            A-Z (9)
+            B-Z (100)
+            
+            A-Y (2)
+            B-Y (20)
+            
+            For all each left node i, compared with each other left node j,
+            look for nodes they have in common:
+            Y, Z (exclude Z, because it was already in `right_nodes`
+            
+            Then we know for sure that both A and B are also connected to
+            Y, while there is no relation found between Y-Z. However,
+            if the distance between Y-Z is reasonable and there are many
+            reads, it is pretty likely that Y is part of the fusion event
+            as well.
+            
+            Reverse
+            -------
+            Then do this in reverse(d) order, from `right_nodes` to
+            `left_nodes`.
+            """
+            i = -1
+            for left_node_i in left_nodes:
+                j = -1
+                i += 1
+                
+                for left_node_j in left_nodes:
+                    j += 1
+                    
+                    if i < j:
+                        ## Find similar destinations
+                        mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
+                        mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
+                        
+                        for mt in mutual_targets:
+                            if mt.is_connected_to((left_node_i, left_node_j), right_nodes):
+                                # Add node
+                                right_nodes.append(mt)
+                                
+                                for arc in mt.arcs.keys():
+                                    for l in left_nodes:
+                                        if str(l.position) == arc:
+                                            arc = mt.arcs[arc]
+                                            arc_c = arc.get_complement()
+                                            
+                                            # Make sure order is correct:
+                                            subarcs.append((arc_c,arc))
+            
+            ## Do inverse:
+            
+            #tmp = left_nodes
+            #left_nodes = right_nodes
+            #right_nodes = tmp
+
+            ### @todo Redo code
+            
+            
+            # remove all the links to the arcs in each of the nodes
+            for node in left_nodes:
+                for arc_u in subarcs:
+                    for arc in arc_u:
+                        key = str(arc._target.position)
+                        if node.arcs.has_key(key):
+                            del(node.arcs[key])
+
+            # pop subarcs from thicker arcs and redo until thicker arcs is empty
+            popme = set()
+            for arc in subarcs:
+                for arc2 in thicker_arcs:
+                    if arc[0] == arc2[0] or arc[1] == arc2[0]:
+                        popme.add(arc2)
+            
+            for pop in popme:
+                thicker_arcs.remove(pop)
+            
+            if q == 2:
+                break
+            
+            subnetworks.append(subarcs)
+        
+        #for sn in subnetworks:
+        #    print "sn:"
+        #    for s in sn:
+        #        print "  ",s[0]
         
         return subnetworks
 
+
+class Subnet(Chain):
+    def __init__(self,_id,arcs):
+        self._id = _id
+        self.arcs = arcs
+        self.total_clips = 0
+        self.total_score = 0
+    
+    def __str__(self):
+        """Make tabular output
+        
+        print "chr-A\t"
+        print "pos-A\t"
+        print "direction-A\t"
+        
+        print "chr-B\t"
+        print "pos-B\t"
+        print "direction-B\t"
+        
+        print "score\t"
+        print "soft+hardclips\t"
+        print "n-split-reads\t"
+        print "n-discordant-reads"
+        
+        print "n-arcs\t"
+        print "n-nodes-A\t"
+        print "n-nodes-B\t"
+        
+        fh.write("entropy-bp-arc\t")
+        fh.write("entropy-all-arcs\t")
+        """
+        out = ""
+        node_a = self.arcs[0][0]._origin
+        node_b = self.arcs[0][0]._target
+        
+        out += str(node_a.position._chr)+"\t"
+        out += str(node_a.position.pos)+"\t"
+        out += strand_tt[node_a.position.strand]+"\t"
+        
+        out += str(node_b.position._chr)+"\t"
+        out += str(node_b.position.pos)+"\t"
+        out += strand_tt[node_b.position.strand]+"\t"
+        
+        out += str(self.total_score)+"\t"
+        out += str(self.total_clips)+"\t"
+        
+        out += str(self.get_n_split_reads())+"\t"
+        out += str(self.get_n_discordant_reads())+"\t"
+        
+        out += str(len(self.arcs))+"\t"
+        nodes_a, nodes_b = self.get_n_nodes()
+        out += str(nodes_a)+"\t"
+        out += str(nodes_b)+"\t"
+        
+        out += str(self.arcs[0][0].get_entropy())+"\t"
+        out += str(self.get_overall_entropy())+"\t"
+        
+        out += "&".join([str(arc[0]) for arc in self.arcs])
+        
+        return out+"\n"
+    
+    def get_overall_entropy(self):
+        frequency_table = {}
+        for arc in self.arcs:
+            for key in arc[0].unique_alignments_idx:
+                if not frequency_table.has_key(key):
+                    frequency_table[key] = 0
+                frequency_table[key] += arc[0].unique_alignments_idx[key]
+        
+        return entropy(frequency_table)
+    
+    def get_n_splice_junctions(self):
+        pass
+    
+    def get_n_nodes(self):
+        nodes_a = set()
+        nodes_b = set()
+        
+        for arc in self.arcs:
+            nodes_a.add(arc[0]._origin)
+            nodes_b.add(arc[0]._target)
+        
+        return len(nodes_a), len(nodes_b)
+    
+    def get_n_split_reads(self):
+        n = 0
+        
+        for _type in ["spanning_paired_1","spanning_paired_2", "spanning_singleton_1", "spanning_singleton_2", "spanning_singleton_1_r", "spanning_singleton_2_r"]:
+            for arc in self.arcs:
+                n += arc[0].get_count(_type)
+        
+        return n
+    
+    def get_n_discordant_reads(self):
+        return sum([arc[0].get_count("discordant_mates") for arc in self.arcs])
+    
 
 class IntronDecomposition:
     def __init__(self,break_point):
@@ -1120,9 +1294,12 @@ class IntronDecomposition:
             _chr = pysam_fh.get_reference_name(r.reference_id)
             insert_size = self.get_insert_size([_chr,r.reference_start],[sa[0][0],sa[0][1]])
             
+            pos1 = None
+            pos2 = None
+            
             if r.get_tag('RG') == 'discordant_mates':
-                if abs(insert_size) >= 400:
-                    self.chain.insert(r,sa[0])
+                if abs(insert_size) >= MIN_DISCO_INS_SIZE:
+                    pos1, pos2 = self.chain.insert(r,sa[0])
             
             elif r.get_tag('RG') == 'silent_mate':
                 # usually in a exon?
@@ -1151,7 +1328,7 @@ class IntronDecomposition:
             
             elif r.get_tag('RG') in ['spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2', 'spanning_singleton_1_r', 'spanning_singleton_2_r']:
                 read = r
-                self.chain.insert(r,sa[0])
+                pos1, pos2 = self.chain.insert(r,sa[0])
 
             else:
                 raise Exception("Unknown type read: '"+str(r.get_tag('RG'))+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
@@ -1178,7 +1355,7 @@ class IntronDecomposition:
 splice-junc:                           <=============>
 
             """
-            if r.get_tag('RG') != 'silent_mate':
+            if pos1 != None and pos2 != None:
                 for internal_arc in self.find_cigar_arcs(r):
                     #@todo return Arc object instead of tuple
                     if internal_arc[2] in ['cigar_splice_junction']:
@@ -1212,9 +1389,9 @@ splice-junc:                           <=============>
                             self.chain.get_node_reference(pos2).add_clip()
                         except:
                             # chr21:39817561
-                            raise Exception("Node was not found, cigar correctly parsed?")
+                            raise Exception("\n\nNode was not found, cigar correctly parsed?\n----------\ninternal arc: "+str(internal_arc)+"\n----------\nqname: "+r.qname+"\ncigar: "+r.cigarstring+"\ntype:  "+r.get_tag('RG')+"\npos:   "+str(pos2))
                     else:
-                        self.chain.insert_entry(pos1,pos2,internal_arc[2],True)
+                        self.chain.insert_entry(pos1,pos2,internal_arc[2],None,True)
     
     def decompose(self,alignment_file):
         pysam_fh = self.test_disco_alignment(alignment_file)
@@ -1236,13 +1413,90 @@ splice-junc:                           <=============>
         # emperical evidence showed ~230bp? look into this by picking a few examples
         #c.prune(400+126-12)
         # max obs = 418 for now
-        thicker_arcs = self.chain.prune(450) # Makes arc thicker by lookin in the ins. size
-        self.chain.merge_splice_juncs(3)
-        thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, 450) # Merges arcs by splice junctions and other junctions
+        thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
+        self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
+        thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
         subnets = self.chain.extract_subnetworks(thicker_arcs)
         
-        return thicker_arcs
+        # If circos:
+        #s = 1
+        #for subnet in subnets:
+        #    c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
+        #    c.draw_network("tmp/test.png","tmp/test.svg")
+        #    s += 1
+        
+        subnets = self.filter_subnets_on_identical_nodes(subnets)
+        self.results = subnets
+        
+        return len(self.results)
+    
+    def export(self, fh):
+        fh.write(str(self))
+    
+    def __str__(self):
+        out = "chr-A\t"
+        out += "pos-A\t"
+        out += "direction-A\t"
+        
+        out += "chr-B\t"
+        out += "pos-B\t"
+        out += "direction-B\t"
+        
+        out += "score\t"
+        out += "soft+hardclips\t"
+        out += "n-split-reads\t"
+        out += "n-discordant-reads\t"
+        
+        out += "n-arcs\t"
+        out += "n-nodes-A\t"
+        out += "n-nodes-B\t"
+        
+        out += "entropy-bp-arc\t"
+        out += "entropy-all-arcs\t"
+        
+        out += "data-structure\n"
+        
+        for subnet in self.results:
+            out += str(subnet)
+        
+        return out
+    
+    def filter_subnets_on_identical_nodes(self, subnets):
+        new_subnets = []
+        _id = 0
+        #1. filter based on nodes - if there are shared nodes, exclude sn
+        all_nodes = set()
+        for i in range(len(subnets)):
+            subnet = subnets[i]
+            rmme = False
+            score = 0
+            nodes = set()
+            for dp in subnet:
+                score += dp[0].get_scores()
+                
+                nodes.add(dp[0]._origin)
+                nodes.add(dp[0]._target)
+            
+            clips = 0
+            for n in nodes:
+                if n in all_nodes:
+                    rmme = True
+                else:
+                    all_nodes.add(n)
+                
+                clips += n.clips
+            
+            if rmme:
+                subnets[i] = None
+            else:
+                i += 1
+                sn = Subnet(_id, subnet)
+                sn.total_clips = clips
+                sn.total_score = score
+                new_subnets.append(sn)
+        
+        return new_subnets
 
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:

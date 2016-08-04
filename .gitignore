@@ -16,3 +16,4 @@ tmp/
 /tests/*/*.bai
 .directory
 /.cache
+/*.svg
