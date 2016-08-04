@@ -1,0 +1,2 @@
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	score	soft+hardclips	n-split-reads	n-discordant-reads	n-arcs	n-nodes-A	n-nodes-B	entropy-bp-arc	entropy-all-arcs	data-structure
+chr21	39877811	+	chr21	42873374	-	9	6	3	0	1	1	1	1.0	1.0	chr21:39877811/39877812(+)->chr21:42873374/42873375(-):(spanning_paired_1:3)

@@ -228,10 +228,10 @@ class Arc:
         
         out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
         
-        spacer = " "*len(str(self._origin.position))
+        #spacer = " "*len(str(self._origin.position))
         
-        for _k in self._origin.splice_arcs.keys():
-            out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_arcs[_k][1].get_splice_score())
+        #for _k in self._origin.splice_arcs.keys():
+        #    out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_arcs[_k][1].get_splice_score())
         
         return out
 
@@ -1206,22 +1206,20 @@ class Subnet(Chain):
         out += str(self.total_score)+"\t"
         out += str(self.total_clips)+"\t"
         
-        out += 's:'+str(self.get_n_split_reads())+"\t"
-        out += 'd:'+str(self.get_n_discordant_reads())+"\t"
+        out += str(self.get_n_split_reads())+"\t"
+        out += str(self.get_n_discordant_reads())+"\t"
         
         out += str(len(self.arcs))+"\t"
         nodes_a, nodes_b = self.get_n_nodes()
-        out += "n-A:"+str(nodes_a)+"\t"
-        out += "n-B:"+str(nodes_b)+"\t"
+        out += str(nodes_a)+"\t"
+        out += str(nodes_b)+"\t"
         
-        out += "ee:"+str(self.arcs[0][0].get_entropy())+"\t"
-        out += "ee2:"+str(self.get_overall_entropy())+"\t"
+        out += str(self.arcs[0][0].get_entropy())+"\t"
+        out += str(self.get_overall_entropy())+"\t"
         
-        #for arc in self.arcs:
-        #    out += "\n\t-> "+str(arc[0].unique_alignments_idx)
-        #    out += "\n\t   "+str(arc[1].unique_alignments_idx)+" <-"
+        out += "&".join([str(arc[0]) for arc in self.arcs])
         
-        return out
+        return out+"\n"
     
     def get_overall_entropy(self):
         frequency_table = {}
@@ -1432,39 +1430,40 @@ splice-junc:                           <=============>
         #    s += 1
         
         subnets = self.filter_subnets_on_identical_nodes(subnets)
-        self.print_results(subnets)
+        self.results = subnets
         
-        
-        return subnets
+        return len(self.results)
     
-    def print_results(self,subnets):
-        fh = sys.stdout
-        fh.write("---\n")
+    def export(self, fh):
+        fh.write(str(self))
+    
+    def __str__(self):
+        out = "chr-A\t"
+        out += "pos-A\t"
+        out += "direction-A\t"
         
-        fh.write("chr-A\t")
-        fh.write("pos-A\t")
-        fh.write("direction-A\t")
+        out += "chr-B\t"
+        out += "pos-B\t"
+        out += "direction-B\t"
         
-        fh.write("chr-B\t")
-        fh.write("pos-B\t")
-        fh.write("direction-B\t")
+        out += "score\t"
+        out += "soft+hardclips\t"
+        out += "n-split-reads\t"
+        out += "n-discordant-reads\t"
         
-        fh.write("score\t")
-        fh.write("soft+hardclips\t")
-        fh.write("n-split-reads\t")
-        fh.write("n-discordant-reads\t")
+        out += "n-arcs\t"
+        out += "n-nodes-A\t"
+        out += "n-nodes-B\t"
         
-        fh.write("n-arcs\t")
-        fh.write("n-nodes-A\t")
-        fh.write("n-nodes-B\t")
+        out += "entropy-bp-arc\t"
+        out += "entropy-all-arcs\t"
         
-        fh.write("entropy-bp-arc\t")
-        fh.write("entropy-all-arcs\n")
+        out += "data-structure\n"
         
-        for subnet in subnets:
-            print subnet
+        for subnet in self.results:
+            out += str(subnet)
         
-        fh.write("---\n")
+        return out
     
     def filter_subnets_on_identical_nodes(self, subnets):
         new_subnets = []
