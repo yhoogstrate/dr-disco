@@ -159,10 +159,10 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
 
 def main():
-    if not os.path.exists(T_TEST_DIR):
-        os.makedirs(T_TEST_DIR)
-    
     unittest.main()
 
 if __name__ == '__main__':
+    if not os.path.exists(T_TEST_DIR):
+        os.makedirs(T_TEST_DIR)
+    
     main()
