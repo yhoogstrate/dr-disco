@@ -51,8 +51,9 @@ class TestIntronicBreakDetection(unittest.TestCase):
         #ic.annotate_genes(gobj)
         n_candidates = ic.decompose(input_file_a)
         
-        with open(output_file, "w") as fh:
-            ic.export(fh)
+        fh = open(output_file, "w")
+        ic.export(fh)
+        fh.close()
         
         self.assertEqual(n_candidates, 1)
         self.assertTrue(filecmp.cmp(test_file, output_file))
