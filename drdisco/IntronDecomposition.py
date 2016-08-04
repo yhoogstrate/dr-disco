@@ -9,8 +9,8 @@ Tries to figure out within a discordant RNA-Seq read alignment:
 
 #http://www.samformat.info/sam-format-flag
 
-import logging,re,math
-import pysam,copy
+import logging,re,math,copy,sys
+import pysam
 from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
 from .CircosController import *
@@ -22,6 +22,21 @@ from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 MIN_DISCO_INS_SIZE = 400
 PRUNE_INS_SIZE = 450
 SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error
+
+
+# translation tables:
+strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
+
+
+def entropy(frequency_table):
+    n = sum(frequency_table.values())
+    prob = [float(x)/n for x in frequency_table.values()]
+    
+    entropy = - sum([ p * math.log(p) / math.log(2.0) for p in prob if p > 0 ])
+    entropy = entropy / (math.log(n) / math.log(2.0))
+    
+    return entropy
+
 
 
 class Arc:
@@ -49,6 +64,62 @@ class Arc:
         self._origin = _origin
         self._target = _target
         self._types = {}
+        
+        # Used for determining entropy
+        self.unique_alignments_idx = {}
+    
+    def get_entropy(self):
+        """Entropy is an important metric/ propery of an arc
+        The assumption is that all reads should be 'different', i.e.
+        have a different start position, different end position,
+        different soft/hardclips etc.
+        
+        It is more probable to find the following alignment in a true
+        fusion gene:
+        
+            <==========]                              (split reads)
+              <========]
+              <========]
+               <=======]
+                <======]
+                               <==========]
+                               <========]
+                               <========]
+                               <=======]
+                               <======]
+       <===========]------------------<===========]    (discordant)
+     <===========]------------------<===========]
+  <===========]------------------<===========]
+        
+        than:
+
+              <========]
+              <========]
+              <========]
+              <========]
+              <========]
+                               <========]
+                               <========]
+                               <========]
+                               <========]
+                               <========]
+        <===========]------------------<===========]    (discordant)
+        <===========]------------------<===========]
+       
+       
+        The easiest way to calculate this is based upon the position plus
+        the cigar strings. However, if some kind of merge strategy
+        will be added, we may find 'M126' for different positions while
+        they have a different meaning. Hence, the combination of the
+        position + the CIGAR string would be the unique key we would like
+        to use for the fequency table.
+        
+        Of course there is some level of saturation; if you have 1.000.000
+        reads there will be reads that are identical because there is simply
+        a limited spanning region (determined by insert size + read length)
+        but calculating the true possiblities has too many degrees of freedom.
+        """
+        return entropy(self.unique_alignments_idx)
     
     def get_complement(self):
         """
@@ -65,6 +136,10 @@ class Arc:
     def merge_arc(self,arc):
         """Merges discordant_mates arcs
         """
+        
+        for alignment_key in arc.unique_alignments_idx:
+            self.add_alignment_key(alignment_key)
+        
         for _type in arc._types:
             if _type in [
                     "discordant_mates",
@@ -80,7 +155,6 @@ class Arc:
             elif _type not in ['silent_mate']:
                 raise Exception("Not sure what to do here with type: %s", _type)
         return False
-        
     
     def add_type(self,_type):
         if _type in ["cigar_soft_clip", 'cigar_hard_clip']:
@@ -90,6 +164,12 @@ class Arc:
             self._types[_type] = 0
         
         self._types[_type] += 1
+    
+    def add_alignment_key(self,alignment_key):
+        if not self.unique_alignments_idx.has_key(alignment_key):
+            self.unique_alignments_idx[alignment_key] = 0
+        
+        self.unique_alignments_idx[alignment_key] += 1
     
     def get_count(self, _type):
         
@@ -187,13 +267,14 @@ class Node:
     def add_clip(self):
         self.clips += 1
     
-    def insert_arc(self,arc,arc_type):
+    def insert_arc(self,arc,arc_type,alignment_key):
         skey = str(arc._target.position)
         
         if not self.arcs.has_key(skey):
             self.set_arc(arc)
         
         self.arcs[skey].add_type(arc_type)
+        self.arcs[skey].add_alignment_key(alignment_key)
     
     def set_arc(self, arc):
         self.arcs[str(arc._target.position)] = arc
@@ -213,12 +294,12 @@ class Node:
         else:
             return (None, None, None, None)
     
-    def new_arc(self,node2,arc_type,do_vice_versa):
+    def new_arc(self,node2,arc_type,alignment_key,do_vice_versa):
         if do_vice_versa:
-            node2.new_arc(self,arc_type,False)
+            node2.new_arc(self,arc_type,alignment_key,False)
         
         arc = Arc(self,node2)
-        self.insert_arc(arc,arc_type)
+        self.insert_arc(arc,arc_type,alignment_key)
     
     def remove_arc(self,arc,idx):
         if idx == "by-target":
@@ -404,11 +485,13 @@ class Chain:
         except:
             return None
     
-    def insert_entry(self,pos1,pos2,_type,do_vice_versa):
+    def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """
          - Checks if Node exists at pos1, otherwise creates one
          - Checks if Node exists at pos2, otherwise creates one
          - Checks if Arc exists between them
+         
+         cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
         """
         
         self.create_node(pos1)
@@ -417,7 +500,13 @@ class Chain:
         node1 = self.get_node_reference(pos1)
         node2 = self.get_node_reference(pos2)
         
-        node1.new_arc(node2,_type,do_vice_versa)
+        # Hexadec saves more mem
+        short_pos1 = "%0.2X" % pos1.pos#str(pos1.pos)
+        short_pos2 = "%0.2X" % pos2.pos#str(pos2.pos)
+        alignment_key  = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"
+        alignment_key += short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
+        
+        node1.new_arc(node2,_type,alignment_key,do_vice_versa)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional arc between read and sa-tag in the Chain
@@ -482,7 +571,8 @@ class Chain:
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            print 
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_1","spanning_singleton_1"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -493,7 +583,7 @@ class Chain:
                                  parsed_SA_tag[1],
                                  STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
 
         elif rg in ["spanning_singleton_1_r"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -515,7 +605,7 @@ class Chain:
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_singleton_2_r"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -848,10 +938,10 @@ thick arcs:
         """
         ## 01 collect all left and right nodes
         
-        #added_splice_junctions = set([])
+        #added_splice_junctions = set()
         
-        left_nodes = set([])
-        right_nodes = set([])
+        left_nodes = set()
+        right_nodes = set()
         
         for arc in thicker_arcs:
             left_nodes.add(arc[0]._origin)
@@ -1042,7 +1132,7 @@ thick arcs:
                             del(node.arcs[key])
 
             # pop subarcs from thicker arcs and redo until thicker arcs is empty
-            popme = set([])
+            popme = set()
             for arc in subarcs:
                 for arc2 in thicker_arcs:
                     if arc[0] == arc2[0] or arc[1] == arc2[0]:
@@ -1065,8 +1155,6 @@ thick arcs:
 
 
 class Subnet(Chain):
-    strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-'}
-    
     def __init__(self,_id,arcs):
         self._id = _id
         self.arcs = arcs
@@ -1074,25 +1162,83 @@ class Subnet(Chain):
         self.total_score = 0
     
     def __str__(self):
-        """Make tabular output"""
+        """Make tabular output
+        
+        print "chr-A\t"
+        print "pos-A\t"
+        print "direction-A\t"
+        
+        print "chr-B\t"
+        print "pos-B\t"
+        print "direction-B\t"
+        
+        print "score\t"
+        print "soft+hardclips\t"
+        print "n-split-reads\t"
+        print "n-discordant-reads"
+        
+        print "n-arcs\t"
+        print "n-nodes-A\t"
+        print "n-nodes-B\t"
+        
+        fh.write("entropy-bp-arc\t")
+        fh.write("entropy-all-arcs\t")
+        """
         out = ""
         node_a = self.arcs[0][0]._origin
         node_b = self.arcs[0][0]._target
         
         out += str(node_a.position._chr)+"\t"
         out += str(node_a.position.pos)+"\t"
-        out += self.strand_tt[node_a.position.strand]+"\t"
+        out += strand_tt[node_a.position.strand]+"\t"
         
         out += str(node_b.position._chr)+"\t"
         out += str(node_b.position.pos)+"\t"
-        out += self.strand_tt[node_b.position.strand]+"\t"
+        out += strand_tt[node_b.position.strand]+"\t"
         
         out += str(self.total_score)+"\t"
         out += str(self.total_clips)+"\t"
         
+        out += 's:'+str(self.get_n_split_reads())+"\t"
+        out += 'd:'+str(self.get_n_discordant_reads())+"\t"
+        
         out += str(len(self.arcs))+"\t"
+        nodes_a, nodes_b = self.get_n_nodes()
+        out += "n-A:"+str(nodes_a)+"\t"
+        out += "n-B:"+str(nodes_b)+"\t"
+        
+        out += "ee:"+str(self.arcs[0][0].get_entropy())+"\t"
+        
+        for arc in self.arcs:
+            out += "\n\t-> "+str(arc[0].unique_alignments_idx)
+            out += "\n\t   "+str(arc[1].unique_alignments_idx)+" <-"
         
         return out
+    
+    def get_n_splice_junctions(self):
+        pass
+    
+    def get_n_nodes(self):
+        nodes_a = set()
+        nodes_b = set()
+        
+        for arc in self.arcs:
+            nodes_a.add(arc[0]._origin)
+            nodes_b.add(arc[0]._target)
+        
+        return len(nodes_a), len(nodes_b)
+    
+    def get_n_split_reads(self):
+        n = 0
+        
+        for _type in ["spanning_paired_1","spanning_paired_2", "spanning_singleton_1", "spanning_singleton_2", "spanning_singleton_1_r", "spanning_singleton_2_r"]:
+            for arc in self.arcs:
+                n += arc[0].get_count(_type)
+        
+        return n
+    
+    def get_n_discordant_reads(self):
+        return sum([arc[0].get_count("discordant_mates") for arc in self.arcs])
     
 
 class IntronDecomposition:
@@ -1274,22 +1420,46 @@ splice-junc:                           <=============>
         return subnets
     
     def print_results(self,subnets):
-        print "---"
-        print "chr-A\tpos-A\tdirection-A\tchr-B\tpos-B\tdirection-B\tscore\tsoft+hardclips\tn-arcs\tn-nodes\tspanning-splice-junctions"
+        fh = sys.stdout
+        fh.write("---\n")
+        
+        fh.write("chr-A\t")
+        fh.write("pos-A\t")
+        fh.write("direction-A\t")
+        
+        fh.write("chr-B\t")
+        fh.write("pos-B\t")
+        fh.write("direction-B\t")
+        
+        fh.write("score\t")
+        fh.write("soft+hardclips\t")
+        fh.write("n-split-reads\t")
+        fh.write("n-discordant-reads\t")
+        
+        fh.write("n-arcs\t")
+        fh.write("n-nodes-A\t")
+        fh.write("n-nodes-B\t")
+        
+        fh.write("entropy-bp-arc\t")
+        fh.write("entropy-all-arcs\t")
+        
+        fh.write("---\n")
+        
         for subnet in subnets:
             print subnet
-        print "---"
+        
+        fh.write("---\n")
     
     def filter_subnets_on_identical_nodes(self, subnets):
         new_subnets = []
         _id = 0
         #1. filter based on nodes - if there are shared nodes, exclude sn
-        all_nodes = set([])
+        all_nodes = set()
         for i in range(len(subnets)):
             subnet = subnets[i]
             rmme = False
             score = 0
-            nodes = set([])
+            nodes = set()
             for dp in subnet:
                 score += dp[0].get_scores()
                 
