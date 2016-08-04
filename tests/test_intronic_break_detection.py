@@ -51,6 +51,11 @@ class TestIntronicBreakDetection(unittest.TestCase):
         #ic.annotate_genes(gobj)
         n_candidates = ic.decompose(input_file_a)
         
+        if os.path.exists(T_TEST_DIR):
+            print "exists"
+        else:
+            print "does not exist:("
+            
         fh = open(output_file, "w")
         ic.export(fh)
         fh.close()
