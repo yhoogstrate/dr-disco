@@ -163,6 +163,7 @@ def main():
 
 if __name__ == '__main__':
     if not os.path.exists(T_TEST_DIR):
+        print "Making dir: "+T_TEST_DIR
         os.makedirs(T_TEST_DIR)
     
     main()
