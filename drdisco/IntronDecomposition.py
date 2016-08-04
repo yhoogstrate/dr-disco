@@ -33,10 +33,10 @@ def entropy(frequency_table):
     prob = [float(x)/n for x in frequency_table.values()]
     
     entropy = - sum([ p * math.log(p) / math.log(2.0) for p in prob if p > 0 ])
-    entropy = entropy / (math.log(n) / math.log(2.0))
-    
-    return entropy
-
+    if entropy <= 0:
+        return 0.0
+    else:
+        return entropy / (math.log(n) / math.log(2.0))
 
 
 class Arc:
@@ -119,6 +119,7 @@ class Arc:
         a limited spanning region (determined by insert size + read length)
         but calculating the true possiblities has too many degrees of freedom.
         """
+        
         return entropy(self.unique_alignments_idx)
     
     def get_complement(self):
@@ -274,7 +275,9 @@ class Node:
             self.set_arc(arc)
         
         self.arcs[skey].add_type(arc_type)
-        self.arcs[skey].add_alignment_key(alignment_key)
+        
+        if alignment_key != None:# Splice junctions should be skipped for entropy
+            self.arcs[skey].add_alignment_key(alignment_key)
     
     def set_arc(self, arc):
         self.arcs[str(arc._target.position)] = arc
@@ -500,13 +503,17 @@ class Chain:
         node1 = self.get_node_reference(pos1)
         node2 = self.get_node_reference(pos2)
         
-        # Hexadec saves more mem
-        short_pos1 = "%0.2X" % pos1.pos#str(pos1.pos)
-        short_pos2 = "%0.2X" % pos2.pos#str(pos2.pos)
-        alignment_key  = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"
-        alignment_key += short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
+        if cigarstrs != None:
+            # Hexadec saves more mem
+            short_pos1 = "%0.2X" % pos1.pos#str(pos1.pos)
+            short_pos2 = "%0.2X" % pos2.pos#str(pos2.pos)
         
-        node1.new_arc(node2,_type,alignment_key,do_vice_versa)
+            alignment_key  = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"
+            alignment_key += short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
+            
+            node1.new_arc(node2,_type,alignment_key,do_vice_versa)
+        else:
+            node1.new_arc(node2,_type,None,do_vice_versa)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional arc between read and sa-tag in the Chain
@@ -594,7 +601,7 @@ class Chain:
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_2","spanning_singleton_2"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -616,7 +623,7 @@ class Chain:
                                  parsed_SA_tag[1],
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
-            self.insert_entry(pos1,pos2,rg,False)
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg not in ["silent_mate"]:
             raise Exception("Fatal Error, RG: "+rg)
@@ -1208,12 +1215,23 @@ class Subnet(Chain):
         out += "n-B:"+str(nodes_b)+"\t"
         
         out += "ee:"+str(self.arcs[0][0].get_entropy())+"\t"
+        out += "ee2:"+str(self.get_overall_entropy())+"\t"
         
-        for arc in self.arcs:
-            out += "\n\t-> "+str(arc[0].unique_alignments_idx)
-            out += "\n\t   "+str(arc[1].unique_alignments_idx)+" <-"
+        #for arc in self.arcs:
+        #    out += "\n\t-> "+str(arc[0].unique_alignments_idx)
+        #    out += "\n\t   "+str(arc[1].unique_alignments_idx)+" <-"
         
         return out
+    
+    def get_overall_entropy(self):
+        frequency_table = {}
+        for arc in self.arcs:
+            for key in arc[0].unique_alignments_idx:
+                if not frequency_table.has_key(key):
+                    frequency_table[key] = 0
+                frequency_table[key] += arc[0].unique_alignments_idx[key]
+        
+        return entropy(frequency_table)
     
     def get_n_splice_junctions(self):
         pass
@@ -1378,7 +1396,7 @@ splice-junc:                           <=============>
                             # chr21:39817561
                             raise Exception("\n\nNode was not found, cigar correctly parsed?\n----------\ninternal arc: "+str(internal_arc)+"\n----------\nqname: "+r.qname+"\ncigar: "+r.cigarstring+"\ntype:  "+r.get_tag('RG')+"\npos:   "+str(pos2))
                     else:
-                        self.chain.insert_entry(pos1,pos2,internal_arc[2],True)
+                        self.chain.insert_entry(pos1,pos2,internal_arc[2],None,True)
     
     def decompose(self,alignment_file):
         pysam_fh = self.test_disco_alignment(alignment_file)
@@ -1441,9 +1459,7 @@ splice-junc:                           <=============>
         fh.write("n-nodes-B\t")
         
         fh.write("entropy-bp-arc\t")
-        fh.write("entropy-all-arcs\t")
-        
-        fh.write("---\n")
+        fh.write("entropy-all-arcs\n")
         
         for subnet in subnets:
             print subnet
