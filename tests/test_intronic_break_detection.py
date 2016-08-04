@@ -33,6 +33,11 @@ TEST_DIR = "tests/detect-intronic/"
 T_TEST_DIR = "tmp/"+TEST_DIR
 
 
+# Nosetests doesn't use main()
+if not os.path.exists(T_TEST_DIR):
+    os.makedirs(T_TEST_DIR)
+
+
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
         #print("\n")
@@ -50,11 +55,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic = IntronDecomposition(bp)
         #ic.annotate_genes(gobj)
         n_candidates = ic.decompose(input_file_a)
-        
-        if os.path.exists(T_TEST_DIR):
-            print "exists"
-        else:
-            print "does not exist:("
             
         fh = open(output_file, "w")
         ic.export(fh)
@@ -162,8 +162,5 @@ def main():
     unittest.main()
 
 if __name__ == '__main__':
-    if not os.path.exists(T_TEST_DIR):
-        print "Making dir: "+T_TEST_DIR
-        os.makedirs(T_TEST_DIR)
-    
     main()
+
