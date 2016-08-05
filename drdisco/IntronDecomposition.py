@@ -147,6 +147,7 @@ class Arc:
         for _type in arc._types:
             if _type in [
                     "discordant_mates",
+                    "spanning_paired_1",
                     "spanning_paired_2",
                     "spanning_singleton_1",
                     "spanning_singleton_2",
@@ -861,25 +862,20 @@ class Chain:
     def prune(self,insert_size):
         """Does some 'clever' tricks to merge arcs together and reduce data points
         """
+        self.logger.info("Find and merge other arcs in close proximity (insert size)")
+        
         candidates = []
         candidate = self.get_start_point()
         
         #self.print_chain()
         
-        i = 1
         while candidate != None:
-            if i > 15:
-                raise Exception("Recusion depth errr")
-            
             self.prune_arc(candidate, insert_size)
             candidates.append((candidate, candidate.get_complement()))
             
             self.remove_arc(candidate)
             
             candidate = self.get_start_point()
-             
-            i += 1
-        
         
         #self.print_chain()
         
@@ -911,7 +907,7 @@ class Chain:
         return None
     
     def merge_splice_juncs(self,uncertainty):
-        #self.print_chain()
+        self.logger.info("Merging splice juncs")
         
         init = self.get_start_splice_junc()
         if init != None:
@@ -929,6 +925,8 @@ class Chain:
                             self.remove_arc(junc)
                             
                             #self.print_chain()
+            
+            init = self.get_start_splice_junc()
     
     def rejoin_splice_juncs(self, thicker_arcs, insert_size):
         """thicker arcs go across the break point:
@@ -1393,10 +1391,13 @@ splice-junc:                           <=============>
                         try:
                             self.chain.get_node_reference(pos2).add_clip()
                         except:
-                            if r.get_tag('RG') in ['spanning_paired_2']:
-                                self.logger.warn("softclip(s) of "+r.qname+" don't add up with the junction(s).")
-                            else:
-                                raise Exception("\n\nNode was not found, cigar correctly parsed?\n----------\ninternal arc: "+str(internal_arc)+"\n----------\nqname: "+r.qname+"\ncigar: "+r.cigarstring+"\ntype:  "+r.get_tag('RG')+"\npos:   "+str(pos2))
+                            # This happens with some weird reads
+                            #if r.get_tag('RG') in ['spanning_paired_2','spanning_singleton_2_r']:
+                            self.chain.create_node(pos2)
+                            self.chain.get_node_reference(pos2).add_clip()
+                            self.logger.warn("softclip of "+r.qname+" is not at the side of the break point.")
+                            #else:
+                            #    raise Exception("\n\nNode was not found, cigar correctly parsed?\n----------\ninternal arc: "+str(internal_arc)+"\n----------\nqname: "+r.qname+"\ncigar: "+r.cigarstring+"\ntype:  "+r.get_tag('RG')+"\npos:   "+str(pos2))
                     else:
                         self.chain.insert_entry(pos1,pos2,internal_arc[2],None,True)
     
@@ -1530,6 +1531,7 @@ splice-junc:                           <=============>
         }
         
         offset = read.reference_start
+        solid = False
         
         for chunk in read.cigar:
             if chunk[0] in tt.keys():# D N S H
@@ -1556,10 +1558,27 @@ splice-junc:                           <=============>
                 second -10,0. Maybe soft- and hard clipping should
                 be merged together?
                 """
-                if chunk[0] in [4,5]:
-                    offset -= chunk[1]
                 
+                if chunk[0] in [4,5] and not solid:
+                    offset -= chunk[1]
+
                 if chunk[1] > 3:
-                    yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+                    if solid:
+                        """Clips to the first node:
+                        M M M M M M M M M M S S S S S
+                                           <========]
+                        """
+                        #yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+                        yield ((offset + chunk[1]), offset , tt[chunk[0]])
+                    else:
+                        """Clips to the second node:
+                        S S S S S M M M M M M M M M M
+                        [========>
+                        """
+                        yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+
+            
+            if chunk[0] not in [4,5]:
+                solid = True
             
             offset += chunk[1]
