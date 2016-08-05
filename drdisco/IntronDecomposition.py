@@ -563,6 +563,7 @@ class Chain:
         # 3. 'split_read'
         # 4. 'silent_mate'
         
+        print read
         rg = read.get_tag('RG')
         if rg in ["discordant_mates"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -603,6 +604,7 @@ class Chain:
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_2","spanning_singleton_2"]:
+            print "Aa", rg
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  read.reference_start,
                                  read.is_reverse)
@@ -610,6 +612,8 @@ class Chain:
             pos2 = BreakPosition(parsed_SA_tag[0],
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            print pos1 , " --> " , pos2
             
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
