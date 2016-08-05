@@ -43,6 +43,7 @@ class Arc:
     """Connection between two genomic locations
      - Also contains different types of evidence
     """
+    
     scoring_table={
                'cigar_splice_junction': 0,
                'discordant_mates': 2,
@@ -56,6 +57,8 @@ class Arc:
                }
     
     def __init__(self,_origin,_target):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        
         if not isinstance(_target, Node) or not isinstance(_origin, Node):
             raise Exception("_origin and _target must be a Node")
         
@@ -464,6 +467,8 @@ class BreakPosition:
 
 class Chain:
     def __init__(self,pysam_fh):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        
         self.idxtree = GenomeIntervalTree()
         self.pysam_fh = pysam_fh
     
@@ -563,7 +568,6 @@ class Chain:
         # 3. 'split_read'
         # 4. 'silent_mate'
         
-        print read
         rg = read.get_tag('RG')
         if rg in ["discordant_mates"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -604,7 +608,6 @@ class Chain:
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_2","spanning_singleton_2"]:
-            print "Aa", rg
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  read.reference_start,
                                  read.is_reverse)
@@ -612,8 +615,6 @@ class Chain:
             pos2 = BreakPosition(parsed_SA_tag[0],
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-            
-            print pos1 , " --> " , pos2
             
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
@@ -1392,8 +1393,10 @@ splice-junc:                           <=============>
                         try:
                             self.chain.get_node_reference(pos2).add_clip()
                         except:
-                            # chr21:39817561
-                            raise Exception("\n\nNode was not found, cigar correctly parsed?\n----------\ninternal arc: "+str(internal_arc)+"\n----------\nqname: "+r.qname+"\ncigar: "+r.cigarstring+"\ntype:  "+r.get_tag('RG')+"\npos:   "+str(pos2))
+                            if r.get_tag('RG') in ['spanning_paired_2']:
+                                self.logger.warn("softclip(s) of "+r.qname+" don't add up with the junction(s).")
+                            else:
+                                raise Exception("\n\nNode was not found, cigar correctly parsed?\n----------\ninternal arc: "+str(internal_arc)+"\n----------\nqname: "+r.qname+"\ncigar: "+r.cigarstring+"\ntype:  "+r.get_tag('RG')+"\npos:   "+str(pos2))
                     else:
                         self.chain.insert_entry(pos1,pos2,internal_arc[2],None,True)
     
