@@ -71,6 +71,16 @@ class Arc:
         # Used for determining entropy
         self.unique_alignments_idx = {}
     
+    """
+    def remove_split_reads(self):
+        for key in ['spanning_paired_1',
+               'spanning_paired_2',
+               'spanning_singleton_1',
+               'spanning_singleton_2',
+               'spanning_singleton_1_r',
+               'spanning_singleton_2_r']:
+                """
+    
     def get_entropy(self):
         """Entropy is an important metric/ propery of an arc
         The assumption is that all reads should be 'different', i.e.
@@ -571,15 +581,38 @@ class Chain:
         
         rg = read.get_tag('RG')
         if rg in ["discordant_mates"]:
+            """
+            Normally reads are:
+            [==R1==> ... <==R2==]
+            
+            For transcription in negative strand, I expect:
+            [==R2==> ... <==R1==]
+            -- confirm --
+            -- if this is true, strand + fip/sip are determinant --
+            
+            
+            If first in pair:
+            [========> ... <---] junction should be position + offset
+            
+            
+            If second in pair:
+              if strand is - (normal):
+                [--> ... <========] junction should be start position
+              if strand is + (rev):
+                [--> ... [========> 
+            
+            """
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  bam_parse_alignment_end(read),
                                  not read.is_reverse)
             
             if read.mate_is_reverse:
+                print "minus offset",parsed_SA_tag[1]
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1],
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             else:
+                print "plus offset",parsed_SA_tag[1]
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
@@ -867,20 +900,20 @@ class Chain:
         candidates = []
         candidate = self.get_start_point()
         
-        #self.print_chain()
+        self.print_chain()
         
         while candidate != None:
             self.prune_arc(candidate, insert_size)
             candidates.append((candidate, candidate.get_complement()))
-            
+            # do not remove if splice junc exists?
             self.remove_arc(candidate)
             
             candidate = self.get_start_point()
         
-        #self.print_chain()
+        self.print_chain()
         
-        #for candidate in candidates:
-        #    print candidate
+        for candidate in candidates:
+            print candidate[0]
         
         return candidates
     
@@ -895,6 +928,7 @@ class Chain:
         arc_complement = arc.get_complement()
         
         for arc_m in self.search_arcs_between(node1.position, node2.position, insert_size):
+            print arc_m.get_count('discordant_mates'),"insert into:",str(arc)
             arc_mc = arc_m.get_complement()
             
             arc.merge_arc(arc_m)
@@ -1264,6 +1298,44 @@ class IntronDecomposition:
         self.break_point = break_point
         self.chain = None
     
+    def decompose(self,alignment_file):
+        pysam_fh = self.test_disco_alignment(alignment_file)
+        
+        lpos = self.break_point.get_left_position(True)
+        rpos = self.break_point.get_right_position(True)
+        
+        self.chain = Chain(pysam_fh)
+        
+        # Solve it somehow like this:
+        #self.insert_tree(pysam_fh, lpos())
+        tmprss2 = ['chr21',42834478,42882085]
+        erg = ['chr21',39737183,40035618]
+        self.insert_chain(pysam_fh, tmprss2)
+        self.insert_chain(pysam_fh, erg)
+        
+        # Merge arcs somehow, label nodes
+        
+        # emperical evidence showed ~230bp? look into this by picking a few examples
+        #c.prune(400+126-12)
+        # max obs = 418 for now
+        thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
+        self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
+        thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
+        self.chain.reinsert_arcs(thicker_arcs)
+        subnets = self.chain.extract_subnetworks(thicker_arcs)
+        
+        # If circos:
+        #s = 1
+        #for subnet in subnets:
+        #    c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
+        #    c.draw_network("tmp/test.png","tmp/test.svg")
+        #    s += 1
+        
+        subnets = self.filter_subnets_on_identical_nodes(subnets)
+        self.results = subnets
+        
+        return len(self.results)
+    
     def test_disco_alignment(self,alignment_file):
         # Make sure the header exists indicating that the BAM file was
         # fixed using Dr. Disco
@@ -1401,43 +1473,6 @@ splice-junc:                           <=============>
                     else:
                         self.chain.insert_entry(pos1,pos2,internal_arc[2],None,True)
     
-    def decompose(self,alignment_file):
-        pysam_fh = self.test_disco_alignment(alignment_file)
-        
-        lpos = self.break_point.get_left_position(True)
-        rpos = self.break_point.get_right_position(True)
-        
-        self.chain = Chain(pysam_fh)
-        
-        # Solve it somehow like this:
-        #self.insert_tree(pysam_fh, lpos())
-        tmprss2 = ['chr21',42834478,42882085]
-        erg = ['chr21',39737183,40035618]
-        self.insert_chain(pysam_fh, tmprss2)
-        self.insert_chain(pysam_fh, erg)
-        
-        # Merge arcs somehow, label nodes
-        
-        # emperical evidence showed ~230bp? look into this by picking a few examples
-        #c.prune(400+126-12)
-        # max obs = 418 for now
-        thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
-        self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
-        thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
-        self.chain.reinsert_arcs(thicker_arcs)
-        subnets = self.chain.extract_subnetworks(thicker_arcs)
-        
-        # If circos:
-        #s = 1
-        #for subnet in subnets:
-        #    c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
-        #    c.draw_network("tmp/test.png","tmp/test.svg")
-        #    s += 1
-        
-        subnets = self.filter_subnets_on_identical_nodes(subnets)
-        self.results = subnets
-        
-        return len(self.results)
     
     def export(self, fh):
         fh.write(str(self))

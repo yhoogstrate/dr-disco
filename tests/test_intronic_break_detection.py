@@ -157,53 +157,53 @@ class TestIntronicBreakDetection(unittest.TestCase):
         #self.assertTrue(filecmp.cmp(test_file, output_file))
 
 
-    def test_06(self):
-        #print("\n")
+    #def test_06(self):
+        ##print("\n")
         
-        input_file_a =    TEST_DIR+"test_terg_01.sub_06.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file  =      TEST_DIR+"test_06.out.dbed"
-        output_file  =  T_TEST_DIR+"test_06.out.dbed"
+        #input_file_a =    TEST_DIR+"test_terg_01.sub_06.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        ##test_file  =      TEST_DIR+"test_06.out.dbed"
+        #output_file  =  T_TEST_DIR+"test_06.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
+        #bps = FusionCatcher(input_file_f,"")
+        #bps_i = bps.__iter__()
+        #bp = bps_i.next()
         
-        ic = IntronDecomposition(bp)
-        #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        #ic = IntronDecomposition(bp)
+        ##ic.annotate_genes(gobj)
+        #n_candidates = ic.decompose(input_file_a)
         
-        with open(output_file, "w") as fh:
-            ic.export(fh)
+        #with open(output_file, "w") as fh:
+            #ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
+        #self.assertEqual(n_candidates, 1)
         
-        #Not sure what 'true' here is exactly
-        #self.assertTrue(filecmp.cmp(test_file, output_file))
+        ##Not sure what 'true' here is exactly
+        ##self.assertTrue(filecmp.cmp(test_file, output_file))
 
-    def test_07(self):
-        #print("\n")
+    #def test_07(self):
+        ##print("\n")
         
-        input_file_a =    TEST_DIR+"test_terg_01.sub_07.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file    =    TEST_DIR+"test_07.out.dbed"
-        output_file  =  T_TEST_DIR+"test_07.out.dbed"
+        #input_file_a =    TEST_DIR+"test_terg_01.sub_07.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        ##test_file    =    TEST_DIR+"test_07.out.dbed"
+        #output_file  =  T_TEST_DIR+"test_07.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
+        #bps = FusionCatcher(input_file_f,"")
+        #bps_i = bps.__iter__()
+        #bp = bps_i.next()
         
-        ic = IntronDecomposition(bp)
-        #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        #ic = IntronDecomposition(bp)
+        ##ic.annotate_genes(gobj)
+        #n_candidates = ic.decompose(input_file_a)
         
-        with open(output_file, "w") as fh:
-            ic.export(fh)
+        #with open(output_file, "w") as fh:
+            #ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
+        #self.assertEqual(n_candidates, 1)
         
-        #Not sure what 'true' here is exactly
-        #self.assertTrue(filecmp.cmp(test_file, output_file))
+        ##Not sure what 'true' here is exactly
+        ##self.assertTrue(filecmp.cmp(test_file, output_file))
 
 
     def test_08(self):
@@ -230,6 +230,9 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertEqual(n_candidates, 1)
         
         # TEST FOR DISCORANT READS!
+        
+        # most likely cause: looking for disco's is strand sensitive or strands are incorrectly assigned to them?
+        
         #Not sure what 'true' here is exactly
         #self.assertTrue(filecmp.cmp(test_file, output_file))
 
