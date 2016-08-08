@@ -604,19 +604,19 @@ class Chain:
             """
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  bam_parse_alignment_end(read),
-                                 not read.is_reverse)
+                                 STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
             
-            if read.mate_is_reverse:
-                print "minus offset",parsed_SA_tag[1]
+            if read.is_read1:
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1],
-                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             else:
-                print "plus offset",parsed_SA_tag[1]
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
+            #print "---"
+            #print pos1,pos2
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_1","spanning_singleton_1"]:
