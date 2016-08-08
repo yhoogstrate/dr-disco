@@ -49,7 +49,13 @@ class Arc:
                'discordant_mates': 2,
                'silent_mate': 0,
                'spanning_paired_1': 3,
+               'spanning_paired_1_r': 3,
+               'spanning_paired_1_s': 3,
+               'spanning_paired_1_t': 3,
                'spanning_paired_2': 3,
+               'spanning_paired_2_r': 3,
+               'spanning_paired_2_s': 3,
+               'spanning_paired_2_t': 3,
                'spanning_singleton_1': 2, 
                'spanning_singleton_2': 2,
                'spanning_singleton_1_r': 1,
@@ -158,7 +164,13 @@ class Arc:
             if _type in [
                     "discordant_mates",
                     "spanning_paired_1",
+                    "spanning_paired_1_r",
+                    "spanning_paired_1_s",
+                    "spanning_paired_1_t",
                     "spanning_paired_2",
+                    "spanning_paired_2_r",
+                    "spanning_paired_2_s",
+                    "spanning_paired_2_t",
                     "spanning_singleton_1",
                     "spanning_singleton_2",
                     "spanning_singleton_1_r",
@@ -601,7 +613,39 @@ class Chain:
               if strand is + (rev):
                 [--> ... [========> 
             
-            """
+
+
+            spanning_singleton_2_r
+            spanning_paired_2_t (left-junc):
+            =======>
+             ======>
+               ====>
+
+
+            spanning_paired_2_s:
+            ---
+            spanning_singleton_1_r (right-junc):
+            spanning_paired_1_t    (right-junc):
+                      =======>
+                      ======>
+                      ====>
+            
+            spanning_paired_1_s:
+            ---
+            spanning_singleton_1:
+            spanning_paired_1:
+            <=======
+             <======
+               <====
+
+            spanning_singleton_2 (right junc):
+            spanning_paired_2 (right junc):
+                      <=======
+                      <======
+                      <====
+
+        """
+
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  bam_parse_alignment_end(read),
                                  STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
@@ -615,31 +659,20 @@ class Chain:
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
-            #print "---"
-            #print pos1,pos2
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
-        elif rg in ["spanning_paired_1","spanning_singleton_1"]:
-            if read.is_read2:
-                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
-                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
-                
-                pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1],
-                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
-            else:
-                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
-                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
-                
-                pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1],
-                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+        elif rg in ["spanning_singleton_1", "spanning_paired_1"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                 STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+            
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                                 parsed_SA_tag[1],
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
 
-        elif rg in ["spanning_singleton_1_r"]:
+        elif rg in ["spanning_singleton_1_r", "spanning_paired_1_t"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  read.reference_start,
                                  not read.is_reverse)
@@ -650,7 +683,18 @@ class Chain:
             
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
-        elif rg in ["spanning_paired_2","spanning_singleton_2"]:
+        elif rg in ["spanning_paired_1_r"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                 not read.is_reverse)
+            
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                                 parsed_SA_tag[1],
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
+        
+        elif rg in ["spanning_singleton_2", "spanning_paired_2"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  read.reference_start,
                                  read.is_reverse)
@@ -661,13 +705,24 @@ class Chain:
             
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
-        elif rg in ["spanning_singleton_2_r"]:
+        elif rg in ["spanning_singleton_2_r", "spanning_paired_2_t"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
                                  read.is_reverse)
             
             pos2 = BreakPosition(parsed_SA_tag[0],
                                  parsed_SA_tag[1],
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
+        
+        elif rg in ["spanning_paired_2_r"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 read.reference_start,
+                                 read.is_reverse)
+            
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                                 parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
@@ -735,14 +790,15 @@ class Chain:
     
     def get_range(self,pos,insert_size,inverse_strand):
         if inverse_strand:
-            comp_strand = STRAND_REVERSE
+            if pos.strand == STRAND_FORWARD:
+                return (pos.pos,(pos.pos-insert_size)-1,-1)
+            else:
+                return (pos.pos,(pos.pos+insert_size)+1,1)
         else:
-            comp_strand = STRAND_FORWARD
-        
-        if pos.strand == comp_strand:
-            return (pos.pos,(pos.pos-insert_size)-1,-1)
-        else:
-            return (pos.pos,(pos.pos+insert_size)+1,1)
+            if pos.strand == STRAND_REVERSE:
+                return (pos.pos,(pos.pos-insert_size)-1,-1)
+            else:
+                return (pos.pos,(pos.pos+insert_size)+1,1)
     
 
     def pos_to_range(self,pos,_range,exclude_itself):
@@ -758,7 +814,6 @@ class Chain:
         
         @todo: correct for splice junction width
         """
-        
         
         range1 = self.get_range(pos1,insert_size,False)
         range2 = self.get_range(pos2,insert_size,False)
@@ -914,6 +969,7 @@ class Chain:
         while candidate != None:
             self.prune_arc(candidate, insert_size)
             candidates.append((candidate, candidate.get_complement()))
+            
             # do not remove if splice junc exists?
             self.remove_arc(candidate)
             
@@ -937,7 +993,6 @@ class Chain:
         arc_complement = arc.get_complement()
         
         for arc_m in self.search_arcs_between(node1.position, node2.position, insert_size):
-            print arc_m.get_count('discordant_mates'),"insert into:",str(arc)
             arc_mc = arc_m.get_complement()
             
             arc.merge_arc(arc_m)
@@ -1290,7 +1345,18 @@ class Subnet(Chain):
     def get_n_split_reads(self):
         n = 0
         
-        for _type in ["spanning_paired_1","spanning_paired_2", "spanning_singleton_1", "spanning_singleton_2", "spanning_singleton_1_r", "spanning_singleton_2_r"]:
+        for _type in ["spanning_paired_1",
+                      "spanning_paired_1_r",
+                      "spanning_paired_1_s",
+                      "spanning_paired_1_t",
+                      "spanning_paired_2",
+                      "spanning_paired_2_r",
+                      "spanning_paired_2_s",
+                      "spanning_paired_2_t",
+                      "spanning_singleton_1",
+                      "spanning_singleton_1_r",
+                      "spanning_singleton_2",
+                      "spanning_singleton_2_r"]:
             for arc in self.arcs:
                 n += arc[0].get_count(_type)
         
@@ -1410,7 +1476,19 @@ class IntronDecomposition:
                 # in their input - has to be fixed in order to allow arc_merging
                 #self.chain.insert(r,broken_mate)
             
-            elif r.get_tag('RG') in ['spanning_paired_1', 'spanning_paired_2', 'spanning_singleton_1', 'spanning_singleton_2', 'spanning_singleton_1_r', 'spanning_singleton_2_r']:
+            elif r.get_tag('RG') in [
+                'spanning_paired_1',
+                'spanning_paired_1_r',
+                'spanning_paired_1_s',
+                'spanning_paired_1_t',
+                'spanning_paired_2',
+                'spanning_paired_2_r',
+                'spanning_paired_2_s',
+                'spanning_paired_2_t',
+                'spanning_singleton_1',
+                'spanning_singleton_1_r',
+                'spanning_singleton_2',
+                'spanning_singleton_2_r']:
                 read = r
                 pos1, pos2 = self.chain.insert(r,sa[0])
 
@@ -1443,44 +1521,52 @@ splice-junc:                           <=============>
                 for internal_arc in self.find_cigar_arcs(r):
                     #@todo return Arc object instead of tuple
                     if internal_arc[2] in ['cigar_splice_junction']:
-                        pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                        i_pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                              internal_arc[0],
                                              STRAND_FORWARD)
-                        pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                        i_pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                              internal_arc[1],
                                              STRAND_REVERSE)
                         
                     elif internal_arc[2] in ['cigar_soft_clip']:
-                        if r.get_tag('RG') in ['spanning_paired_2', 'spanning_singleton_2']:
-                            pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                        # @todo add all _r's also
+                        if r.get_tag('RG') in [ 'spanning_paired_1',
+                                                'spanning_paired_1_r',
+                                                'spanning_paired_1_s',
+                                                'spanning_paired_1_t',
+                                                'spanning_paired_2',
+                                                'spanning_paired_2_r',
+                                                'spanning_paired_2_s',
+                                                'spanning_paired_2_t',
+                                                'spanning_singleton_1',
+                                                'spanning_singleton_1_r',
+                                                'spanning_singleton_2',
+                                                'spanning_singleton_2_r']:
+                            i_pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                                  internal_arc[0],
-                                                 r.is_reverse)
-                            pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
+                                                 pos2.strand)
+                            i_pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                                  internal_arc[1],
-                                                 r.is_reverse)
+                                                 pos1.strand)
+                        
                         else:
-                            pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                                 internal_arc[0],
-                                                 not r.is_reverse)
-                            pos2 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
-                                                 internal_arc[1],
-                                                 not r.is_reverse)
+                            raise Exception("what todo here?")
                     else:
                         raise Exception("Arc type not implemented: %s", internal_arc)
                     
                     if internal_arc[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
                         try:
-                            self.chain.get_node_reference(pos2).add_clip()
+                            self.chain.get_node_reference(i_pos2).add_clip()
                         except:
                             # This happens with some weird reads
                             #if r.get_tag('RG') in ['spanning_paired_2','spanning_singleton_2_r']:
-                            self.chain.create_node(pos2)
-                            self.chain.get_node_reference(pos2).add_clip()
-                            self.logger.warn("softclip of "+r.qname+" is not at the side of the break point.")
+                            #self.chain.create_node(i_pos2)
+                            #self.chain.get_node_reference(i_pos2).add_clip()
+                            self.logger.warn("softclip of "+r.qname+" ("+r.get_tag('RG')+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
                             #else:
                             #    raise Exception("\n\nNode was not found, cigar correctly parsed?\n----------\ninternal arc: "+str(internal_arc)+"\n----------\nqname: "+r.qname+"\ncigar: "+r.cigarstring+"\ntype:  "+r.get_tag('RG')+"\npos:   "+str(pos2))
                     else:
-                        self.chain.insert_entry(pos1,pos2,internal_arc[2],None,True)
+                        self.chain.insert_entry(i_pos1,i_pos2,internal_arc[2],None,True)
     
     
     def export(self, fh):
