@@ -46,7 +46,7 @@ class Arc:
     
     scoring_table={
                'cigar_splice_junction': 0,
-               'discordant_mates': 2,
+               'discordant_mates': 1,
                'silent_mate': 0,
                'spanning_paired_1': 3,
                'spanning_paired_1_r': 3,
@@ -58,8 +58,8 @@ class Arc:
                'spanning_paired_2_t': 3,
                'spanning_singleton_1': 2, 
                'spanning_singleton_2': 2,
-               'spanning_singleton_1_r': 1,
-               'spanning_singleton_2_r': 1
+               'spanning_singleton_1_r': 2,
+               'spanning_singleton_2_r': 2
                }
     
     def __init__(self,_origin,_target):
@@ -76,16 +76,6 @@ class Arc:
         
         # Used for determining entropy
         self.unique_alignments_idx = {}
-    
-    """
-    def remove_split_reads(self):
-        for key in ['spanning_paired_1',
-               'spanning_paired_2',
-               'spanning_singleton_1',
-               'spanning_singleton_2',
-               'spanning_singleton_1_r',
-               'spanning_singleton_2_r']:
-                """
     
     def get_entropy(self):
         """Entropy is an important metric/ propery of an arc
@@ -992,7 +982,9 @@ class Chain:
         
         arc_complement = arc.get_complement()
         
+        print "pruning",arc
         for arc_m in self.search_arcs_between(node1.position, node2.position, insert_size):
+            print "  ...",arc_m
             arc_mc = arc_m.get_complement()
             
             arc.merge_arc(arc_m)
@@ -1406,7 +1398,8 @@ class IntronDecomposition:
         #    c.draw_network("tmp/test.png","tmp/test.svg")
         #    s += 1
         
-        subnets = self.filter_subnets_on_identical_nodes(subnets)
+        #subnets = self.filter_subnets_on_identical_nodes(subnets)
+        print "n:", len(subnets)
         self.results = subnets
         
         return len(self.results)
