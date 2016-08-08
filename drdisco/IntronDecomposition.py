@@ -620,13 +620,22 @@ class Chain:
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
         
         elif rg in ["spanning_paired_1","spanning_singleton_1"]:
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
-                                 not read.is_reverse)
-            
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                                 parsed_SA_tag[1],
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+            if read.is_read2:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1],
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+            else:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1],
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
 
