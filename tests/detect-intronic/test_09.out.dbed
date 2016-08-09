@@ -1,0 +1,5 @@
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	score	soft+hardclips	n-split-reads	n-discordant-reads	n-arcs	n-nodes-A	n-nodes-B	entropy-bp-arc	entropy-all-arcs	data-structure
+chr21	39754426	+	chr21	39754531	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	1	0	1	0	1	1	1	0.0	0.0	chr21:39754426/39754427(+)->chr21:39754531/39754532(-):(spanning_paired_2_s:1)
+chr21	39833377	+	chr21	39833426	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	1	0	1	0	1	1	1	0.0	0.0	chr21:39833377/39833378(+)->chr21:39833426/39833427(-):(spanning_paired_2_s:1)
+chr21	42837811	+	chr21	42837832	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	1	0	1	0	1	1	1	0.0	0.0	chr21:42837811/42837812(+)->chr21:42837832/42837833(-):(spanning_paired_2_s:1)
+chr21	42839788	-	chr21	42839895	+	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	1	0	1	0	1	1	1	0.0	0.0	chr21:42839788/42839789(-)->chr21:42839895/42839896(+):(spanning_paired_1_s:1)

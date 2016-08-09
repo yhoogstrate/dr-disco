@@ -153,5 +153,23 @@ mv "/tmp/alignment_new.sorted.bam" "$target_alignment" &&
 samtools index "$target_alignment" &&
 
 
+# intron, test 09
+target_alignment="tests/detect-intronic/test_terg_01.sub_09.filtered.fixed.bam" &&
+touch "$target_alignment".bai &&
+echo "D00xxx:000:x00x0xxxx:3:1214:6382:59013" > "/tmp/readnames.txt" &&
+echo "D00xxx:000:x00x0xxxx:3:2214:10717:11369" >> "/tmp/readnames.txt" &&
+echo "D00xxx:000:x00x0xxxx:6:1207:11522:20854" >> "/tmp/readnames.txt" &&
+echo "D00xxx:000:x00x0xxxx:8:1214:6905:100714" >> "/tmp/readnames.txt" &&
+sed -i.bak -e ':a' -e 'N' -e '$!ba' -e 's/\n/|/g' "/tmp/readnames.txt" &&
+samtools view "$corrected_alignment" | grep -P $(cat "/tmp/readnames.txt") > "/tmp/body.sam" &&
+cat "$headerfile" "/tmp/body.sam" > "/tmp/alignment_new.sam" &&
+samtools view -bS "/tmp/alignment_new.sam" > "/tmp/alignment_new.unsorted.bam" &&
+samtools sort -o "/tmp/alignment_new.sorted.bam" "/tmp/alignment_new.unsorted.bam" &&
+rm "$target_alignment".bai &&
+mv "/tmp/alignment_new.sorted.bam" "$target_alignment" &&
+samtools index "$target_alignment" &&
+
+
+
 echo ":)"
 

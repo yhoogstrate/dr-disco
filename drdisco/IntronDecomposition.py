@@ -69,11 +69,11 @@ class Arc:
                'silent_mate': 0,
                'spanning_paired_1': 3,
                'spanning_paired_1_r': 3,
-               'spanning_paired_1_s': 3,
+               'spanning_paired_1_s': 1,# Very odd type of reads
                'spanning_paired_1_t': 3,
                'spanning_paired_2': 3,
                'spanning_paired_2_r': 3,
-               'spanning_paired_2_s': 3,
+               'spanning_paired_2_s': 1,# Very odd type of reads
                'spanning_paired_2_t': 3,
                'spanning_singleton_1': 2, 
                'spanning_singleton_2': 2,
@@ -735,7 +735,30 @@ class Chain:
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
             
             self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
+
+        elif rg in ["spanning_paired_1_s"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                 STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+            
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                     parsed_SA_tag[1],
+                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
+                     
+        elif rg in ["spanning_paired_2_s"]:
+            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                             read.reference_start,
+                             not read.is_reverse)
         
+            pos2 = BreakPosition(parsed_SA_tag[0],
+                                 parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
+        
+
         elif rg not in ["silent_mate"]:
             raise Exception("Fatal Error, RG: "+rg)
         
@@ -1613,19 +1636,18 @@ splice-junc:                           <=============>
                                              STRAND_REVERSE)
                         
                     elif internal_arc[2] in ['cigar_soft_clip']:
-                        # @todo add all _r's also
-                        if r.get_tag('RG') in [ 'spanning_paired_1',
-                                                'spanning_paired_1_r',
-                                                'spanning_paired_1_s',
-                                                'spanning_paired_1_t',
-                                                'spanning_paired_2',
-                                                'spanning_paired_2_r',
-                                                'spanning_paired_2_s',
-                                                'spanning_paired_2_t',
-                                                'spanning_singleton_1',
-                                                'spanning_singleton_1_r',
-                                                'spanning_singleton_2',
-                                                'spanning_singleton_2_r']:
+                        rg = r.get_tag('RG') 
+                        if rg in [  'discordant_mates',
+                                    'spanning_paired_1',
+                                    'spanning_paired_1_r',
+                                    'spanning_paired_1_t',
+                                    'spanning_paired_2',
+                                    'spanning_paired_2_r',
+                                    'spanning_paired_2_t',
+                                    'spanning_singleton_1',
+                                    'spanning_singleton_1_r',
+                                    'spanning_singleton_2',
+                                    'spanning_singleton_2_r']:
                             i_pos1 = BreakPosition(pysam_fh.get_reference_name(r.reference_id),
                                                  internal_arc[0],
                                                  pos2.strand)
@@ -1633,14 +1655,19 @@ splice-junc:                           <=============>
                                                  internal_arc[1],
                                                  pos1.strand)
                         
+                        elif rg in ['spanning_paired_1_s',
+                                    'spanning_paired_2_s']:
+                            i_pos1 = None
+                            i_pos2 = None
                         else:
-                            raise Exception("what todo here?")
+                            raise Exception("what todo here - "+str(r.get_tag('RG')))
                     else:
                         raise Exception("Arc type not implemented: %s", internal_arc)
                     
                     if internal_arc[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
                         try:
-                            self.chain.get_node_reference(i_pos2).add_clip()
+                            if i_pos1 != None:
+                                self.chain.get_node_reference(i_pos2).add_clip()
                         except:
                             # This happens with some weird reads
                             #if r.get_tag('RG') in ['spanning_paired_2','spanning_singleton_2_r']:
