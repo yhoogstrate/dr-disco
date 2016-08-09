@@ -38,6 +38,17 @@ def entropy(frequency_table):
     else:
         return entropy / (math.log(n) / math.log(2.0))
 
+def merge_frequency_tables(frequency_tables):
+    new_frequency_table = {}
+    for t in frequency_tables:
+        for key in t.keys():
+            if not new_frequency_table.has_key(key):
+                new_frequency_table[key] = 0
+            
+            new_frequency_table[key] += t[key]
+    
+    return new_frequency_table
+
 
 class Arc:
     """Connection between two genomic locations
@@ -1238,15 +1249,8 @@ thick arcs:
             for pop in popme:
                 thicker_arcs.remove(pop)
             
-            if q == 2:
-                break
-            
-            subnetworks.append(subarcs)
-        
-        #for sn in subnetworks:
-        #    print "sn:"
-        #    for s in sn:
-        #        print "  ",s[0]
+            sn = Subnet(q,subarcs)
+            subnetworks.append(sn)
         
         return subnetworks
 
@@ -1257,6 +1261,32 @@ class Subnet(Chain):
         self.arcs = arcs
         self.total_clips = 0
         self.total_score = 0
+        self.discarded = False
+        
+        self.calc_clips()
+        self.calc_scores()
+    
+    def calc_clips(self):
+        clips = 0
+        
+        nodes = set()
+        for arc in self.arcs:
+            nodes.add(arc[0]._origin)
+            nodes.add(arc[0]._target)
+        
+        for node in nodes:
+            clips += node.clips
+        
+        self.total_clips = clips
+        return self.total_clips
+    
+    def calc_scores(self):
+        score = 0
+        for arc in self.arcs:
+            score += arc[0].get_scores()
+        
+        self.total_score = score
+        return self.total_score
     
     def __str__(self):
         """Make tabular output
@@ -1268,6 +1298,8 @@ class Subnet(Chain):
         print "chr-B\t"
         print "pos-B\t"
         print "direction-B\t"
+        
+        print "discarded\t"
         
         print "score\t"
         print "soft+hardclips\t"
@@ -1293,6 +1325,8 @@ class Subnet(Chain):
         out += str(node_b.position.pos)+"\t"
         out += strand_tt[node_b.position.strand]+"\t"
         
+        out += ("plausible" if not self.discarded else "discarded") + "\t"
+        
         out += str(self.total_score)+"\t"
         out += str(self.total_clips)+"\t"
         
@@ -1312,13 +1346,7 @@ class Subnet(Chain):
         return out+"\n"
     
     def get_overall_entropy(self):
-        frequency_table = {}
-        for arc in self.arcs:
-            for key in arc[0].unique_alignments_idx:
-                if not frequency_table.has_key(key):
-                    frequency_table[key] = 0
-                frequency_table[key] += arc[0].unique_alignments_idx[key]
-        
+        frequency_table = merge_frequency_tables([arc[0].unique_alignments_idx for arc in self.arcs])
         return entropy(frequency_table)
     
     def get_n_splice_junctions(self):
@@ -1390,6 +1418,9 @@ class IntronDecomposition:
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
         subnets = self.chain.extract_subnetworks(thicker_arcs)
+        ##subnets = self.filter_subnets_on_identical_nodes(subnets)
+        #self.merge_overlapping_subnets(subnets)
+        self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
         # If circos:
         #s = 1
@@ -1398,10 +1429,10 @@ class IntronDecomposition:
         #    c.draw_network("tmp/test.png","tmp/test.svg")
         #    s += 1
         
-        #subnets = self.filter_subnets_on_identical_nodes(subnets)
-        print "n:", len(subnets)
-        self.results = subnets
+        for s in subnets:
+            print s
         
+        self.results = subnets
         return len(self.results)
     
     def test_disco_alignment(self,alignment_file):
@@ -1508,8 +1539,8 @@ class IntronDecomposition:
             Splice juncs are bi-directional, and real arcs.
  
 splice-junc:                           <=============>
-
             """
+            
             if pos1 != None and pos2 != None:
                 for internal_arc in self.find_cigar_arcs(r):
                     #@todo return Arc object instead of tuple
@@ -1629,6 +1660,18 @@ splice-junc:                           <=============>
         
         return new_subnets
 
+    def filter_subnets(self, subnets):
+        for subnet in subnets:
+            """Total of 8 reads is minimum, of which 2 must be
+            discordant and the entropy must be above 0.55"""
+            entropy = subnet.get_overall_entropy()
+            if  entropy < 0.55 or \
+                subnet.get_n_discordant_reads() < 2 or \
+                (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) < (4 * subnet.get_n_nodes()):
+                subnet.discarded = True
+        
+        return subnets
+
     def find_cigar_arcs(self,read):
         """Tries to find ARCs introduced by:
          - Hard clipping
@@ -1685,7 +1728,7 @@ splice-junc:                           <=============>
                 if chunk[0] in [4,5] and not solid:
                     offset -= chunk[1]
 
-                if chunk[1] > 3:
+                if chunk[1] > SPLICE_JUNC_ACC_ERR:
                     if solid:
                         """Clips to the first node:
                         M M M M M M M M M M S S S S S
