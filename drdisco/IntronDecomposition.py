@@ -22,6 +22,7 @@ from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 MIN_DISCO_INS_SIZE = 400
 PRUNE_INS_SIZE = 450
 SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error
+MAX_GENOMIC_DIST = 999999999
 
 
 # translation tables:
@@ -32,6 +33,7 @@ strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
 MIN_SUBNET_ENTROPY = 0.55
 MIN_DISCO_PER_SUBNET_PER_NODE = 1#minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
 MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4#minimum supporting reads is 8 per subnet
+MAX_SUBNET_MERGE_DIST = 5000
 
 
 def entropy(frequency_table):
@@ -100,7 +102,7 @@ class Arc:
         have a different start position, different end position,
         different soft/hardclips etc.
         
-        It is more probable to find the following alignment in a true
+        It is more probable to find the following alignment for a true
         fusion gene:
         
             <==========]                              (split reads)
@@ -485,7 +487,7 @@ class BreakPosition:
             # must be larger than any Hs chr reflecting natural distances
             # in a way that interchromosomal breaks are 'larger' than
             # intrachromosomal ones
-            return 999999999
+            return MAX_GENOMIC_DIST
     
     def get_rmse(self, pos_vec):
         err = 0
@@ -999,9 +1001,7 @@ class Chain:
         
         arc_complement = arc.get_complement()
         
-        print "pruning",arc
         for arc_m in self.search_arcs_between(node1.position, node2.position, insert_size):
-            print "  ...",arc_m
             arc_mc = arc_m.get_complement()
             
             arc.merge_arc(arc_m)
@@ -1073,7 +1073,7 @@ thick arcs:
                 
                 if j > i:# Avoid unnecessary comparisons
                     if node1.position.strand == node2.position.strand:
-                        left_junc = (999999999, None)
+                        left_junc = (MAX_GENOMIC_DIST, None)
                         
                         for node in self:
                             for splice_junc in node:
@@ -1101,7 +1101,7 @@ thick arcs:
                 
                 if j > i:# Avoid unnecessary comparisons
                     if node1.position.strand == node2.position.strand:
-                        right_junc = (999999999, None)
+                        right_junc = (MAX_GENOMIC_DIST, None)
                         
                         for node in self:
                             for splice_junc in node:
@@ -1267,7 +1267,7 @@ class Subnet(Chain):
         self.arcs = arcs
         self.total_clips = 0
         self.total_score = 0
-        self.discarded = False
+        self.discarded = []
         
         self.calc_clips()
         self.calc_scores()
@@ -1331,7 +1331,7 @@ class Subnet(Chain):
         out += str(node_b.position.pos)+"\t"
         out += strand_tt[node_b.position.strand]+"\t"
         
-        out += ("plausible" if not self.discarded else "discarded") + "\t"
+        out += ("valid" if self.discarded == [] else ','.join(self.discarded)) + "\t"
         
         out += str(self.total_score)+"\t"
         out += str(self.total_clips)+"\t"
@@ -1354,9 +1354,6 @@ class Subnet(Chain):
     def get_overall_entropy(self):
         frequency_table = merge_frequency_tables([arc[0].unique_alignments_idx for arc in self.arcs])
         return entropy(frequency_table)
-    
-    def get_n_splice_junctions(self):
-        pass
     
     def get_n_nodes(self):
         nodes_a = set()
@@ -1391,7 +1388,66 @@ class Subnet(Chain):
     def get_n_discordant_reads(self):
         return sum([arc[0].get_count("discordant_mates") for arc in self.arcs])
     
+    def find_distance(self, subnet_t):
+        """
+        Later on correct for that these are closer:
+        |    |     ... ~ ...   |
+           |                   |
+        
+        than these:
+        |    |     ... ~ ...   |
+      |                        |
+        
+        
+        """
+        if not isinstance(subnet_t, Subnet):
+            raise Exception("subnet_t must be Subnet")
+        
+        ldist = MAX_GENOMIC_DIST
+        rdist = MAX_GENOMIC_DIST
 
+        for lnode in self.get_lnodes():
+            for lnode_t in subnet_t.get_lnodes():
+                dist = lnode.position.get_dist(lnode_t.position, True)
+                if dist < ldist:
+                    ldist = dist
+        
+        for rnode in self.get_rnodes():
+            for rnode_t in subnet_t.get_rnodes():
+                dist = rnode.position.get_dist(rnode_t.position, True)
+                if dist < ldist:
+                    rdist = dist
+        
+        dist = math.sqrt(pow(ldist,2) + pow(rdist, 2))
+        print dist
+        return dist
+        
+    def get_lnodes(self):
+        lnodes = set()
+        
+        for arc in self.arcs:
+            lnodes.add(arc[0]._origin)
+        
+        for lnode in lnodes:
+            yield lnode
+    
+    def get_rnodes(self):
+        rnodes = set()
+        
+        for arc in self.arcs:
+            rnodes.add(arc[0]._target)
+        
+        for rnode in rnodes:
+            yield rnode
+    
+    def merge(self, subnet_m):
+        for arc in subnet_m.arcs:
+            print arc
+            self.arcs.append(arc)
+
+        self.calc_clips()
+        self.calc_scores()
+        
 class IntronDecomposition:
     def __init__(self,break_point):
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -1425,8 +1481,8 @@ class IntronDecomposition:
         self.chain.reinsert_arcs(thicker_arcs)
         subnets = self.chain.extract_subnetworks(thicker_arcs)
         ##subnets = self.filter_subnets_on_identical_nodes(subnets)
-        #self.merge_overlapping_subnets(subnets)
-        self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
+        subnets = self.merge_overlapping_subnets(subnets)
+        subnets = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
         # If circos:
         #s = 1
@@ -1456,7 +1512,7 @@ class IntronDecomposition:
         if pos1[0] == pos2[0]:
             return pos2[1] - pos1[1]
         else:
-            return 99999999
+            return MAX_GENOMIC_DIST
     
     def parse_SA(self,SA_tag):
         sa_tags = SA_tag.split(";")
@@ -1666,15 +1722,67 @@ splice-junc:                           <=============>
         
         return new_subnets
 
+    def merge_overlapping_subnets(self, subnets):
+        """Merges very closely adjacent subnets based on the smallest
+        internal distance. E.g. if we have a subnet having 1 and one
+        having 2 arcs:
+        
+  snA:  |       |            ~             |
+        |        --------------------------  arcA1
+         ----------------------------------  arcA2
+
+  snB         |                        |
+               ------------------------      arcB1
+
+        We would like to filter based on the distance between arcA1 and
+        arcB1.
+        
+        We also don't want to have a growth pattern, i.e. that based on
+        merging snB to snA, snC becomes part of it. Although it may be
+        true it can become problematc as I've seen with FuMa.
+        
+        So, idea is:
+        loop over all subnets i;
+            loop over all subnets j > i
+                if subnet j should be merged with i, remeber it into M
+            
+            merge all subnets in M into i, and remove the former subnets
+        """
+        
+        n = len(subnets)
+        for i in range(n):
+            if subnets[i] != None:
+                candidates = []
+                for j in range(i+1,n):
+                    if subnets[j] != None and\
+                       subnets[i].find_distance(subnets[j]) <= MAX_SUBNET_MERGE_DIST:
+                        candidates.append(subnets[j])
+                        subnets[j] = None
+            
+                for sn_j in candidates:
+                    subnets[i].merge(sn_j)
+                    del(sn_j)
+        
+        return [sn for sn in subnets if sn != None]
+
     def filter_subnets(self, subnets):
         for subnet in subnets:
             """Total of 8 reads is minimum, of which 2 must be
             discordant and the entropy must be above 0.55"""
+            
             entropy = subnet.get_overall_entropy()
-            if  entropy < MIN_SUBNET_ENTROPY or \
-                subnet.get_n_discordant_reads() < (MIN_DISCO_PER_SUBNET_PER_NODE * subnet.get_n_nodes()) or \
-                (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) < (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * subnet.get_n_nodes()):
-                subnet.discarded = True
+            if entropy < MIN_SUBNET_ENTROPY:
+                subnet.discarded.append("entropy="+str(entropy))
+            
+            n_disco = subnet.get_n_discordant_reads()
+            n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes())
+            if n_disco < n_disco_min:
+                subnet.discarded.append("n_discordant_reads="+str(n_disco)+"/"+str(n_disco_min))
+            
+            n_support = subnet.get_n_discordant_reads() + subnet.get_n_split_reads()
+            n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
+            if n_support < n_support_min:
+                subnet.discarded.append("n_support="+str(n_support)+"/"+str(n_support_min))
         
         return subnets
 
