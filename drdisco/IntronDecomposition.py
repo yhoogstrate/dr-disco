@@ -971,9 +971,9 @@ class Chain:
         self.logger.info("Find and merge other arcs in close proximity (insert size)")
         
         candidates = []
+        k = 0
         candidate = self.get_start_point()
-        
-        self.print_chain()
+        #self.print_chain()
         
         while candidate != None:
             self.prune_arc(candidate, insert_size)
@@ -983,12 +983,10 @@ class Chain:
             self.remove_arc(candidate)
             
             candidate = self.get_start_point()
+            k += 1
         
-        self.print_chain()
-        
-        for candidate in candidates:
-            print candidate[0]
-        
+        #self.print_chain()
+        self.logger.info("* Pruned into "+str(k)+" candidate arc(s)")
         return candidates
     
     #@todo ADD RECURSION DEPTH LIMIT
@@ -1053,6 +1051,7 @@ thick arcs:
         ## 01 collect all left and right nodes
         
         #added_splice_junctions = set()
+        k = 0
         
         left_nodes = set()
         right_nodes = set()
@@ -1089,6 +1088,8 @@ thick arcs:
                             node1.splice_arcs[node2] = left_junc
                             node2.splice_arcs[node1] = left_junc
                             
+                            k += 1
+                            
                             #added_splice_junctions.add(left_junc[1])
 
         i = -1
@@ -1117,7 +1118,10 @@ thick arcs:
                             node1.splice_arcs[node2] = right_junc
                             node2.splice_arcs[node1] = right_junc
                             
+                            k += 1
                             #added_splice_junctions.add(right_junc[1])
+        
+        self.logger.info("* Linked "+str(k)+" splice jucntion(s)")
         
         return thicker_arcs
     
@@ -1255,9 +1259,9 @@ thick arcs:
             for pop in popme:
                 thicker_arcs.remove(pop)
             
-            sn = Subnet(q,subarcs)
-            subnetworks.append(sn)
+            subnetworks.append(Subnet(q,subarcs))
         
+        self.logger.info("* Extract "+str(len(subnetworks))+" subnetwork(s)")
         return subnetworks
 
 
@@ -1408,19 +1412,17 @@ class Subnet(Chain):
 
         for lnode in self.get_lnodes():
             for lnode_t in subnet_t.get_lnodes():
-                dist = lnode.position.get_dist(lnode_t.position, True)
+                dist = abs(lnode.position.get_dist(lnode_t.position, True))
                 if dist < ldist:
                     ldist = dist
         
         for rnode in self.get_rnodes():
             for rnode_t in subnet_t.get_rnodes():
-                dist = rnode.position.get_dist(rnode_t.position, True)
-                if dist < ldist:
+                dist = abs(rnode.position.get_dist(rnode_t.position, True))
+                if dist < rdist:
                     rdist = dist
         
-        dist = math.sqrt(pow(ldist,2) + pow(rdist, 2))
-        print dist
-        return dist
+        return math.sqrt(pow(ldist,2) + pow(rdist, 2))
         
     def get_lnodes(self):
         lnodes = set()
@@ -1442,7 +1444,6 @@ class Subnet(Chain):
     
     def merge(self, subnet_m):
         for arc in subnet_m.arcs:
-            print arc
             self.arcs.append(arc)
 
         self.calc_clips()
@@ -1490,9 +1491,6 @@ class IntronDecomposition:
         #    c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
         #    c.draw_network("tmp/test.png","tmp/test.svg")
         #    s += 1
-        
-        for s in subnets:
-            print s
         
         self.results = subnets
         return len(self.results)
@@ -1686,41 +1684,43 @@ splice-junc:                           <=============>
         
         return out
     
-    def filter_subnets_on_identical_nodes(self, subnets):
-        new_subnets = []
-        _id = 0
-        #1. filter based on nodes - if there are shared nodes, exclude sn
-        all_nodes = set()
-        for i in range(len(subnets)):
-            subnet = subnets[i]
-            rmme = False
-            score = 0
-            nodes = set()
-            for dp in subnet:
-                score += dp[0].get_scores()
+    #def filter_subnets_on_identical_nodes(self, subnets):
+        ## This function is deprecated because it often happens that unknown exons are included
+        ##
+        #new_subnets = []
+        #_id = 0
+        ##1. filter based on nodes - if there are shared nodes, exclude sn
+        #all_nodes = set()
+        #for i in range(len(subnets)):
+            #subnet = subnets[i]
+            #rmme = False
+            #score = 0
+            #nodes = set()
+            #for dp in subnet:
+                #score += dp[0].get_scores()
                 
-                nodes.add(dp[0]._origin)
-                nodes.add(dp[0]._target)
+                #nodes.add(dp[0]._origin)
+                #nodes.add(dp[0]._target)
             
-            clips = 0
-            for n in nodes:
-                if n in all_nodes:
-                    rmme = True
-                else:
-                    all_nodes.add(n)
+            #clips = 0
+            #for n in nodes:
+                #if n in all_nodes:
+                    #rmme = True
+                #else:
+                    #all_nodes.add(n)
                 
-                clips += n.clips
+                #clips += n.clips
             
-            if rmme:
-                subnets[i] = None
-            else:
-                i += 1
-                sn = Subnet(_id, subnet)
-                sn.total_clips = clips
-                sn.total_score = score
-                new_subnets.append(sn)
+            #if rmme:
+                #subnets[i] = None
+            #else:
+                #i += 1
+                #sn = Subnet(_id, subnet)
+                #sn.total_clips = clips
+                #sn.total_score = score
+                #new_subnets.append(sn)
         
-        return new_subnets
+        #return new_subnets
 
     def merge_overlapping_subnets(self, subnets):
         """Merges very closely adjacent subnets based on the smallest
@@ -1750,22 +1750,29 @@ splice-junc:                           <=============>
         """
         
         n = len(subnets)
+        
+        k = 0
         for i in range(n):
             if subnets[i] != None:
                 candidates = []
                 for j in range(i+1,n):
+                    dist = subnets[i].find_distance(subnets[j])
                     if subnets[j] != None and\
-                       subnets[i].find_distance(subnets[j]) <= MAX_SUBNET_MERGE_DIST:
+                       dist <= MAX_SUBNET_MERGE_DIST:
                         candidates.append(subnets[j])
                         subnets[j] = None
             
                 for sn_j in candidates:
                     subnets[i].merge(sn_j)
                     del(sn_j)
+                    k += 1
+        
+        self.logger.info("* Merged "+str(k)+" of the "+str(n)+" subnetwork(s)")
         
         return [sn for sn in subnets if sn != None]
 
     def filter_subnets(self, subnets):
+        k = 0
         for subnet in subnets:
             """Total of 8 reads is minimum, of which 2 must be
             discordant and the entropy must be above 0.55"""
@@ -1783,7 +1790,11 @@ splice-junc:                           <=============>
             n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
             if n_support < n_support_min:
                 subnet.discarded.append("n_support="+str(n_support)+"/"+str(n_support_min))
+            
+            if len(subnet.discarded) > 0:
+                k += 1
         
+        self.logger.info("* Filtered "+str(k)+" of the "+str(len(subnets))+" subnetwork(s)")
         return subnets
 
     def find_cigar_arcs(self,read):
