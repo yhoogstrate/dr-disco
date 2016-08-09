@@ -28,6 +28,12 @@ SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error
 strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
 
 
+# filter settings
+MIN_SUBNET_ENTROPY = 0.55
+MIN_DISCO_PER_SUBNET_PER_NODE = 1#minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
+MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4#minimum supporting reads is 8 per subnet
+
+
 def entropy(frequency_table):
     n = sum(frequency_table.values())
     prob = [float(x)/n for x in frequency_table.values()]
@@ -1665,9 +1671,9 @@ splice-junc:                           <=============>
             """Total of 8 reads is minimum, of which 2 must be
             discordant and the entropy must be above 0.55"""
             entropy = subnet.get_overall_entropy()
-            if  entropy < 0.55 or \
-                subnet.get_n_discordant_reads() < 2 or \
-                (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) < (4 * subnet.get_n_nodes()):
+            if  entropy < MIN_SUBNET_ENTROPY or \
+                subnet.get_n_discordant_reads() < (MIN_DISCO_PER_SUBNET_PER_NODE * subnet.get_n_nodes()) or \
+                (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) < (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * subnet.get_n_nodes()):
                 subnet.discarded = True
         
         return subnets
