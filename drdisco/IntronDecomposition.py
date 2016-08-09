@@ -1144,7 +1144,7 @@ thick arcs:
                             k += 1
                             #added_splice_junctions.add(right_junc[1])
         
-        self.logger.info("* Linked "+str(k)+" splice jucntion(s)")
+        self.logger.info("* Linked "+str(k)+" splice junction(s)")
         
         return thicker_arcs
     
@@ -1783,11 +1783,11 @@ splice-junc:                           <=============>
             if subnets[i] != None:
                 candidates = []
                 for j in range(i+1,n):
-                    dist = subnets[i].find_distance(subnets[j])
-                    if subnets[j] != None and\
-                       dist <= MAX_SUBNET_MERGE_DIST:
-                        candidates.append(subnets[j])
-                        subnets[j] = None
+                    if subnets[j] != None:
+                        dist = subnets[i].find_distance(subnets[j])
+                        if dist <= MAX_SUBNET_MERGE_DIST:
+                            candidates.append(subnets[j])
+                            subnets[j] = None
             
                 for sn_j in candidates:
                     subnets[i].merge(sn_j)
