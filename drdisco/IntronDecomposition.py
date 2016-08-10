@@ -604,20 +604,20 @@ class Chain:
             if read.is_reverse:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start,
-                                     STRAND_REVERSE)
+                                     STRAND_FORWARD)
             else:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start+bam_parse_alignment_offset(read.cigar),
-                                     STRAND_FORWARD)
+                                     STRAND_REVERSE)
             
             if parsed_SA_tag[4] == "-":
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1],
-                                     STRAND_REVERSE)
+                                     STRAND_FORWARD)
             else:
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-                                     STRAND_FORWARD)
+                                     STRAND_REVERSE)
         
         elif rg in ["spanning_singleton_1", "spanning_paired_1"]:
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
