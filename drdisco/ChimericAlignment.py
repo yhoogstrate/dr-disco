@@ -366,9 +366,9 @@ class ChimericAlignment:
                 self.set_read_group([reads_updated[0]],'spanning_paired_1')
                 self.set_read_group([reads_updated[1]],'spanning_paired_2')
             else:
-                raise Exception("Unexpected data...? please investigate further")
-                #self.set_read_group([reads_updated[0]],'spanning_paired_2_rr')
-                #self.set_read_group([reads_updated[1]],'spanning_paired_1_rr')
+                self.logger.warn("Unexpected data...? please investigate further: "+str(reads_updated[0]))
+                self.set_read_group([reads_updated[0]],'silent_mate')
+                self.set_read_group([reads_updated[1]],'silent_mate')
             
             self.set_read_group(mates_updated,'silent_mate')
             for a in reads_updated:

@@ -589,6 +589,7 @@ class Chain:
         pos2 = None
         
         rg = read.get_tag('RG')
+        
         if rg in ["discordant_mates"]:
             # How to distinguish between:
             #
@@ -1439,7 +1440,7 @@ class IntronDecomposition:
         tmprss2 = ['chr21',42834478,42882085]
         erg = ['chr21',39737183,40035618]
         self.insert_chain(pysam_fh, tmprss2)
-        self.insert_chain(pysam_fh, erg)
+        #self.insert_chain(pysam_fh, erg)
         
         # Merge arcs somehow, label nodes
         
@@ -1486,7 +1487,7 @@ class IntronDecomposition:
     
     
     def insert_chain(self,pysam_fh, region):
-        for read in pysam_fh.fetch(region[0],region[1],region[2]):
+        for read in pysam_fh.fetch():#region[0],region[1],region[2]):
         #for r in pysam_fh.fetch(region[0],region[1]):
             sa = self.parse_SA(read.get_tag('SA'))
             _chr = pysam_fh.get_reference_name(read.reference_id)

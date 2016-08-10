@@ -1,0 +1,2 @@
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	filter-status	score	soft+hardclips	n-split-reads	n-discordant-reads	n-arcs	n-nodes-A	n-nodes-B	entropy-bp-arc	entropy-all-arcs	data-structure
+chr7	151970252	+	chr21	39777764	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	2	1	0	1	1	1	0.0	0.0	chr7:151970252/151970253(+)->chr21:39777764/39777765(-):(spanning_paired_1_t:1)

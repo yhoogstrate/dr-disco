@@ -23,10 +23,16 @@ Dr. Disco
 """
 
 import drdisco
+import unittest,logging,sys,subprocess,filecmp,pysam,os
 import click
 
 from drdisco import __version__, __author__, __homepage__
+from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
+from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
+
+logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
+
 
 
 def main():
@@ -55,8 +61,21 @@ def CLI_fix_chimeric_alignment(temp_dir,output_alignment_file,
 @click.argument('output_file', type=click.File('w'))
 @click.argument('fusion_candidates_input_file', type=click.Path(exists=True))
 @click.argument('bam_input_file', type=click.Path(exists=True))
-def CLI_detect_intronic_break_points(output_file,input_list,input_alignment):
-    pass
+def CLI_detect_intronic_break_points(
+        output_file,
+        fusion_candidates_input_file,
+        bam_input_file
+    ):
+    bps = FusionCatcher(fusion_candidates_input_file,"")
+    bps_i = bps.__iter__()
+    bp = bps_i.next()
+
+    ic = IntronDecomposition(bp)
+    #ic.annotate_genes(gobj)
+    n_candidates = ic.decompose(bam_input_file)
+
+    ic.export(output_file)
+
 
 if __name__ == '__main__':
     main()
