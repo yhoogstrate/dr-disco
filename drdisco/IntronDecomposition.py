@@ -985,10 +985,10 @@ class Chain:
     
     def merge_splice_juncs(self,uncertainty):
         self.logger.info("merge_splice_juncs() - Merging splice juncs")
-        """@todo while?"""
+        """@todo while loop?"""
         
         init = self.get_start_splice_junc()
-        if init != None:
+        while init != None:
             init_c = init.get_complement()
             
             for xnode in self.idxtree[init._origin.position._chr].search(init._origin.position.pos - (uncertainty+1), init._origin.position.pos + (uncertainty + 1)):
@@ -1006,6 +1006,8 @@ class Chain:
                                 #self.print_chain()
             
             init = self.get_start_splice_junc()
+        
+        self.logger.info("merge_splice_juncs() - done")
     
     def rejoin_splice_juncs(self, thicker_arcs, insert_size):
         """thicker arcs go across the break point:
@@ -1453,13 +1455,10 @@ class IntronDecomposition:
         self.insert_chain(pysam_fh, tmprss2)
         #self.insert_chain(pysam_fh, erg)
         
-        # Merge arcs somehow, label nodes
-        
-        # emperical evidence showed ~230bp? look into this by picking a few examples
-        #c.prune(400+126-12)
-        # max obs = 418 for now
         thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
-        self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
+        # function seems useless because of the rejoining based on insert size
+        #self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
+        
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
         subnets = self.chain.extract_subnetworks(thicker_arcs)
