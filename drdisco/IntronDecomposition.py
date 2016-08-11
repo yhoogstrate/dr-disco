@@ -835,69 +835,6 @@ class Chain:
                     for arc in node_i.arcs.values():
                         if arc.target_in_range(range2) and arc._target.position.strand == pos2.strand:
                             yield (arc)
-    
-    def arcs_ratio_between(self,pos1, pos2, insert_size):
-        """
-        Searches for reads inbetween two regions (e.g. break + ins. size)
-        and returns the ratio of uniq reads that fall within this range
-        
-        included = [
-            'discordant_mates',
-            'spanning_paired_1',
-            'spanning_paired_2',
-            'spanning_singleton_1',
-            'spanning_singleton_2',
-            'spanning_singleton_1_r',
-            'spanning_singleton_2_r'
-            ]
-        excluded = ['cigar_soft_clip', 'silent_mate', 'cigar_splice_junction']
-        
-        total_arcs = 0
-        arcs_inbetween = 0
-
-        range1 = self.get_range(pos1,insert_size,False)
-        range2 = self.get_range(pos2,insert_size,False)
-        for pos_i in self.pos_to_range(pos1,range1,False):
-            node_i = self.get_node_reference(pos_i)
-            if node_i != None:
-                for arc in node_i.arcs.values():
-                    for _type in arc._types.keys():
-                        if _type in included:
-                            if arc.target_in_range(range2):
-                                arcs_inbetween += arc._types[_type]
-                                total_arcs += arc._types[_type]
-                            else:
-                                # The in-range ones are counted twice
-                                total_arcs += 2*arc._types[_type]
-                        
-                        elif _type in excluded:# weird types; cigar types
-                            continue
-                        else:
-                            raise Exception("To be implemented: %s", _type)
-                    
-        
-        range2 = self.get_range(pos2,insert_size,False)
-        range1 = self.get_range(pos1,insert_size,False)
-        for pos_i in self.pos_to_range(pos2,range2,False):
-            node_i = self.get_node_reference(pos_i)
-            if node_i != None:
-                for arc in node_i.arcs.values():
-                    for _type in arc._types.keys():
-                        if _type in included:
-                            if arc.target_in_range(range1):
-                                arcs_inbetween += arc._types[_type]
-                                total_arcs += arc._types[_type]
-                            else:
-                                # The in-range ones are counted twice
-                                total_arcs += 2*arc._types[_type]
-                        
-                        elif _type in excluded:# weird types; cigar types
-                            continue
-                        else:
-                            raise Exception("To be implemented: %s", _type)
-
-        return (1.0 * arcs_inbetween / total_arcs)
-        """
 
     def print_chain(self):
         print "**************************************************************"
