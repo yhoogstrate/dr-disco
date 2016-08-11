@@ -1,0 +1,2 @@
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	filter-status	score	soft+hardclips	n-split-reads	n-discordant-reads	n-arcs	n-nodes-A	n-nodes-B	entropy-bp-arc	entropy-all-arcs	data-structure
+chr21	39817544	-	chr21	42880007	+	valid	24	14	7	5	2	1	2	0.827729376771	0.907019018116	chr21:39817544/39817545(-)->chr21:42880007/42880008(+):(spanning_paired_1:5)&chr21:39817544/39817545(-)->chr21:42879876/42879877(+):(discordant_mates:5,spanning_singleton_2_r:2)

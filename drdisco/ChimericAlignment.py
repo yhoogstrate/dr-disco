@@ -343,13 +343,14 @@ class ChimericAlignment:
             
             ca = CigarAlignment(reads_updated[0].cigar,reads_updated[1].cigar)
             if ca.get_order() == STRAND_FORWARD:
-                self.set_read_group([reads_updated[0]],'spanning_paired_1')
-                self.set_read_group([reads_updated[1]],'spanning_paired_2')
+                """These reads have the opposite strand because they are both read1
+                """
+                self.set_read_group([reads_updated[0]],'spanning_paired_1_s')
+                self.set_read_group([reads_updated[1]],'spanning_paired_2_s')
             else:
-                self.set_read_group([reads_updated[0]],'spanning_paired_2')
-                self.set_read_group([reads_updated[1]],'spanning_paired_1')
+                self.set_read_group([reads_updated[0]],'spanning_paired_1_t')
+                self.set_read_group([reads_updated[1]],'spanning_paired_2_t')
             
-            #self.set_read_group(reads_updated,'spanning_paired')
             self.set_read_group(mates_updated,'silent_mate')
             for a in reads_updated:
                 all_reads_updated.append(a)
@@ -365,10 +366,10 @@ class ChimericAlignment:
                 self.set_read_group([reads_updated[0]],'spanning_paired_1')
                 self.set_read_group([reads_updated[1]],'spanning_paired_2')
             else:
-                self.set_read_group([reads_updated[0]],'spanning_paired_2')
-                self.set_read_group([reads_updated[1]],'spanning_paired_1')
+                self.logger.warn("Unexpected data...? please investigate further: "+str(reads_updated[0]))
+                self.set_read_group([reads_updated[0]],'silent_mate')
+                self.set_read_group([reads_updated[1]],'silent_mate')
             
-            #self.set_read_group(reads_updated,'spanning_paired')
             self.set_read_group(mates_updated,'silent_mate')
             for a in reads_updated:
                 all_reads_updated.append(a)
@@ -379,7 +380,7 @@ class ChimericAlignment:
         elif n_s == 2:
             reads_updated,mates_updated = self.fix_chain(singletons,bam_file,[])
             
-            ca = CigarAlignment(reads_updated[0].cigar,reads_updated[1].cigar)
+            #ca = CigarAlignment(reads_updated[0].cigar,reads_updated[1].cigar)
             
             #if ca.get_order() == STRAND_FORWARD:
             #    if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
@@ -462,7 +463,13 @@ class ChimericAlignment:
             {'ID':'discordant_mates','DS':'This read has discordant mate pair'},
             {'ID':'silent_mate','DS':'Reads of this type are not discordant while their mate is'},
             {'ID':'spanning_paired_1','DS':'This read was aligned to two locations and also has an aligned mate'},
+            {'ID':'spanning_paired_1_r','DS':'This read was aligned to two locations and also has an aligned mate (strand type r)'},
+            {'ID':'spanning_paired_1_s','DS':'This read was aligned to two locations and also has an aligned mate (strand type s)'},
+            {'ID':'spanning_paired_1_t','DS':'This read was aligned to two locations and also has an aligned mate (strand type t)'},
             {'ID':'spanning_paired_2','DS':'This read was aligned to two locations and also has an aligned mate'},
+            {'ID':'spanning_paired_2_r','DS':'This read was aligned to two locations and also has an aligned mate (strand type r)'},
+            {'ID':'spanning_paired_2_s','DS':'This read was aligned to two locations and also has an aligned mate (strand type s)'},
+            {'ID':'spanning_paired_2_t','DS':'This read was aligned to two locations and also has an aligned mate (strand type t)'},
             {'ID':'spanning_singleton_1','DS':'This read was aligned to two locations but no aligned mate'},
             {'ID':'spanning_singleton_1_r','DS':'This read was aligned to two locations but no aligned mate'},
             {'ID':'spanning_singleton_2','DS':'This read was aligned to two locations but no aligned mate'},

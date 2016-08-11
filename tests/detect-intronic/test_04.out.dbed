@@ -1,3 +1,2 @@
-chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	score	soft+hardclips	n-split-reads	n-discordant-reads	n-arcs	n-nodes-A	n-nodes-B	entropy-bp-arc	entropy-all-arcs	data-structure
-chr21	39817544	-	chr21	42880007	+	234	161	82	0	3	2	2	0.798471826791	0.812925026756	chr21:39817544/39817545(-)->chr21:42880007/42880008(+):(spanning_paired_1:67,spanning_singleton_1:2,spanning_singleton_2_r:3)&chr21:39817544/39817545(-)->chr21:42879876/42879877(+):(spanning_paired_1:6,spanning_singleton_2_r:2)&chr21:39846044/39846045(-)->chr21:42879876/42879877(+):(spanning_paired_1:2)
-chr21	39817544	+	chr21	42878371	-	3	9	1	0	1	1	1	0.0	0.0	chr21:39817544/39817545(+)->chr21:42878371/42878372(-):(spanning_paired_1:1)
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	filter-status	score	soft+hardclips	n-split-reads	n-discordant-reads	n-arcs	n-nodes-A	n-nodes-B	entropy-bp-arc	entropy-all-arcs	data-structure
+chr21	39817544	-	chr21	42880007	+	n_discordant_reads=0/3,n_support=7/12	19	14	7	0	2	1	2	0.827729376771	0.796453035938	chr21:39817544/39817545(-)->chr21:42880007/42880008(+):(spanning_paired_1:5)&chr21:39817544/39817545(-)->chr21:42879876/42879877(+):(spanning_singleton_2_r:2)

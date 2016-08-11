@@ -107,8 +107,10 @@ class CigarAlignment:
         
     """
     def __init__(self,cigtup1,cigtup2):
-        self.cigtup1 = self.cleanup_cigar(cigtup1,[3])
-        self.cigtup2 = self.cleanup_cigar(cigtup2,[3])
+        logger = logging.getLogger(self.__class__.__name__)
+        
+        self.cigtup1 = self.cleanup_cigar(cigtup1,[1,2,3])
+        self.cigtup2 = self.cleanup_cigar(cigtup2,[1,2,3])
         
         self.m = len(self.cigtup1)
         self.n = len(self.cigtup2)
@@ -125,6 +127,9 @@ class CigarAlignment:
         
         ## Merging those that become adjacent to each other
         ### E.g. removal of 'N' in 6M10N6M -> 6M6M -> 12M
+        
+        ## or:    [(4, 17), (0, 55), (1, 1), (0, 53)] -> [(4, 17), (0, 108)]
+        
         last_type = -1
         concat = []
         
@@ -191,8 +196,7 @@ class CigarAlignment:
                 j += 1
     
     def cigar_diff(self,cig_chunk1,cig_chunk2):
-        """
-        Maybe sort on cigar type, to reduce if statements
+        """Maybe sort on cigar type, to reduce if statements
         """
         if (cig_chunk1[0] == 0 and cig_chunk2[0] == 0) or (cig_chunk1[0] == 4 and cig_chunk2[0] == 4):
             # M * M or S*S => sqaure 
@@ -304,13 +308,17 @@ class CigarAlignment:
         c1_total = sum([x[1] for x in c1 if x[0] in [0,4]])
         c2_total = sum([x[1] for x in c2 if x[0] in [0,4]])
         
-        c1_r = 1.0 * c1_l / c1_total
-        c2_r = 1.0 * c2_l / c2_total
-
-        if c1_r >= c2_r:
+        if c1_total == 0 or c2_total == 0:
+            #@todo figure out when this happens? 
             return STRAND_FORWARD
         else:
-            return STRAND_REVERSE
+            c1_r = 1.0 * c1_l / c1_total
+            c2_r = 1.0 * c2_l / c2_total
+
+            if c1_r >= c2_r:
+                return STRAND_FORWARD
+            else:
+                return STRAND_REVERSE
 
 
     def get_order(self):

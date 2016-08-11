@@ -13,7 +13,9 @@ tmp/
 .coverage
 /htmlcov/*
 /*.R
-/tests/*/*.bai
+/tests/fix-chimeric/*.bai
 .directory
 /.cache
 /*.svg
+test.out
+truncated.*
