@@ -935,10 +935,11 @@ class Chain:
         
         for node in self:
             for _arc in node:
-                score = (_arc.get_count('cigar_splice_junction'),_arc.get_count('cigar_soft_clip'))
-                if score[0] > maxscore[0] or (score[0] == maxscore[0] and score[1] > maxscore[1]):
-                    arc = _arc
-                    maxscore = score
+                if _arc._origin.position._chr == _arc._target.position._chr:
+                    score = (_arc.get_count('cigar_splice_junction'),_arc.get_count('cigar_soft_clip'))
+                    if score[0] > maxscore[0] or (score[0] == maxscore[0] and score[1] > maxscore[1]):
+                        arc = _arc
+                        maxscore = score
         
         return arc
     
