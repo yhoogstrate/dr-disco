@@ -1043,6 +1043,8 @@ thick arcs:
     def extract_subnetworks(self,thicker_arcs):
         """Make sure this does not suffer from endless recursion
         """
+        self.logger.info("extract_subnetwors() - rnodes not yet implemented")
+        
         q = 0
         subnetworks = []
         while len(thicker_arcs) > 0:
@@ -1176,7 +1178,7 @@ thick arcs:
             
             subnetworks.append(Subnet(q,subarcs))
         
-        self.logger.info("* Extract "+str(len(subnetworks))+" subnetwork(s)")
+        self.logger.info("extract_subnetwors() - Extracted "+str(len(subnetworks))+" subnetwork(s)")
         return subnetworks
 
 
