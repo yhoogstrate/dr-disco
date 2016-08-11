@@ -522,6 +522,7 @@ class Chain:
         except:
             return None
     
+    
     def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
@@ -767,6 +768,11 @@ class Chain:
             for element in sorted(self.idxtree[key]):
                 for strand in sorted(element[2].keys()):
                     yield element[2][strand]
+
+    def __iter_chr(self,key):
+        for element in sorted(self.idxtree[key]):
+            for strand in sorted(element[2].keys()):
+                yield element[2][strand]
     
     def get_range(self,pos,insert_size,inverse_strand):
         if inverse_strand:
@@ -929,10 +935,11 @@ class Chain:
         
         for node in self:
             for _arc in node:
-                score = (_arc.get_count('cigar_splice_junction'),_arc.get_count('cigar_soft_clip'))
-                if score[0] > maxscore[0] or (score[0] == maxscore[0] and score[1] > maxscore[1]):
-                    arc = _arc
-                    maxscore = score
+                if _arc._origin.position._chr == _arc._target.position._chr:
+                    score = (_arc.get_count('cigar_splice_junction'),_arc.get_count('cigar_soft_clip'))
+                    if score[0] > maxscore[0] or (score[0] == maxscore[0] and score[1] > maxscore[1]):
+                        arc = _arc
+                        maxscore = score
         
         return arc
     
@@ -983,69 +990,112 @@ class Chain:
         return None
     
     def merge_splice_juncs(self,uncertainty):
+        """
+> c[11]=0.154
+> c[21]=0.208
+> c[31]=0.275
+> c[41]=0.346
+> c[51]=0.432
+> c[61]=0.514
+> c[71]=0.705
+> c[81]=0.859
+> c[91]=1.042
+> c[101]=1.223
+> c[111]=1.593
+> c[121]=1.779
+> c[131]=2.005
+> c[141]=2.336
+> c[151]=2.665
+> c[161]=3.179
+> c[171]=3.727
+> c[181]=4.117
+> c[191]=4.605
+> c[201]=5.380
+> c[211]=6.042
+> c[221]=7.308
+> c[231]=8.091
+> c[241]=8.914
+> c[251]=9.978
+> c[261]=11.277
+        """
         self.logger.info("Merging splice juncs")
         
         init = self.get_start_splice_junc()
         if init != None:
             init_c = init.get_complement()
             
-            for node in self:
-                for junc in node:
-                    if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
-                        d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
-                        d_target = abs(junc._target.position.pos - init._target.position.pos)
-                        if d_origin <= uncertainty and d_target <= uncertainty:
-                            init.merge_arc(junc)
-                            init_c.merge_arc(junc.get_complement())
-                            
-                            self.remove_arc(junc)
-                            
-                            #self.print_chain()
+            # for node in self:
+            for xnode in self.idxtree[init._origin.position._chr].search(init._origin.position.pos - (uncertainty+1), init._origin.position.pos + (uncertainty + 1)):
+                for node in xnode[2].values():
+                    for junc in node:
+                        if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
+                            d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
+                            d_target = abs(junc._target.position.pos - init._target.position.pos)
+                            if d_origin <= uncertainty and d_target <= uncertainty:
+                                init.merge_arc(junc)
+                                init_c.merge_arc(junc.get_complement())
+                                
+                                self.remove_arc(junc)
+                                
+                                #self.print_chain()
             
             init = self.get_start_splice_junc()
     
     def rejoin_splice_juncs(self, thicker_arcs, insert_size):
         """thicker arcs go across the break point:
-        
- splice juncs:
-               -------  -------                                            -----
-             ||       ||       ||        |          $ ... $       |      ||     ||
 
 thick arcs:
                                 ------------------------------------------
                        ---------------------------------------------------
                        ----------------------------------------------------------
               -------------------------------------------------------------------
+
+ splice juncs:
+               -------  -------                                            -----
+             ||       ||       ||        |          $ ... $       |      ||     ||
+
         
         the goal is to add the splice juncs between the nodes
         """
         ## 01 collect all left and right nodes
-        
-        #added_splice_junctions = set()
         k = 0
         
-        left_nodes = set()
-        right_nodes = set()
+        left_nodes = {}
+        right_nodes = {}
         
         for arc in thicker_arcs:
-            left_nodes.add(arc[0]._origin)
-            right_nodes.add(arc[0]._target)
+            #lnodes
+            if not left_nodes.has_key(arc[0]._origin.position._chr):
+                left_nodes[arc[0]._origin.position._chr] = set()
+            left_nodes[arc[0]._origin.position._chr].add(arc[0]._origin)
+            
+            #rnodes
+            if not right_nodes.has_key(arc[0]._target.position._chr):
+                right_nodes[arc[0]._target.position._chr] = set()
+            right_nodes[arc[0]._target.position._chr].add(arc[0]._target)
+        
         
         ## 02 look for all left nodes if there is any set (i < j) where
         ## i and j span a splice junction
         i = -1
-        for node1 in left_nodes:
-            i += 1
-            j = -1
-            
-            for node2 in left_nodes:
-                j += 1
+        for _chr in left_nodes.keys():
+            for node1 in left_nodes[_chr]:
+                i += 1
+                j = -1
                 
-                if j > i:# Avoid unnecessary comparisons
-                    if node1.position.strand == node2.position.strand:
+                for node2 in left_nodes[_chr]:
+                    j += 1
+                    
+                    if j > i and node1.position.strand == node2.position.strand:# Avoid unnecessary comparisons
                         left_junc = (MAX_GENOMIC_DIST, None)
                         
-                        for node in self:
+                        # @todo to make it even faster:
+                        # for lnode in self.idxtree[_chr].search(pos1)
+                        #      for splice junc ...
+                        # for lnode in self.idxtree[_chr].search(pos2)
+                        #      for splice junc ....
+                        
+                        for node in self.__iter_chr(_chr):
                             for splice_junc in node:
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_origin1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
@@ -1064,18 +1114,18 @@ thick arcs:
                             #added_splice_junctions.add(left_junc[1])
 
         i = -1
-        for node1 in right_nodes:
-            i += 1
-            j = -1
-            
-            for node2 in right_nodes:
-                j += 1
+        for _chr in right_nodes.keys():
+            for node1 in right_nodes[_chr]:
+                i += 1
+                j = -1
                 
-                if j > i:# Avoid unnecessary comparisons
-                    if node1.position.strand == node2.position.strand:
+                for node2 in right_nodes[_chr]:
+                    j += 1
+                    
+                    if j > i and node1.position.strand == node2.position.strand:# Avoid unnecessary comparisons
                         right_junc = (MAX_GENOMIC_DIST, None)
                         
-                        for node in self:
+                        for node in self.__iter_chr(_chr):
                             for splice_junc in node:
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
