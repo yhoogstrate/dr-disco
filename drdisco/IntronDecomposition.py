@@ -816,34 +816,25 @@ class Chain:
         @todo: correct for splice junction width
         @todo use idxtree.search()
         """
-        
         range1 = self.get_range(pos1,insert_size,False)
         range2 = self.get_range(pos2,insert_size,False)
-        for pos_i in self.pos_to_range(pos1,range1,True):
-            node_i = self.get_node_reference(pos_i)
-            if node_i != None:
-                for arc in node_i.arcs.values():
-                    """Although I still don't understand why this happens
-                    I found about ~25% of the split reads to be in reverse
-                    strand:
-                    
-                    <========]   $ ... $   <====]
-                      <======]   $ ... $   <======]
-                        <====]   $ ... $   <========]
-                    <========]   $ ... $   <====]
-                      <======]   $ ... $   <======]
-                        <====]   $ ... $   <========]
-                        
-                       [=====>   $ ... $   [========>
-                      <======]   $ ... $   <========]
-                    
-                    but this almost only seem to happen for 'spanning_singleton_[1/2]' type reads.
-                    The most likely reason is that for spanning singletons the direction
-                    depends on whether it was the first or second mate.
-                    """
-                    if arc.target_in_range(range2):
-                        yield (arc)
-
+        
+        if range1[2] == -1:
+            _min = range1[1]
+            _max = range1[0]
+            interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
+        else:
+            _max = range1[1]
+            _min = range1[0]
+            interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
+        
+        for interval in interval_iterator:
+            if interval[0] != pos1.pos:
+                if interval[2].has_key(pos1.strand):
+                    node_i = interval[2][pos1.strand]
+                    for arc in node_i.arcs.values():
+                        if arc.target_in_range(range2) and arc._target.position.strand == pos2.strand:
+                            yield (arc)
     
     def arcs_ratio_between(self,pos1, pos2, insert_size):
         """
@@ -1398,12 +1389,18 @@ class Subnet(Chain):
         for lnode in self.get_lnodes():
             for lnode_t in subnet_t.get_lnodes():
                 dist = abs(lnode.position.get_dist(lnode_t.position, True))
+                if dist == MAX_GENOMIC_DIST:
+                    return MAX_GENOMIC_DIST
+                
                 if dist < ldist:
                     ldist = dist
         
         for rnode in self.get_rnodes():
             for rnode_t in subnet_t.get_rnodes():
                 dist = abs(rnode.position.get_dist(rnode_t.position, True))
+                if dist == MAX_GENOMIC_DIST:
+                    return MAX_GENOMIC_DIST
+                
                 if dist < rdist:
                     rdist = dist
         
@@ -1738,7 +1735,7 @@ splice-junc:                           <=============>
             
             merge all subnets in M into i, and remove the former subnets
         """
-        
+        self.logger.info("merge_overlapping_subnets()")
         n = len(subnets)
         
         k = 0
@@ -1757,7 +1754,7 @@ splice-junc:                           <=============>
                     del(sn_j)
                     k += 1
         
-        self.logger.info("* Merged "+str(k)+" of the "+str(n)+" subnetwork(s)")
+        self.logger.info("merge_overlapping_subnets() - Merged "+str(k)+" of the "+str(n)+" subnetwork(s)")
         
         return [sn for sn in subnets if sn != None]
 
