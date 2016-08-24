@@ -45,14 +45,14 @@ def CLI():
 
 
 #@click.command(help="This tool requires the '*.Chimeric.out.sam' files of RNA STAR converted into BAM")
-@CLI.command(name="fix",short_help="Fixes chimeric SAM/BAM"
-"alignment produced by RNA-STAR")
+@CLI.command(name="fix",short_help="Fixes chimeric SAM/BAM alignment produced by RNA-STAR")
 @click.option("--temp-dir","-t",type=click.Path(exists=True),default="/tmp",help="Path"
 "in which temporary files will be stored (default: /tmp)")
 @click.argument('output_alignment_file')
 @click.argument('input_alignment_file', type=click.Path(exists=True))
-def CLI_fix_chimeric_alignment(temp_dir,output_alignment_file,
-    input_alignment_file):
+def CLI_fix_chimeric_alignment(
+        temp_dir,output_alignment_file,
+        input_alignment_file):
     alignment_handle = ChimericAlignment(input_alignment_file)
     alignment_handle.convert(output_alignment_file,temp_dir)
 
@@ -64,8 +64,7 @@ def CLI_fix_chimeric_alignment(temp_dir,output_alignment_file,
 def CLI_detect_intronic_break_points(
         output_file,
         fusion_candidates_input_file,
-        bam_input_file
-    ):
+        bam_input_file):
     bps = FusionCatcher(fusion_candidates_input_file,"")
     bps_i = bps.__iter__()
     bp = bps_i.next()
@@ -75,6 +74,16 @@ def CLI_detect_intronic_break_points(
     n_candidates = ic.decompose(bam_input_file)
 
     ic.export(output_file)
+
+
+@CLI.command(name='subview-bam',short_help='Extract reads from two chromosomal positions (and also take the mates with the same name)')
+@click.argument('region1',help="chr21:123-456")
+@click.argument('region2',help="chr21:123-456")
+@click.argument('bam_input_file', type=click.Path(exists=True))
+def CLI_detect_intronic_break_points(region1,region2,bam_input_file):
+    pass
+
+
 
 
 if __name__ == '__main__':

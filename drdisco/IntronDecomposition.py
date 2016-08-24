@@ -902,6 +902,7 @@ class Chain:
     def prune_arc(self, arc, insert_size):
         ## These types of arcs fall within the same space / inst. size
         ## they make the arcs heavier
+        ## @ todo double check if this is strand specific
         
         node1 = arc._origin
         node2 = arc._target
@@ -1393,8 +1394,8 @@ class IntronDecomposition:
         erg = ['chr21',39737183,40035618]
         self.insert_chain(pysam_fh, tmprss2)
         #self.insert_chain(pysam_fh, erg)
-        
         thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
+        """
         # function seems useless because of the rejoining based on insert size
         #self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
         
@@ -1414,6 +1415,9 @@ class IntronDecomposition:
         
         self.results = subnets
         return len(self.results)
+        """
+        self.results = []
+        return 0
     
     def test_disco_alignment(self,alignment_file):
         # Make sure the header exists indicating that the BAM file was
@@ -1570,7 +1574,8 @@ splice-junc:                           <=============>
                             #if rg in ['spanning_paired_2','spanning_singleton_2_r']:
                             #self.chain.create_node(i_pos2)
                             #self.chain.get_node_reference(i_pos2).add_clip()
-                            self.logger.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
+                            #self.logger.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
+                            pass
                     else:
                         if i_pos1 != None:
                             self.chain.insert_entry(i_pos1,i_pos2,internal_arc[2],None,True)
