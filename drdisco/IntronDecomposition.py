@@ -1395,7 +1395,7 @@ class IntronDecomposition:
         self.insert_chain(pysam_fh, tmprss2)
         #self.insert_chain(pysam_fh, erg)
         thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
-        """
+        
         # function seems useless because of the rejoining based on insert size
         #self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
         
@@ -1415,9 +1415,6 @@ class IntronDecomposition:
         
         self.results = subnets
         return len(self.results)
-        """
-        self.results = []
-        return 0
     
     def test_disco_alignment(self,alignment_file):
         # Make sure the header exists indicating that the BAM file was

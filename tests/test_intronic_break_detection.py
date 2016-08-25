@@ -60,8 +60,10 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
+        assertion = filecmp.cmp(test_file, output_file)
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
+        if not assertion:
+            print "diff '"+test_file+"' '"+output_file+"'"
 
     def test_02(self):
         #print("\n")
@@ -82,9 +84,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
     def test_03(self):
         #print("\n")
@@ -106,9 +106,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
     def test_04(self):
         #print("\n")
@@ -130,8 +128,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
 
     def test_05(self):
@@ -153,8 +150,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
 
     def test_06(self):
@@ -223,8 +219,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
         
         # TEST FOR DISCORANT READS!
 
@@ -248,7 +243,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
 
     def test_10(self):
@@ -270,7 +265,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
 
     def test_final(self):
@@ -292,8 +287,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        #self.assertEqual(n_candidates, 2)
-        #self.assertTrue(filecmp.cmp(test_file, output_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
 
     def test_11(self):
@@ -315,7 +309,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
 def main():
     unittest.main()
