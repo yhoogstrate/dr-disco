@@ -36,5 +36,8 @@ class BAMExtract:
             if r.query_name in ids:
                 fh.write(r)
         
+        
         fh.close()
+        
+        pysam.index(str(bamfile_out))
 
