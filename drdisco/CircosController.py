@@ -3,7 +3,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 from subprocess import Popen, PIPE
-import os
+import os,logging
 
 
 class CircosController:
@@ -12,8 +12,6 @@ class CircosController:
     smoothing_prec = 3
     
     def __init__(self, sid, data, main_config_file, coordinate_config_file, data_file):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        
         self.sid = sid
         self.data = data
         #self.main_config_file = main_config_file

@@ -82,8 +82,6 @@ class Arc:
                }
     
     def __init__(self,_origin,_target):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        
         if not isinstance(_target, Node) or not isinstance(_origin, Node):
             raise Exception("_origin and _target must be a Node")
         
@@ -500,8 +498,6 @@ class BreakPosition:
 
 class Chain:
     def __init__(self,pysam_fh):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        
         self.idxtree = GenomeIntervalTree()
         self.pysam_fh = pysam_fh
     
@@ -762,7 +758,7 @@ class Chain:
         ## Re-insert if necessary
         if len(new_element[2]) > 0:
             self.idxtree[pos._chr].add(new_element)
-            
+    
     def __iter__(self):
         for key in self.idxtree:
             for element in sorted(self.idxtree[key]):
@@ -845,7 +841,8 @@ class Chain:
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
     def get_start_point(self):
-        """Returns the chain with the higest number of counts
+        """Returns all nodes in the chain,
+        ordered by the higest number of counts
         """
         maxscore = 0
         arc = None
@@ -877,7 +874,7 @@ class Chain:
     def prune(self,insert_size):
         """Does some 'clever' tricks to merge arcs together and reduce data points
         """
-        self.logger.info("prune() - Find and merge other arcs in close proximity (insert size)")
+        logging.info("Finding and merging other arcs in close proximity (insert size)")
         
         candidates = []
         k = 0
@@ -895,7 +892,7 @@ class Chain:
             k += 1
         
         #self.print_chain()
-        self.logger.info("prune() - * Pruned into "+str(k)+" candidate arc(s)")
+        logging.info("Pruned into "+str(k)+" candidate arc(s)")
         return candidates
     
     #@todo ADD RECURSION DEPTH LIMIT
@@ -922,7 +919,7 @@ class Chain:
         return None
     
     def merge_splice_juncs(self,uncertainty):
-        self.logger.info("merge_splice_juncs() - Merging splice juncs")
+        logging.info("Merging splice juncs")
         """@todo while loop?"""
         
         init = self.get_start_splice_junc()
@@ -945,7 +942,7 @@ class Chain:
             
             init = self.get_start_splice_junc()
         
-        self.logger.info("merge_splice_juncs() - done")
+        logging.debug("done")
     
     def rejoin_splice_juncs(self, thicker_arcs, insert_size):
         """thicker arcs go across the break point:
@@ -964,7 +961,7 @@ thick arcs:
         the goal is to add the splice juncs between the nodes
         """
         k = 0
-        self.logger.info("rejoin_splice_junctions()")
+        logging.debug("Initiated")
         
         ## 01 collect all left and right nodes, indexed per chromosome
         left_nodes = {}
@@ -1037,39 +1034,14 @@ thick arcs:
                                 
                                 k += 1
         
-        self.logger.info("rejoin_splice_junctions() - Linked "+str(k)+" splice junction(s)")
+        logging.info("Linked "+str(k)+" splice junction(s)")
         
         return thicker_arcs
     
+    def extract_subnetworks_by_splice_junctions(self,thicker_arcs):
+        sys.exit(1)
+    
     def extract_subnetworks(self,thicker_arcs):
-        """Make sure this does not suffer from endless recursion
-        """
-        self.logger.info("extract_subnetwors() - rnodes not yet implemented")
-        
-        q = 0
-        subnetworks = []
-        while len(thicker_arcs) > 0:
-            start_point = thicker_arcs[0][0]
-            
-            left_nodes = [start_point._origin]
-            right_nodes = [start_point._target]
-            
-            ## The original nodes have been emptied, so the most important
-            ## arc's are now separated.
-            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
-            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
-            
-            subarcs = []
-            
-            # All arcs between any of the left and right nodes are valid arcs and have to be extracted
-            # Find all direct arcs joined by splice junctions
-            for left_node in left_nodes:
-                for right_node in right_nodes:
-                    if left_node.arcs.has_key(str(right_node.position)):
-                        subarcs.append( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
-            
-            
-            ## Find all with one indirect step - these might be alternative junctions / exons
             """
             Here we want to add new nodes to `left_nodes` or `right_nodes`
             using the `guilt-by-association` principle. Sometimes nodes are
@@ -1096,7 +1068,15 @@ thick arcs:
             
             nodes:
             A     B         $ ... $          Y    Z
+    arcs:   ....................................... (9)
+            ..................................      (2)
+                  ................................. (100)
+                  ............................      (20)
     splice:  -----
+    
+    
+    start point: thickest arc
+    
 
     left_nodes:  A, B
     right_nodes: Y, Z
@@ -1108,7 +1088,7 @@ thick arcs:
             A-Y (2)
             B-Y (20)
             
-            For all each left node i, compared with each other left node j,
+            For each left node i, compared to any other left node j,
             look for nodes they have in common:
             Y, Z (exclude Z, because it was already in `right_nodes`
             
@@ -1122,7 +1102,32 @@ thick arcs:
             -------
             Then do this in reverse(d) order, from `right_nodes` to
             `left_nodes`.
-            """
+            """        logging.info("Initiated -- *** rnodes not yet implemented ***")
+        
+        q = 0
+        subnetworks = []
+        while len(thicker_arcs) > 0:
+            start_point = thicker_arcs[0][0]
+            
+            left_nodes = [start_point._origin]
+            right_nodes = [start_point._target]
+            
+            ## The original nodes have been emptied, so the most important
+            ## arc's are now separated.
+            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
+            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
+            
+            subarcs = []
+            
+            # All arcs between any of the left and right nodes are valid arcs and have to be extracted
+            # Find all direct arcs joined by splice junctions
+            for left_node in left_nodes:
+                for right_node in right_nodes:
+                    if left_node.arcs.has_key(str(right_node.position)):
+                        subarcs.append( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
+            
+            
+            ## Find all with one indirect step - these might be alternative junctions / exons
             i = -1
             for left_node_i in left_nodes:
                 j = -1
@@ -1179,7 +1184,7 @@ thick arcs:
             
             subnetworks.append(Subnet(q,subarcs))
         
-        self.logger.info("extract_subnetwors() - Extracted "+str(len(subnetworks))+" subnetwork(s)")
+        logging.info("Extracted "+str(len(subnetworks))+" subnetwork(s)")
         return subnetworks
 
 
@@ -1375,8 +1380,6 @@ class Subnet(Chain):
         
 class IntronDecomposition:
     def __init__(self,break_point):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        
         self.break_point = break_point
         self.chain = None
     
@@ -1388,20 +1391,13 @@ class IntronDecomposition:
         
         self.chain = Chain(pysam_fh)
         
-        # Solve it somehow like this:
-        #self.insert_tree(pysam_fh, lpos())
-        tmprss2 = ['chr21',42834478,42882085]
-        erg = ['chr21',39737183,40035618]
         self.insert_chain(pysam_fh, tmprss2)
-        #self.insert_chain(pysam_fh, erg)
         thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
-        
-        # function seems useless because of the rejoining based on insert size
-        #self.chain.merge_splice_juncs(SPLICE_JUNC_ACC_ERR)
-        
+        #thickre_arcs = self.index_arcs
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
-        subnets = self.chain.extract_subnetworks(thicker_arcs)
+        #subnets = self.chain.extract_subnetworks(thicker_arcs)
+        subnets = extract_subnetworks_by_splice_junctions(thicker arcs)
         ##subnets = self.filter_subnets_on_identical_nodes(subnets)
         subnets = self.merge_overlapping_subnets(subnets)
         subnets = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
@@ -1423,6 +1419,19 @@ class IntronDecomposition:
         if bam_fh.header.has_key('PG'):
             for pg in bam_fh.header['PG']:
                 if pg['ID'] == 'drdisco_fix_chimeric':
+                    # create index if it does not exist
+                    try:
+                        bam_fh.fetch()
+                    except:
+                        logging.info('Indexing BAM file with pysam: '+bam_fh.filename)
+                        pysam.index(bam_fh.filename)
+                        bam_fh = pysam.AlignmentFile(bam_fh.filename)
+                    
+                    try:
+                        bam_fh.fetch()
+                    except:
+                        raise Exception('Could not indexing BAM file: '+bam_fh.filename)
+                    
                     return bam_fh
         
         raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
@@ -1437,8 +1446,7 @@ class IntronDecomposition:
     
     
     def insert_chain(self,pysam_fh, region):
-        for read in pysam_fh.fetch():#region[0],region[1],region[2]):
-        #for r in pysam_fh.fetch(region[0],region[1]):
+        for read in pysam_fh.fetch():
             sa = self.parse_SA(read.get_tag('SA'))
             _chr = pysam_fh.get_reference_name(read.reference_id)
             rg = read.get_tag('RG')
@@ -1571,7 +1579,7 @@ splice-junc:                           <=============>
                             #if rg in ['spanning_paired_2','spanning_singleton_2_r']:
                             #self.chain.create_node(i_pos2)
                             #self.chain.get_node_reference(i_pos2).add_clip()
-                            #self.logger.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
+                            #logging.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
                             pass
                     else:
                         if i_pos1 != None:
@@ -1675,7 +1683,7 @@ splice-junc:                           <=============>
             
             merge all subnets in M into i, and remove the former subnets
         """
-        self.logger.info("merge_overlapping_subnets()")
+        logging.info("initiated")
         n = len(subnets)
         
         k = 0
@@ -1694,7 +1702,7 @@ splice-junc:                           <=============>
                     del(sn_j)
                     k += 1
         
-        self.logger.info("merge_overlapping_subnets() - Merged "+str(k)+" of the "+str(n)+" subnetwork(s)")
+        logging.info("Merged "+str(k)+" of the "+str(n)+" subnetwork(s)")
         
         return [sn for sn in subnets if sn != None]
 
@@ -1721,7 +1729,7 @@ splice-junc:                           <=============>
             if len(subnet.discarded) > 0:
                 k += 1
         
-        self.logger.info("* Filtered "+str(k)+" of the "+str(len(subnets))+" subnetwork(s)")
+        logging.info("* Filtered "+str(k)+" of the "+str(len(subnets))+" subnetwork(s)")
         return subnets
 
     def find_cigar_arcs(self,read):

@@ -10,7 +10,24 @@ from .BAMExtract import *
 
 class BAMExtract:
     def __init__(self, bam_file):
-        self.samfile = pysam.AlignmentFile(bam_file, "rb")
+        self.samfile = self.test_idx(bam_file)
+    
+    def test_idx(self, bam_file):
+        pysam_fh = pysam.AlignmentFile(bam_file, "rb")
+        
+        try:
+            pysam_fh.fetch()
+        except:
+            logging.info('Indexing BAM file with pysam: '+pysam_fh.filename)
+            pysam.index(pysam_fh.filename)
+            pysam_fh = pysam.AlignmentFile(pysam_fh.filename)
+        
+        try:
+            pysam_fh.fetch()
+        except:
+            raise Exception('Could not indexing BAM file: '+pysam_fh.filename)
+        
+        return pysam_fh
     
     def parse_pos(self, str_pos):
         _chr,_poss = str_pos.split(":",2)

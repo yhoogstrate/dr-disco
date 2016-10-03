@@ -21,7 +21,8 @@
 """
 
 import unittest,logging,sys,subprocess,filecmp,pysam,os
-logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
+import drdisco
+logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
 
 from drdisco.BAMExtract import BAMExtract
 

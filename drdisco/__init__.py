@@ -28,3 +28,6 @@ __version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.
 __author__ = 'Youri Hoogstrate'
 __homepage__ = 'https://github.com/yhoogstrate/dr-disco'
 __license__ = 'GNU General Public License v3 (GPLv3)'
+__license_notice__ = 'License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.'
+
+__log_format__ = "[%(filename)s:%(lineno)s - %(funcName)s()] %(asctime)s - %(levelname)s - %(message)s"

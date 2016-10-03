@@ -26,20 +26,19 @@ import drdisco
 import unittest,logging,sys,subprocess,filecmp,pysam,os
 import click
 
-from drdisco import __version__, __author__, __homepage__
+import drdisco
 from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
 from drdisco.BAMExtract import BAMExtract
 
-logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
-
+logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
 
 
 def main():
     CLI()
 
-@click.version_option(__version__)
+@click.version_option(drdisco.__version__+"\n\n"+drdisco.__license_notice__+"\n\nWritten by "+drdisco.__author__+".\n\nFor more info please visit:\n"+drdisco.__homepage__)
 @click.group()
 def CLI():
     pass
