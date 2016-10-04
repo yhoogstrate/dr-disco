@@ -71,8 +71,8 @@ class BAMExtract:
         return sa_tags
     
     @staticmethod
-    def find_cigar_arcs(read):
-        """Tries to find ARCs introduced by:
+    def find_cigar_edges(read):
+        """Tries to find Edges introduced by:
          - Hard clipping
          - Soft clipping
          - Splicing
@@ -118,7 +118,7 @@ class BAMExtract:
                 
                 5H 10S 5M
                 
-                in that case, the first arc should be -15,-10 and the
+                in that case, the first edge should be -15,-10 and the
                 second -10,0. Maybe soft- and hard clipping should
                 be merged together?
                 """

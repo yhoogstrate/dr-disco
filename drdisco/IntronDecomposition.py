@@ -41,7 +41,7 @@ def merge_frequency_tables(frequency_tables):
     return new_frequency_table
 
 
-class Arc:
+class Edge:
     """Connection between two genomic locations
      - Also contains different types of evidence
     """
@@ -78,7 +78,7 @@ class Arc:
         self.unique_alignments_idx = {}
     
     def get_entropy(self):
-        """Entropy is an important metric/ propery of an arc
+        """Entropy is an important metric/ propery of an edge
         The assumption is that all reads should be 'different', i.e.
         have a different start position, different end position,
         different soft/hardclips etc.
@@ -132,7 +132,7 @@ class Arc:
         return entropy(self.unique_alignments_idx)
     
     def get_complement(self):
-        """complement = self._target.arcs[str(self._origin.position)]
+        """complement = self._target.edges[str(self._origin.position)]
         
         if complement == self:
             raise Exception("err")
@@ -140,18 +140,18 @@ class Arc:
         return complement
         """
         try:
-            return self._target.arcs[str(self._origin.position)]
+            return self._target.edges[str(self._origin.position)]
         except KeyError as err:
-            raise KeyError("Could not find complement for arc:   "+str(self))
+            raise KeyError("Could not find complement for edge:   "+str(self))
     
-    def merge_arc(self,arc):
-        """Merges discordant_mates arcs
+    def merge_edge(self,edge):
+        """Merges discordant_mates edges
         """
         
-        for alignment_key in arc.unique_alignments_idx:
+        for alignment_key in edge.unique_alignments_idx:
             self.add_alignment_key(alignment_key)
         
-        for _type in arc._types:
+        for _type in edge._types:
             if _type in [
                     "discordant_mates",
                     "spanning_paired_1",
@@ -176,7 +176,7 @@ class Arc:
     
     def add_type(self,_type):
         if _type in ["cigar_soft_clip", 'cigar_hard_clip']:
-            raise Exception("Clips shouldn't be added as arcs, but as properties of Nodes")
+            raise Exception("Clips shouldn't be added as edges, but as properties of Nodes")
         
         if not self._types.has_key(_type):
             self._types[_type] = 0
@@ -247,8 +247,8 @@ class Arc:
         
         #spacer = " "*len(str(self._origin.position))
         
-        #for _k in self._origin.splice_arcs.keys():
-        #    out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_arcs[_k][1].get_splice_score())
+        #for _k in self._origin.splice_edges.keys():
+        #    out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_edges[_k][1].get_splice_score())
         
         return out
 
@@ -259,14 +259,14 @@ class Node:
     def __init__(self,position):
         self.position = position
         self.clips = 0
-        self.arcs = {}
-        self.splice_arcs = {}
+        self.edges = {}
+        self.splice_edges = {}
     
     def rfind_connected_sjuncs(self,left_nodes):
         """Recursively finds all nodes that are connected by splice junctions"""
         
         results = []
-        for node in self.splice_arcs.keys():
+        for node in self.splice_edges.keys():
             if node not in left_nodes:
                 results.append(node)
         
@@ -285,71 +285,71 @@ class Node:
     def add_clip(self):
         self.clips += 1
     
-    def insert_arc(self,arc,arc_type,alignment_key):
-        skey = str(arc._target.position)
+    def insert_edge(self,edge,edge_type,alignment_key):
+        skey = str(edge._target.position)
         
-        if not self.arcs.has_key(skey):
-            self.set_arc(arc)
+        if not self.edges.has_key(skey):
+            self.set_edge(edge)
         
-        self.arcs[skey].add_type(arc_type)
+        self.edges[skey].add_type(edge_type)
         
         if alignment_key != None:# Splice junctions should be skipped for entropy
-            self.arcs[skey].add_alignment_key(alignment_key)
+            self.edges[skey].add_alignment_key(alignment_key)
     
-    def set_arc(self, arc):
-        self.arcs[str(arc._target.position)] = arc
+    def set_edge(self, edge):
+        self.edges[str(edge._target.position)] = edge
     
-    def get_top_arc(self):
+    def get_top_edge(self):
         maxscore = -1
-        top_arc = None
+        top_edge = None
         
-        for arc in self:
-            score = arc.get_scores()
+        for edge in self:
+            score = edge.get_scores()
             if score > maxscore:
                 maxscore = score
-                top_arc = arc
+                top_edge = edge
         
-        if top_arc != None:
-            return (maxscore, top_arc, self, top_arc._target)
+        if top_edge != None:
+            return (maxscore, top_edge, self, top_edge._target)
         else:
             return (None, None, None, None)
     
-    def new_arc(self,node2,arc_type,alignment_key,do_vice_versa):
+    def new_edge(self,node2,edge_type,alignment_key,do_vice_versa):
         if do_vice_versa:
-            node2.new_arc(self,arc_type,alignment_key,False)
+            node2.new_edge(self,edge_type,alignment_key,False)
         
-        arc = Arc(self,node2)
-        self.insert_arc(arc,arc_type,alignment_key)
+        edge = Edge(self,node2)
+        self.insert_edge(edge,edge_type,alignment_key)
     
-    def remove_arc(self,arc,idx):
+    def remove_edge(self,edge,idx):
         if idx == "by-target":
-            skey = str(arc._target.position)
+            skey = str(edge._target.position)
         elif idx == "by-origin":
-            skey = str(arc._origin.position)
+            skey = str(edge._origin.position)
         else:
             raise Exception("Invalid usage of function")
         
-        if not self.arcs.has_key(skey):
+        if not self.edges.has_key(skey):
             raise Exception("Unknown key: %s", skey)
         
-        self.arcs[skey] = None
-        del(self.arcs[skey])
+        self.edges[skey] = None
+        del(self.edges[skey])
     
     def __iter__(self):
-        for k in sorted(self.arcs.keys()):
-            yield self.arcs[k]
+        for k in sorted(self.edges.keys()):
+            yield self.edges[k]
     
     def __str__(self):
         out  = str(self.position)
         
         a = 0
-        for sarc in self.arcs:
-            arc = self.arcs[sarc]
-            filtered_arcs = {x:arc._types[x] for x in sorted(arc._types.keys()) if x not in ['cigar_soft_clip','cigar_hard_clip']}
-            len_arcs = len(filtered_arcs)
-            a += len_arcs
-            if len_arcs > 0:
-                out += "\n\t-> "+str(arc._target.position)+" "+str(filtered_arcs)
+        for sedge in self.edges:
+            edge = self.edges[sedge]
+            filtered_edges = {x:edge._types[x] for x in sorted(edge._types.keys()) if x not in ['cigar_soft_clip','cigar_hard_clip']}
+            len_edges = len(filtered_edges)
+            a += len_edges
+            if len_edges > 0:
+                out += "\n\t-> "+str(edge._target.position)+" "+str(filtered_edges)
 
         
         if a > 0:
@@ -370,12 +370,12 @@ class Node:
         
         scores = []
         for nearby_node in nearby_nodes:
-            p = nearby_node.arcs[str(self.position)]
+            p = nearby_node.edges[str(self.position)]
             scores.append(p.get_scores())
         
         k = len(scores)
         if k < 2:
-            raise Exception("nearby_nodes contains less than 2 elements with shared Arcs")
+            raise Exception("nearby_nodes contains less than 2 elements with shared Edges")
         
         product = reduce(lambda x,y: x*y, scores)
         
@@ -571,7 +571,7 @@ class Chain:
                     broken_mate = sa[0]
                 
                 #@todo silent mates do not make pairs but are one directional
-                # in their input - has to be fixed in order to allow arc_merging
+                # in their input - has to be fixed in order to allow edge_merging
                 #self.chain.insert(r,broken_mate)
 
             else:
@@ -590,38 +590,38 @@ class Chain:
             Softclip are usually one-directional, from the sequenced base until
             the end. If it is before the first M/= flag, it's direction should
             be '-', otherwise '+' as it clips from the end. In principle the
-            soft/hard clips are not arcs but properties of nodes. One particular
+            soft/hard clips are not edges but properties of nodes. One particular
             base may have several soft/hard clips (from different locations but
             adding weigt to the same node).
             
-            Splice juncs are bi-directional, and real arcs.
+            Splice juncs are bi-directional, and real edges.
  
 splice-junc:                           <=============>
             """
             
             if pos1 != None and pos2 != None:
-                for internal_arc in BAMExtract.BAMExtract.find_cigar_arcs(read):
-                    if internal_arc[2] in ['cigar_splice_junction']:#, 'cigar_deletion'
+                for internal_edge in BAMExtract.BAMExtract.find_cigar_edges(read):
+                    if internal_edge[2] in ['cigar_splice_junction']:#, 'cigar_deletion'
                         i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                               internal_arc[0],
+                                               internal_edge[0],
                                                STRAND_FORWARD)
                         i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                               internal_arc[1],
+                                               internal_edge[1],
                                                STRAND_REVERSE)
                     
-                    elif internal_arc[2] in ['cigar_deletion']:
+                    elif internal_edge[2] in ['cigar_deletion']:
                         i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                               internal_arc[0],
+                                               internal_edge[0],
                                                STRAND_FORWARD)
                         i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                               internal_arc[1],
+                                               internal_edge[1],
                                                STRAND_REVERSE)
                         
                         if i_pos1.get_dist(i_pos2,False) < MIN_DISCO_INS_SIZE:
                             i_pos1 = None
                             i_pos2 = None
                     
-                    elif internal_arc[2] in ['cigar_soft_clip']:
+                    elif internal_edge[2] in ['cigar_soft_clip']:
                         if rg in ['discordant_mates',
                                   'spanning_paired_1',
                                   'spanning_paired_1_r',
@@ -634,10 +634,10 @@ splice-junc:                           <=============>
                                   'spanning_singleton_2',
                                   'spanning_singleton_2_r']:
                             i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                                 internal_arc[0],
+                                                 internal_edge[0],
                                                  pos2.strand)
                             i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                                 internal_arc[1],
+                                                 internal_edge[1],
                                                  pos1.strand)
                         
                         elif rg in ['spanning_paired_1_s',
@@ -647,9 +647,9 @@ splice-junc:                           <=============>
                         else:
                             raise Exception("what todo here - "+rg)
                     else:
-                        raise Exception("Arc type not implemented: %s\n\n%s", internal_arc,str(read))
+                        raise Exception("Edge type not implemented: %s\n\n%s", internal_edge,str(read))
                     
-                    if internal_arc[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
+                    if internal_edge[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
                         try:
                             if i_pos1 != None:
                                 self.get_node_reference(i_pos2).add_clip()
@@ -662,12 +662,12 @@ splice-junc:                           <=============>
                             pass
                     else:
                         if i_pos1 != None:
-                            self.insert_entry(i_pos1,i_pos2,internal_arc[2],None,True)
+                            self.insert_entry(i_pos1,i_pos2,internal_edge[2],None,True)
     
     def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
-            - Checks if Arc exists between them
+            - Checks if Edge exists between them
          
          cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
         """
@@ -685,13 +685,13 @@ splice-junc:                           <=============>
             alignment_key  = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"
             alignment_key += short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
             
-            node1.new_arc(node2,_type,alignment_key,do_vice_versa)
+            node1.new_edge(node2,_type,alignment_key,do_vice_versa)
         else:
-            node1.new_arc(node2,_type,None,do_vice_versa)
+            node1.new_edge(node2,_type,None,do_vice_versa)
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
-        """Inserts a bi-drectional arc between read and sa-tag in the Chain
-        determines the type of arc by @RG tag (done by dr-disco fix-chimeric)
+        """Inserts a bi-drectional edge between read and sa-tag in the Chain
+        determines the type of edge by @RG tag (done by dr-disco fix-chimeric)
 
             spanning_singleton_2_r
             spanning_paired_2_t (left-junc):
@@ -837,7 +837,7 @@ splice-junc:                           <=============>
         elif rg not in ["silent_mate"]:
             raise Exception("Fatal Error, RG: "+rg)
         
-        if pos1 != None:# First check if insert size makes sense anyway (only for certain types of arcs)
+        if pos1 != None:# First check if insert size makes sense anyway (only for certain types of edges)
             if rg in ['discordant_mates',
                       'spanning_paired_2',     'spanning_paired_1',
                       'spanning_paired_1_t',   'spanning_paired_2_t',
@@ -854,34 +854,34 @@ splice-junc:                           <=============>
         
         return (pos1, pos2)
     
-    def reinsert_arcs(self, arcs):
-        """Only works for Arcs of which the _origin and _target Node
+    def reinsert_edges(self, edges):
+        """Only works for Edges of which the _origin and _target Node
         still exists
         """
-        for arc_t in arcs:
-            arc   = arc_t[0]
-            arc_c = arc_t[1]
+        for edge_t in edges:
+            edge   = edge_t[0]
+            edge_c = edge_t[1]
             
-            node1 = arc._origin
-            node2 = arc._target
+            node1 = edge._origin
+            node2 = edge._target
             
-            node1.set_arc(arc)
-            node2.set_arc(arc_c)
+            node1.set_edge(edge)
+            node2.set_edge(edge_c)
     
-    def remove_arc(self, arc):
-        node1 = arc._origin
-        node2 = arc._target
+    def remove_edge(self, edge):
+        node1 = edge._origin
+        node2 = edge._target
         
-        node1.remove_arc(arc,"by-target")
-        node2.remove_arc(arc,"by-origin")
+        node1.remove_edge(edge,"by-target")
+        node2.remove_edge(edge,"by-origin")
 
         # Not necessary
-        #del(arc)
+        #del(edge)
         
-        if node1.get_top_arc()[0] == None:
+        if node1.get_top_edge()[0] == None:
             self.remove_node(node1)
 
-        if node2.get_top_arc()[0] == None:
+        if node2.get_top_edge()[0] == None:
             self.remove_node(node2)
     
     def remove_node(self,node):
@@ -911,19 +911,19 @@ splice-junc:                           <=============>
             else:
                 yield BreakPosition(pos._chr, _pos, pos.strand)
     
-    def search_splice_arcs_between(self,pos1,pos2, insert_size):
+    def seedgeh_splice_edges_between(self,pos1,pos2, insert_size):
         # insert size is two directional
         target_range = (pos2.pos - insert_size, pos2.pos+ insert_size, None)
         
         for interval in self.idxtree[pos1._chr].search(pos1.pos - insert_size, pos1.pos + insert_size + 1):
             for key in interval[2].keys():
                 node1 = interval[2][key]
-                for arc in node1.arcs.values():
-                    if arc.target_in_range(target_range):
-                        yield (arc)
+                for edge in node1.edges.values():
+                    if edge.target_in_range(target_range):
+                        yield (edge)
     
-    def search_arcs_between(self,pos1, pos2, insert_size):
-        """Searches for reads inbetween two regions (e.g. break + ins. size):
+    def seedgeh_edges_between(self,pos1, pos2, insert_size):
+        """Seedgehes for reads inbetween two regions (e.g. break + ins. size):
         
         [     ]                   [     ]
          |  |                       | |
@@ -949,9 +949,9 @@ splice-junc:                           <=============>
             if interval[0] != pos1.pos:
                 if interval[2].has_key(pos1.strand):
                     node_i = interval[2][pos1.strand]
-                    for arc in node_i.arcs.values():
-                        if arc.target_in_range(range2) and arc._target.position.strand == pos2.strand:
-                            yield (arc)
+                    for edge in node_i.edges.values():
+                        if edge.target_in_range(range2) and edge._target.position.strand == pos2.strand:
+                            yield (edge)
 
     def print_chain(self):
         print "**************************************************************"
@@ -966,36 +966,36 @@ splice-junc:                           <=============>
         ordered by the higest number of counts
         """
         maxscore = 0
-        arc = None
+        edge = None
         
         for node in self:
-            _score, _arc, _node1, _node2 = node.get_top_arc()
-            if _arc != None and _score > maxscore:
+            _score, _edge, _node1, _node2 = node.get_top_edge()
+            if _edge != None and _score > maxscore:
                 maxscore = _score
-                arc = _arc
+                edge = _edge
         
-        return arc
+        return edge
     
     def get_start_splice_junc(self):
         """Returns the chain with the higest number of counts
         """
         maxscore = (0,0)
-        arc = None
+        edge = None
         
         for node in self:
-            for _arc in node:
-                if _arc._origin.position._chr == _arc._target.position._chr:
-                    score = (_arc.get_count('cigar_splice_junction'),_arc.get_count('cigar_soft_clip'))
+            for _edge in node:
+                if _edge._origin.position._chr == _edge._target.position._chr:
+                    score = (_edge.get_count('cigar_splice_junction'),_edge.get_count('cigar_soft_clip'))
                     if score[0] > maxscore[0] or (score[0] == maxscore[0] and score[1] > maxscore[1]):
-                        arc = _arc
+                        edge = _edge
                         maxscore = score
         
-        return arc
+        return edge
     
     def prune(self,insert_size):
-        """Does some 'clever' tricks to merge arcs together and reduce data points
+        """Does some 'clever' tricks to merge edges together and reduce data points
         """
-        logging.info("Finding and merging other arcs in close proximity (insert size)")
+        logging.info("Finding and merging other edges in close proximity (insert size)")
         
         candidates = []
         k = 0
@@ -1003,39 +1003,39 @@ splice-junc:                           <=============>
         #self.print_chain()
         
         while candidate != None:
-            self.prune_arc(candidate, insert_size)
+            self.prune_edge(candidate, insert_size)
             candidates.append((candidate, candidate.get_complement()))
             
             # do not remove if splice junc exists?
-            self.remove_arc(candidate)
+            self.remove_edge(candidate)
             
             candidate = self.get_start_point()
             k += 1
         
         #self.print_chain()
-        logging.info("Pruned into "+str(k)+" candidate arc(s)")
+        logging.info("Pruned into "+str(k)+" candidate edge(s)")
         return candidates
     
     #@todo ADD RECURSION DEPTH LIMIT
-    def prune_arc(self, arc, insert_size):
-        ## These types of arcs fall within the same space / inst. size
-        ## they make the arcs heavier
+    def prune_edge(self, edge, insert_size):
+        ## These types of edges fall within the same space / inst. size
+        ## they make the edges heavier
         ## @ todo double check if this is strand specific
         
-        node1 = arc._origin
-        node2 = arc._target
+        node1 = edge._origin
+        node2 = edge._target
         
-        arc_complement = arc.get_complement()
+        edge_complement = edge.get_complement()
         
-        for arc_m in self.search_arcs_between(node1.position, node2.position, insert_size):
-            arc_mc = arc_m.get_complement()
+        for edge_m in self.seedgeh_edges_between(node1.position, node2.position, insert_size):
+            edge_mc = edge_m.get_complement()
             
-            arc.merge_arc(arc_m)
-            arc_complement.merge_arc(arc_mc)
+            edge.merge_edge(edge_m)
+            edge_complement.merge_edge(edge_mc)
             
-            self.remove_arc(arc_m)
+            self.remove_edge(edge_m)
             # complement is automatically removed after removing the fwd
-            #self.remove_arc(arc_mc)
+            #self.remove_edge(edge_mc)
         
         return None
     
@@ -1054,10 +1054,10 @@ splice-junc:                           <=============>
                             d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
                             d_target = abs(junc._target.position.pos - init._target.position.pos)
                             if d_origin <= uncertainty and d_target <= uncertainty:
-                                init.merge_arc(junc)
-                                init_c.merge_arc(junc.get_complement())
+                                init.merge_edge(junc)
+                                init_c.merge_edge(junc.get_complement())
                                 
-                                self.remove_arc(junc)
+                                self.remove_edge(junc)
                                 
                                 #self.print_chain()
             
@@ -1065,10 +1065,10 @@ splice-junc:                           <=============>
         
         logging.debug("done")
     
-    def rejoin_splice_juncs(self, thicker_arcs, insert_size):
-        """thicker arcs go across the break point:
+    def rejoin_splice_juncs(self, thicker_edges, insert_size):
+        """thicker edges go across the break point:
 
-thick arcs:
+thick edges:
                                 ------------------------------------------
                        ---------------------------------------------------
                        ----------------------------------------------------------
@@ -1088,14 +1088,14 @@ thick arcs:
         left_nodes = {}
         right_nodes = {}
         
-        for arc in thicker_arcs:
-            if not left_nodes.has_key(arc[0]._origin.position._chr):#lnodes
-                left_nodes[arc[0]._origin.position._chr] = set()
-            left_nodes[arc[0]._origin.position._chr].add(arc[0]._origin)
+        for edge in thicker_edges:
+            if not left_nodes.has_key(edge[0]._origin.position._chr):#lnodes
+                left_nodes[edge[0]._origin.position._chr] = set()
+            left_nodes[edge[0]._origin.position._chr].add(edge[0]._origin)
             
-            if not right_nodes.has_key(arc[0]._target.position._chr):#rnodes
-                right_nodes[arc[0]._target.position._chr] = set()
-            right_nodes[arc[0]._target.position._chr].add(arc[0]._target)
+            if not right_nodes.has_key(edge[0]._target.position._chr):#rnodes
+                right_nodes[edge[0]._target.position._chr] = set()
+            right_nodes[edge[0]._target.position._chr].add(edge[0]._target)
         
         ## 02 look for all left nodes if there is any set (i < j) where
         ## i and j span a splice junction
@@ -1112,7 +1112,7 @@ thick arcs:
                         if node1.position.strand == node2.position.strand:
                             left_junc = (MAX_GENOMIC_DIST, None)
                             
-                            for splice_junc in self.search_splice_arcs_between(node1.position, node2.position, insert_size):
+                            for splice_junc in self.seedgeh_splice_edges_between(node1.position, node2.position, insert_size):
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_origin1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_origin2 = abs(splice_junc._target.position.get_dist(node2.position, False))
@@ -1122,8 +1122,8 @@ thick arcs:
                                         left_junc = (sq_dist_origin, splice_junc)
                                 
                             if left_junc[1] != None:
-                                node1.splice_arcs[node2] = left_junc
-                                node2.splice_arcs[node1] = left_junc
+                                node1.splice_edges[node2] = left_junc
+                                node2.splice_edges[node1] = left_junc
                                 
                                 k += 1
 
@@ -1140,7 +1140,7 @@ thick arcs:
                         if node1.position.strand == node2.position.strand:
                             right_junc = (MAX_GENOMIC_DIST, None)
                             
-                            for splice_junc in self.search_splice_arcs_between(node1.position, node2.position, insert_size):
+                            for splice_junc in self.seedgeh_splice_edges_between(node1.position, node2.position, insert_size):
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
@@ -1150,23 +1150,23 @@ thick arcs:
                                         right_junc = (sq_dist_target, splice_junc)
                             
                             if right_junc[1] != None:
-                                node1.splice_arcs[node2] = right_junc
-                                node2.splice_arcs[node1] = right_junc
+                                node1.splice_edges[node2] = right_junc
+                                node2.splice_edges[node1] = right_junc
                                 
                                 k += 1
         
         logging.info("Linked "+str(k)+" splice junction(s)")
         
-        return thicker_arcs
+        return thicker_edges
     
-    def extract_subnetworks_by_splice_junctions(self,thicker_arcs):
+    def extract_subnetworks_by_splice_junctions(self,thicker_edges):
         sys.exit(1)
     
-    def extract_subnetworks(self,thicker_arcs):
+    def extract_subnetworks(self,thicker_edges):
         """
             Here we want to add new nodes to `left_nodes` or `right_nodes`
             using the `guilt-by-association` principle. Sometimes nodes are
-            having arcs to the same nodes of the already existing network,
+            having edges to the same nodes of the already existing network,
             but lack splice junction(s) to those existing network. They're
             still connected to the network they might be exons that are not
             taken into account by the aligner (classical example: exon-0 in
@@ -1176,11 +1176,11 @@ thick arcs:
             Therefore we ideally need a function that adds nodes based on:
              - Genomic distance to all entries in either `left_nodes` or `right_nodes`
                * Currently implemented as RMSE on Node::get_dist()
-             - The score of all arcs going to the node
+             - The score of all edges going to the node
                * It also needs to correct for imbalance; 4 and 36 reads is less
                  likely than 20 and 20. Solution used multiplication.
-             - Number of arcs relative to the number of nodes.
-               *In case of 3 nodes, it is more likely to have 3 arcs (3/3) instead of 2
+             - Number of edges relative to the number of nodes.
+               *In case of 3 nodes, it is more likely to have 3 edges (3/3) instead of 2
                (2/3). This weight is not yet implemented (01/08/16).
 
 
@@ -1189,20 +1189,20 @@ thick arcs:
             
             nodes:
             A     B         $ ... $          Y    Z
-    arcs:   ....................................... (9)
+    edges:   ....................................... (9)
             ..................................      (2)
                   ................................. (100)
                   ............................      (20)
     splice:  -----
     
     
-    start point: thickest arc
+    start point: thickest edge
     
 
     left_nodes:  A, B
     right_nodes: Y, Z
 
-    arcs:
+    edges:
             A-Z (9)
             B-Z (100)
             
@@ -1228,26 +1228,26 @@ thick arcs:
         
         q = 0
         subnetworks = []
-        while len(thicker_arcs) > 0:
-            print "len(thicker_arcs) = "+str(len(thicker_arcs))
-            start_point = thicker_arcs[0][0]
+        while len(thicker_edges) > 0:
+            print "len(thicker_edges) = "+str(len(thicker_edges))
+            start_point = thicker_edges[0][0]
             
             left_nodes = [start_point._origin]
             right_nodes = [start_point._target]
             
             ## The original nodes have been emptied, so the most important
-            ## arc's are now separated.
+            ## edge's are now separated.
             left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
             right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
             
-            subarcs = []
+            subedges = []
             
-            # All arcs between any of the left and right nodes are valid arcs and have to be extracted
-            # Find all direct arcs joined by splice junctions
+            # All edges between any of the left and right nodes are valid edges and have to be extracted
+            # Find all direct edges joined by splice junctions
             for left_node in left_nodes:
                 for right_node in right_nodes:
-                    if left_node.arcs.has_key(str(right_node.position)):
-                        subarcs.append( (left_node.arcs[str(right_node.position)], right_node.arcs[str(left_node.position)]) )
+                    if left_node.edges.has_key(str(right_node.position)):
+                        subedges.append( (left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) )
             
             
             ## Find all with one indirect step - these might be alternative junctions / exons
@@ -1261,22 +1261,22 @@ thick arcs:
                     
                     if i < j:
                         ## Find similar destinations
-                        mutual_targets = list(set(left_node_i.arcs.keys()).intersection(left_node_j.arcs.keys()))
-                        mutual_targets = [left_node_i.arcs[mt]._target for mt in mutual_targets]
+                        mutual_targets = list(set(left_node_i.edges.keys()).intersection(left_node_j.edges.keys()))
+                        mutual_targets = [left_node_i.edges[mt]._target for mt in mutual_targets]
                         
                         for mt in mutual_targets:
                             if mt.is_connected_to((left_node_i, left_node_j), right_nodes):
                                 # Add node
                                 right_nodes.append(mt)
                                 
-                                for arc in mt.arcs.keys():
+                                for edge in mt.edges.keys():
                                     for l in left_nodes:
-                                        if str(l.position) == arc:
-                                            arc = mt.arcs[arc]
-                                            arc_c = arc.get_complement()
+                                        if str(l.position) == edge:
+                                            edge = mt.edges[edge]
+                                            edge_c = edge.get_complement()
                                             
                                             # Make sure order is correct:
-                                            subarcs.append((arc_c,arc))
+                                            subedges.append((edge_c,edge))
             
             ## Do inverse:
             
@@ -1287,34 +1287,34 @@ thick arcs:
             ### @todo Redo code
             
             
-            # remove all the links to the arcs in each of the nodes
+            # remove all the links to the edges in each of the nodes
             for node in left_nodes:
-                for arc_u in subarcs:
-                    for arc in arc_u:
-                        key = str(arc._target.position)
-                        if node.arcs.has_key(key):
-                            del(node.arcs[key])
+                for edge_u in subedges:
+                    for edge in edge_u:
+                        key = str(edge._target.position)
+                        if node.edges.has_key(key):
+                            del(node.edges[key])
 
-            # pop subarcs from thicker arcs and redo until thicker arcs is empty
+            # pop subedges from thicker edges and redo until thicker edges is empty
             popme = set()
-            for arc in subarcs:
-                for arc2 in thicker_arcs:
-                    if arc[0] == arc2[0] or arc[1] == arc2[0]:
-                        popme.add(arc2)
+            for edge in subedges:
+                for edge2 in thicker_edges:
+                    if edge[0] == edge2[0] or edge[1] == edge2[0]:
+                        popme.add(edge2)
             
             for pop in popme:
-                thicker_arcs.remove(pop)
+                thicker_edges.remove(pop)
             
-            subnetworks.append(Subnet(q,subarcs))
+            subnetworks.append(Subnet(q,subedges))
         
         logging.info("Extracted "+str(len(subnetworks))+" subnetwork(s)")
         return subnetworks
 
 
 class Subnet(Chain):
-    def __init__(self,_id,arcs):
+    def __init__(self,_id,edges):
         self._id = _id
-        self.arcs = arcs
+        self.edges = edges
         self.total_clips = 0
         self.total_score = 0
         self.discarded = []
@@ -1326,9 +1326,9 @@ class Subnet(Chain):
         clips = 0
         
         nodes = set()
-        for arc in self.arcs:
-            nodes.add(arc[0]._origin)
-            nodes.add(arc[0]._target)
+        for edge in self.edges:
+            nodes.add(edge[0]._origin)
+            nodes.add(edge[0]._target)
         
         for node in nodes:
             clips += node.clips
@@ -1338,8 +1338,8 @@ class Subnet(Chain):
     
     def calc_scores(self):
         score = 0
-        for arc in self.arcs:
-            score += arc[0].get_scores()
+        for edge in self.edges:
+            score += edge[0].get_scores()
         
         self.total_score = score
         return self.total_score
@@ -1362,16 +1362,16 @@ class Subnet(Chain):
         print "n-split-reads\t"
         print "n-discordant-reads"
         
-        print "n-arcs\t"
+        print "n-edges\t"
         print "n-nodes-A\t"
         print "n-nodes-B\t"
         
-        fh.write("entropy-bp-arc\t")
-        fh.write("entropy-all-arcs\t")
+        fh.write("entropy-bp-edge\t")
+        fh.write("entropy-all-edges\t")
         """
         out = ""
-        node_a = self.arcs[0][0]._origin
-        node_b = self.arcs[0][0]._target
+        node_a = self.edges[0][0]._origin
+        node_b = self.edges[0][0]._target
         
         out += str(node_a.position._chr)+"\t"
         out += str(node_a.position.pos)+"\t"
@@ -1389,29 +1389,29 @@ class Subnet(Chain):
         out += str(self.get_n_split_reads())+"\t"
         out += str(self.get_n_discordant_reads())+"\t"
         
-        out += str(len(self.arcs))+"\t"
+        out += str(len(self.edges))+"\t"
         nodes_a, nodes_b = self.get_n_nodes()
         out += str(nodes_a)+"\t"
         out += str(nodes_b)+"\t"
         
-        out += str(self.arcs[0][0].get_entropy())+"\t"
+        out += str(self.edges[0][0].get_entropy())+"\t"
         out += str(self.get_overall_entropy())+"\t"
         
-        out += "&".join([str(arc[0]) for arc in self.arcs])
+        out += "&".join([str(edge[0]) for edge in self.edges])
         
         return out+"\n"
     
     def get_overall_entropy(self):
-        frequency_table = merge_frequency_tables([arc[0].unique_alignments_idx for arc in self.arcs])
+        frequency_table = merge_frequency_tables([edge[0].unique_alignments_idx for edge in self.edges])
         return entropy(frequency_table)
     
     def get_n_nodes(self):
         nodes_a = set()
         nodes_b = set()
         
-        for arc in self.arcs:
-            nodes_a.add(arc[0]._origin)
-            nodes_b.add(arc[0]._target)
+        for edge in self.edges:
+            nodes_a.add(edge[0]._origin)
+            nodes_b.add(edge[0]._target)
         
         return len(nodes_a), len(nodes_b)
     
@@ -1430,13 +1430,13 @@ class Subnet(Chain):
                       "spanning_singleton_1_r",
                       "spanning_singleton_2",
                       "spanning_singleton_2_r"]:
-            for arc in self.arcs:
-                n += arc[0].get_count(_type)
+            for edge in self.edges:
+                n += edge[0].get_count(_type)
         
         return n
     
     def get_n_discordant_reads(self):
-        return sum([arc[0].get_count("discordant_mates") for arc in self.arcs])
+        return sum([edge[0].get_count("discordant_mates") for edge in self.edges])
     
     def find_distance(self, subnet_t):
         """
@@ -1479,8 +1479,8 @@ class Subnet(Chain):
     def get_lnodes(self):
         lnodes = set()
         
-        for arc in self.arcs:
-            lnodes.add(arc[0]._origin)
+        for edge in self.edges:
+            lnodes.add(edge[0]._origin)
         
         for lnode in lnodes:
             yield lnode
@@ -1488,15 +1488,15 @@ class Subnet(Chain):
     def get_rnodes(self):
         rnodes = set()
         
-        for arc in self.arcs:
-            rnodes.add(arc[0]._target)
+        for edge in self.edges:
+            rnodes.add(edge[0]._target)
         
         for rnode in rnodes:
             yield rnode
     
     def merge(self, subnet_m):
-        for arc in subnet_m.arcs:
-            self.arcs.append(arc)
+        for edge in subnet_m.edges:
+            self.edges.append(edge)
 
         self.calc_clips()
         self.calc_scores()
@@ -1518,12 +1518,12 @@ class IntronDecomposition:
         
         #@todo move function into Chain
         self.chain.insert_chain(pysam_fh)
-        thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
-        #@todo: thickre_arcs = self.index_arcs() and come up with class
-        thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
-        self.chain.reinsert_arcs(thicker_arcs)
-        subnets = self.chain.extract_subnetworks(thicker_arcs)
-        #subnets = extract_subnetworks_by_splice_junctions(thicker arcs)
+        thicker_edges = self.chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size
+        #@todo: thickre_edges = self.index_edges() and come up with class
+        thicker_edges = self.chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
+        self.chain.reinsert_edges(thicker_edges)
+        subnets = self.chain.extract_subnetworks(thicker_edges)
+        #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
         ##subnets = self.filter_subnets_on_identical_nodes(subnets)
         subnets = self.merge_overlapping_subnets(subnets)
         subnets = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
@@ -1581,12 +1581,12 @@ class IntronDecomposition:
         out += "n-split-reads\t"
         out += "n-discordant-reads\t"
         
-        out += "n-arcs\t"
+        out += "n-edges\t"
         out += "n-nodes-A\t"
         out += "n-nodes-B\t"
         
-        out += "entropy-bp-arc\t"
-        out += "entropy-all-arcs\t"
+        out += "entropy-bp-edge\t"
+        out += "entropy-all-edges\t"
         
         out += "data-structure\n"
         
@@ -1636,17 +1636,17 @@ class IntronDecomposition:
     def merge_overlapping_subnets(self, subnets):
         """Merges very closely adjacent subnets based on the smallest
         internal distance. E.g. if we have a subnet having 1 and one
-        having 2 arcs:
+        having 2 edges:
         
   snA:  |       |            ~             |
-        |        --------------------------  arcA1
-         ----------------------------------  arcA2
+        |        --------------------------  edgeA1
+         ----------------------------------  edgeA2
 
   snB         |                        |
-               ------------------------      arcB1
+               ------------------------      edgeB1
 
-        We would like to filter based on the distance between arcA1 and
-        arcB1.
+        We would like to filter based on the distance between edgeA1 and
+        edgeB1.
         
         We also don't want to have a growth pattern, i.e. that based on
         merging snB to snA, snC becomes part of it. Although it may be
