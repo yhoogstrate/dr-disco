@@ -501,6 +501,17 @@ class Chain:
         self.idxtree = GenomeIntervalTree()
         self.pysam_fh = pysam_fh
     
+    def __iter__(self):
+        for key in self.idxtree:
+            for element in sorted(self.idxtree[key]):
+                for strand in sorted(element[2].keys()):
+                    yield element[2][strand]
+
+    def __iter_chr(self,key):
+        for element in sorted(self.idxtree[key]):
+            for strand in sorted(element[2].keys()):
+                yield element[2][strand]
+    
     def create_node(self,pos):
         """Creates the Node but does not overwrite it
         """
@@ -512,12 +523,23 @@ class Chain:
         if not list(self.idxtree[pos._chr][pos.pos])[0][2].has_key(pos.strand):
             list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand] = Node(pos)
     
+    def get_range(self,pos,insert_size,inverse_strand):
+        if inverse_strand:
+            if pos.strand == STRAND_FORWARD:
+                return (pos.pos,(pos.pos-insert_size)-1,-1)
+            else:
+                return (pos.pos,(pos.pos+insert_size)+1,1)
+        else:
+            if pos.strand == STRAND_REVERSE:
+                return (pos.pos,(pos.pos-insert_size)-1,-1)
+            else:
+                return (pos.pos,(pos.pos+insert_size)+1,1)
+        
     def get_node_reference(self,pos):
         try:
             return list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand]
         except:
             return None
-    
     
     def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """ - Checks if Node exists at pos1, otherwise creates one
@@ -759,30 +781,6 @@ class Chain:
         if len(new_element[2]) > 0:
             self.idxtree[pos._chr].add(new_element)
     
-    def __iter__(self):
-        for key in self.idxtree:
-            for element in sorted(self.idxtree[key]):
-                for strand in sorted(element[2].keys()):
-                    yield element[2][strand]
-
-    def __iter_chr(self,key):
-        for element in sorted(self.idxtree[key]):
-            for strand in sorted(element[2].keys()):
-                yield element[2][strand]
-    
-    def get_range(self,pos,insert_size,inverse_strand):
-        if inverse_strand:
-            if pos.strand == STRAND_FORWARD:
-                return (pos.pos,(pos.pos-insert_size)-1,-1)
-            else:
-                return (pos.pos,(pos.pos+insert_size)+1,1)
-        else:
-            if pos.strand == STRAND_REVERSE:
-                return (pos.pos,(pos.pos-insert_size)-1,-1)
-            else:
-                return (pos.pos,(pos.pos+insert_size)+1,1)
-    
-
     def pos_to_range(self,pos,_range,exclude_itself):
         for _pos in range(_range[0], _range[1], _range[2]):
             if exclude_itself and _pos == pos.pos:
@@ -1042,7 +1040,7 @@ thick arcs:
         sys.exit(1)
     
     def extract_subnetworks(self,thicker_arcs):
-            """
+        """
             Here we want to add new nodes to `left_nodes` or `right_nodes`
             using the `guilt-by-association` principle. Sometimes nodes are
             having arcs to the same nodes of the already existing network,
@@ -1102,11 +1100,13 @@ thick arcs:
             -------
             Then do this in reverse(d) order, from `right_nodes` to
             `left_nodes`.
-            """        logging.info("Initiated -- *** rnodes not yet implemented ***")
+            """
+        logging.info("Initiated -- *** rnodes not yet implemented ***")
         
         q = 0
         subnetworks = []
         while len(thicker_arcs) > 0:
+            print "len(thicker_arcs) = "+str(len(thicker_arcs))
             start_point = thicker_arcs[0][0]
             
             left_nodes = [start_point._origin]
@@ -1389,15 +1389,17 @@ class IntronDecomposition:
         lpos = self.break_point.get_left_position(True)
         rpos = self.break_point.get_right_position(True)
         
+        #@todo do not make chain property of this class - it;s not permanent
         self.chain = Chain(pysam_fh)
         
-        self.insert_chain(pysam_fh, tmprss2)
+        #@todo move function into Chain
+        self.insert_chain(pysam_fh)
         thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
-        #thickre_arcs = self.index_arcs
+        #@todo: thickre_arcs = self.index_arcs() and come up with class
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
         self.chain.reinsert_arcs(thicker_arcs)
-        #subnets = self.chain.extract_subnetworks(thicker_arcs)
-        subnets = extract_subnetworks_by_splice_junctions(thicker arcs)
+        subnets = self.chain.extract_subnetworks(thicker_arcs)
+        #subnets = extract_subnetworks_by_splice_junctions(thicker arcs)
         ##subnets = self.filter_subnets_on_identical_nodes(subnets)
         subnets = self.merge_overlapping_subnets(subnets)
         subnets = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
@@ -1445,7 +1447,7 @@ class IntronDecomposition:
         return sa_tags
     
     
-    def insert_chain(self,pysam_fh, region):
+    def insert_chain(self,pysam_fh):
         for read in pysam_fh.fetch():
             sa = self.parse_SA(read.get_tag('SA'))
             _chr = pysam_fh.get_reference_name(read.reference_id)

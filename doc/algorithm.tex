@@ -199,6 +199,12 @@ However, if you have a junction on the other side or in the middle of an exon, i
 It is desired to have the exon junctions connected to the junctions.
 We would like to include the splice junctions to \textbf{all} edges that are in close proximity (450bp), possibly resulting into one splice junction linking several nodes together.
 
+\subsection{Extract subnetworks (by splice junctions)}
+In our data we find both intronic and exonic break points.
+Because intronic break points may be spliced, multiple junctions and thus multiple arcs may contribute to the same fusion gene.
+Therefore we would like to take all arcs corresponding to the same junction out of the graph together, just at once.
+We then extract subnetworks, sets of 2 nodes and 2 (directional) arcs that are joined by splice junctions.
+
 \begin{verbatim}
 thick arcs:
                                 ------------------------------------------
@@ -215,15 +221,11 @@ thick arcs:
 \end{verbatim}
 
 
-\subsection{Extract subnetworks (by splice junctions)}
-In the RNA-Seq we find both intronic as exonic break points.
-Because intronic break points may be spliced, multiple junctions and thus multiple arcs may contribute to the same fusion gene.
-Therefore we would like to take all arcs corresponding to the same junction out of the graph together, just at once.
-We then extract subnetworks, sets of 2 nodes and 2 (directional) arcs that are joined by splice junctions.
 
 \subsection{Extract subnetworks}
-The complexity is that it may be possible that novel 
-Then we merge subnetworks together based on their overall distance to other networks.
+It may be possible that novel or unannotated exons exist and certain junctions did not get connected to the subnetwork by splice junctions.
+A typical example is exon-0 in the TMPRSS2-ERG fusion gene.
+To also include those junctions, we merge subnetworks together based on their overall distance to other networks.
 This is because it often happens that novel exons are being used or that no splice junctions were present in the alignment.
 This may also merge intronic with splice-junction spanning reads.
 We apply a filter on the subnetworks that uses the number of discordant reads, split reads and entropy (unique aligned reads in contrast to all reads involved).
