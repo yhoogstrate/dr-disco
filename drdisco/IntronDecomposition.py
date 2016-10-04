@@ -14,6 +14,7 @@ import pysam
 from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
 from .CircosController import *
+from .BAMExtract import BAMExtract
 
 
 # load cfg
@@ -43,7 +44,7 @@ def merge_frequency_tables(frequency_tables):
 
 class Edge:
     """Connection between two genomic locations
-     - Also contains different types of evidence
+     - the connection can by of different types
     """
     
     scoring_table={
@@ -262,23 +263,27 @@ class Node:
         self.edges = {}
         self.splice_edges = {}
     
-    def rfind_connected_sjuncs(self,left_nodes):
+    def rfind_connected_sjuncs(self,left_nodes,depth=0):
         """Recursively finds all nodes that are connected by splice junctions"""
         
-        results = []
+        #@todo return in genomic order...
+        
+        # results new in the current iteration
+        results_new = set()
         for node in self.splice_edges.keys():
             if node not in left_nodes:
-                results.append(node)
+                results_new.add(node)
         
-        results_all = [x for x in left_nodes]
-        for x in results:
-            if x not in results_all:
-                results_all.append(x)
+        # old results, + recursive results
+        results_all = set(left_nodes).union(results_new)
         
-        for node in results:
-            for child in node.rfind_connected_sjuncs(results_all):
-                if child not in results_all:
-                    results_all.append(child)
+        if depth < SJ_MAX_RECURSION_DEPTH:
+            for node in results_new:
+                for edge in node.rfind_connected_sjuncs(results_all, depth + 1):
+                    results_all.add(edge)
+        
+        for x in results_all:
+            print results_all
         
         return results_all
     
@@ -524,10 +529,10 @@ class Chain:
         except:
             return None
     
-    def insert_chain(self,pysam_fh):
-        for read in pysam_fh.fetch():
+    def insert_alignment(self):
+        for read in self.pysam_fh.fetch():
             sa = BAMExtract.BAMExtract.parse_SA(read.get_tag('SA'))
-            _chr = pysam_fh.get_reference_name(read.reference_id)
+            _chr = self.pysam_fh.get_reference_name(read.reference_id)
             rg = read.get_tag('RG')
             
             pos1 = None
@@ -602,18 +607,22 @@ splice-junc:                           <=============>
             if pos1 != None and pos2 != None:
                 for internal_edge in BAMExtract.BAMExtract.find_cigar_edges(read):
                     if internal_edge[2] in ['cigar_splice_junction']:#, 'cigar_deletion'
-                        i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                        #@todo _chr?
+                        i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                                internal_edge[0],
                                                STRAND_FORWARD)
-                        i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                        #@todo _chr?
+                        i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                                internal_edge[1],
                                                STRAND_REVERSE)
                     
                     elif internal_edge[2] in ['cigar_deletion']:
-                        i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                        #@todo _chr?
+                        i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                                internal_edge[0],
                                                STRAND_FORWARD)
-                        i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                        #@todo _chr?
+                        i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                                internal_edge[1],
                                                STRAND_REVERSE)
                         
@@ -633,10 +642,12 @@ splice-junc:                           <=============>
                                   'spanning_singleton_1_r',
                                   'spanning_singleton_2',
                                   'spanning_singleton_2_r']:
-                            i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                            #@todo _chr?
+                            i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                                  internal_edge[0],
                                                  pos2.strand)
-                            i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                            #@todo _chr?
+                            i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                                  internal_edge[1],
                                                  pos1.strand)
                         
@@ -911,7 +922,7 @@ splice-junc:                           <=============>
             else:
                 yield BreakPosition(pos._chr, _pos, pos.strand)
     
-    def seedgeh_splice_edges_between(self,pos1,pos2, insert_size):
+    def search_splice_edges_between(self,pos1,pos2, insert_size):
         # insert size is two directional
         target_range = (pos2.pos - insert_size, pos2.pos+ insert_size, None)
         
@@ -922,8 +933,8 @@ splice-junc:                           <=============>
                     if edge.target_in_range(target_range):
                         yield (edge)
     
-    def seedgeh_edges_between(self,pos1, pos2, insert_size):
-        """Seedgehes for reads inbetween two regions (e.g. break + ins. size):
+    def search_edges_between(self,pos1, pos2, insert_size):
+        """searches for reads inbetween two regions (e.g. break + ins. size):
         
         [     ]                   [     ]
          |  |                       | |
@@ -1027,7 +1038,7 @@ splice-junc:                           <=============>
         
         edge_complement = edge.get_complement()
         
-        for edge_m in self.seedgeh_edges_between(node1.position, node2.position, insert_size):
+        for edge_m in self.search_edges_between(node1.position, node2.position, insert_size):
             edge_mc = edge_m.get_complement()
             
             edge.merge_edge(edge_m)
@@ -1081,6 +1092,8 @@ thick edges:
         
         the goal is to add the splice juncs between the nodes
         """
+        #@todo use a separate genometree for this?
+        
         k = 0
         logging.debug("Initiated")
         
@@ -1112,7 +1125,7 @@ thick edges:
                         if node1.position.strand == node2.position.strand:
                             left_junc = (MAX_GENOMIC_DIST, None)
                             
-                            for splice_junc in self.seedgeh_splice_edges_between(node1.position, node2.position, insert_size):
+                            for splice_junc in self.search_splice_edges_between(node1.position, node2.position, insert_size):
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_origin1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_origin2 = abs(splice_junc._target.position.get_dist(node2.position, False))
@@ -1140,7 +1153,7 @@ thick edges:
                         if node1.position.strand == node2.position.strand:
                             right_junc = (MAX_GENOMIC_DIST, None)
                             
-                            for splice_junc in self.seedgeh_splice_edges_between(node1.position, node2.position, insert_size):
+                            for splice_junc in self.search_splice_edges_between(node1.position, node2.position, insert_size):
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
@@ -1159,14 +1172,10 @@ thick edges:
         
         return thicker_edges
     
-    def extract_subnetworks_by_splice_junctions(self,thicker_edges):
-        sys.exit(1)
-    
     def extract_subnetworks(self,thicker_edges):
-        """
-            Here we want to add new nodes to `left_nodes` or `right_nodes`
-            using the `guilt-by-association` principle. Sometimes nodes are
-            having edges to the same nodes of the already existing network,
+        """ Here we add additional nodes an edge's current `left_node` 
+or `right_node` using the `guilt-by-association` principle. Sometimes nodes
+have edges to the same nodes of the already existing network,
             but lack splice junction(s) to those existing network. They're
             still connected to the network they might be exons that are not
             taken into account by the aligner (classical example: exon-0 in
@@ -1267,7 +1276,7 @@ thick edges:
                         for mt in mutual_targets:
                             if mt.is_connected_to((left_node_i, left_node_j), right_nodes):
                                 # Add node
-                                right_nodes.append(mt)
+                                right_nodes.add(mt)
                                 
                                 for edge in mt.edges.keys():
                                     for l in left_nodes:
@@ -1447,8 +1456,6 @@ class Subnet(Chain):
         than these:
         |    |     ... ~ ...   |
       |                        |
-        
-        
         """
         if not isinstance(subnet_t, Subnet):
             raise Exception("subnet_t must be Subnet")
@@ -1503,44 +1510,38 @@ class Subnet(Chain):
 
 
 class IntronDecomposition:
-    def __init__(self,break_point):
-        self.break_point = break_point
-        self.chain = None
+    def __init__(self,alignment_file):
+        self.pysam_fh = self.test_disco_alignment(alignment_file)
     
-    def decompose(self,alignment_file):
-        pysam_fh = self.test_disco_alignment(alignment_file)
+    def decompose(self):
+        chain = Chain(self.pysam_fh)
+        chain.insert_alignment()
         
-        lpos = self.break_point.get_left_position(True)
-        rpos = self.break_point.get_right_position(True)
+        #@todo: thicker_edges = self.index_edges() and come up with class
+        thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size
+        thicker_edges = chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
+        chain.reinsert_edges(thicker_edges)
         
-        #@todo do not make chain property of this class - it;s not permanent
-        self.chain = Chain(pysam_fh)
-        
-        #@todo move function into Chain
-        self.chain.insert_chain(pysam_fh)
-        thicker_edges = self.chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size
-        #@todo: thickre_edges = self.index_edges() and come up with class
-        thicker_edges = self.chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
-        self.chain.reinsert_edges(thicker_edges)
-        subnets = self.chain.extract_subnetworks(thicker_edges)
         #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
+        subnets = chain.extract_subnetworks(thicker_edges)
         ##subnets = self.filter_subnets_on_identical_nodes(subnets)
         subnets = self.merge_overlapping_subnets(subnets)
-        subnets = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
+        self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
         # If circos:
         #s = 1
-        #for subnet in subnets:
+        #for subnet in self.results:
         #    c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
         #    c.draw_network("tmp/test.png","tmp/test.svg")
         #    s += 1
         
-        self.results = subnets
         return len(self.results)
     
+    # @todo drop this into the BAMExtract class
     def test_disco_alignment(self,alignment_file):
-        # Make sure the header exists indicating that the BAM file was
-        # fixed using Dr. Disco
+        """Ensures by reading the BAM header whether the BAM file was
+        indeed fixed using Dr. Disco
+        """
         bam_fh = pysam.AlignmentFile(alignment_file, "rb")
         if bam_fh.header.has_key('PG'):
             for pg in bam_fh.header['PG']:

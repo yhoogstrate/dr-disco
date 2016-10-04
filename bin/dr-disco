@@ -30,7 +30,7 @@ import drdisco
 from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
-from drdisco.BAMExtract import BAMExtract
+from drdisco.BAMExtract import *
 
 logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
 
@@ -64,14 +64,13 @@ def CLI_detect_intronic_break_points(
         output_file,
         fusion_candidates_input_file,
         bam_input_file):
-    bps = FusionCatcher(fusion_candidates_input_file,"")
-    bps_i = bps.__iter__()
-    bp = bps_i.next()
+    #bps = FusionCatcher(fusion_candidates_input_file,"")
+    #bps_i = bps.__iter__()
+    #bp = bps_i.next()
 
-    ic = IntronDecomposition(bp)
+    ic = IntronDecomposition(bam_input_file)
     #ic.annotate_genes(gobj)
-    n_candidates = ic.decompose(bam_input_file)
-
+    ic.decompose()
     ic.export(output_file)
 
 
@@ -81,7 +80,7 @@ def CLI_detect_intronic_break_points(
 @click.argument('bam_output_file')
 @click.argument('bam_input_file', type=click.Path(exists=True))
 def CLI_bam_extract_regions(region1,region2,bam_output_file,bam_input_file):
-    c = BAMExtract(bam_input_file)
+    c = BAMExtract.BAMExtract(bam_input_file)
     c.extract(region1, region2, bam_output_file)
 
 
