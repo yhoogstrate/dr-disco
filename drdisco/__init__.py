@@ -31,3 +31,24 @@ __license__ = 'GNU General Public License v3 (GPLv3)'
 __license_notice__ = 'License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.'
 
 __log_format__ = "[%(filename)s:%(lineno)s - %(funcName)s()] %(asctime)s - %(levelname)s - %(message)s"
+
+
+
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
+
+# parameters
+MIN_DISCO_INS_SIZE = 400
+PRUNE_INS_SIZE = 450
+SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error
+MAX_GENOMIC_DIST = 999999999
+
+
+# translation tables:
+strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
+
+
+# filter settings
+MIN_SUBNET_ENTROPY = 0.55
+MIN_DISCO_PER_SUBNET_PER_NODE = 1#minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
+MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4#minimum supporting reads is 8 per subnet
+MAX_SUBNET_MERGE_DIST = 5000

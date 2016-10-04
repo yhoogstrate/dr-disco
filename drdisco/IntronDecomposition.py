@@ -15,26 +15,9 @@ from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
 from .CircosController import *
 
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 
-
-# parameters
-MIN_DISCO_INS_SIZE = 400
-PRUNE_INS_SIZE = 450
-SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error
-MAX_GENOMIC_DIST = 999999999
-
-
-# translation tables:
-strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
-
-
-# filter settings
-MIN_SUBNET_ENTROPY = 0.55
-MIN_DISCO_PER_SUBNET_PER_NODE = 1#minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
-MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4#minimum supporting reads is 8 per subnet
-MAX_SUBNET_MERGE_DIST = 5000
-
+# load cfg
+from . import *
 
 def entropy(frequency_table):
     n = sum(frequency_table.values())
@@ -56,95 +39,6 @@ def merge_frequency_tables(frequency_tables):
             new_frequency_table[key] += t[key]
     
     return new_frequency_table
-
-##todo make static class BAM/SAMutils http://stackoverflow.com/questions/18679803/python-calling-method-without-self
-class BAMUtilities:
-    @staticmethod
-    def parse_SA(SA_tag):
-        sa_tags = SA_tag.split(";")
-        for i in range(len(sa_tags)):
-            sa_tags[i] = sa_tags[i].split(",")
-            sa_tags[i][1] = int(sa_tags[i][1])
-        
-        return sa_tags
-    
-    @staticmethod
-    def find_cigar_arcs(read):
-        """Tries to find ARCs introduced by:
-         - Hard clipping
-         - Soft clipping
-         - Splicing
-         - Deletion
-
-            M	BAM_CMATCH	0
-            I	BAM_CINS	1
-            D	BAM_CDEL	2
-            N	BAM_CREF_SKIP	3
-            S	BAM_CSOFT_CLIP	4
-            H	BAM_CHARD_CLIP	5
-            P	BAM_CPAD	6
-            =	BAM_CEQUAL	7
-            X	BAM_CDIFF	8"""
-        
-        tt = {
-            2:'cigar_deletion',
-            3:'cigar_splice_junction',
-            4:'cigar_soft_clip',
-            5:'cigar_hard_clip'
-        }
-        
-        offset = read.reference_start
-        solid = False
-        
-        for chunk in read.cigar:
-            if chunk[0] in tt.keys():# D N S H
-                """Small softclips occur all the time - introns and 
-                deletions of that size shouldn't add weight anyway
-                
-                1S 5M means:
-                startpoint-1 , startpoint => Softclip 
-                
-                5M 2S means:
-                startpoint +5, startpoint +5+2 => softclip
-                
-                In the first case, which I call left_clipping, the junction
-                occurs before the start position and it needs to be corrected
-                for
-                
-                @todo it's still a buggy implementation because the following
-                is theoretically possible too:
-                
-                5H 10S 5M
-                
-                in that case, the first arc should be -15,-10 and the
-                second -10,0. Maybe soft- and hard clipping should
-                be merged together?
-                """
-                
-                if chunk[0] in [4,5] and not solid:
-                    offset -= chunk[1]
-
-                if chunk[1] > SPLICE_JUNC_ACC_ERR:
-                    if solid:
-                        """Clips to the first node:
-                        M M M M M M M M M M S S S S S
-                                           <========]
-                        """
-                        #yield (offset , (offset + chunk[1]) , tt[chunk[0]])
-                        yield ((offset + chunk[1]), offset , tt[chunk[0]])
-                    else:
-                        """Clips to the second node:
-                        S S S S S M M M M M M M M M M
-                        [========>
-                        """
-                        yield (offset , (offset + chunk[1]) , tt[chunk[0]])
-
-            
-            if chunk[0] not in [4,5]:
-                solid = True
-            
-            offset += chunk[1]
-
 
 
 class Arc:
@@ -632,7 +526,7 @@ class Chain:
     
     def insert_chain(self,pysam_fh):
         for read in pysam_fh.fetch():
-            sa = BAMUtilities.parse_SA(read.get_tag('SA'))
+            sa = BAMExtract.BAMExtract.parse_SA(read.get_tag('SA'))
             _chr = pysam_fh.get_reference_name(read.reference_id)
             rg = read.get_tag('RG')
             
@@ -706,7 +600,7 @@ splice-junc:                           <=============>
             """
             
             if pos1 != None and pos2 != None:
-                for internal_arc in BAMUtilities.find_cigar_arcs(read):
+                for internal_arc in BAMExtract.BAMExtract.find_cigar_arcs(read):
                     if internal_arc[2] in ['cigar_splice_junction']:#, 'cigar_deletion'
                         i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
                                                internal_arc[0],
