@@ -53,11 +53,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
         
-        assertion = filecmp.cmp(test_file, output_file)
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
-        if not assertion:
-            print "diff '"+test_file+"' '"+output_file+"'"
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+    
     def test_02(self):
         input_file_a =   TEST_DIR+"test_terg_01.sub_02.filtered.fixed.bam"
         #input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
@@ -71,8 +68,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+    
     def test_03(self):
         input_file_a =   TEST_DIR+"test_terg_01.sub_03.filtered.fixed.bam"
         #input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
@@ -86,7 +83,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_04(self):
         input_file_a =    TEST_DIR+"test_terg_01.sub_04.filtered.fixed.bam"
@@ -101,7 +98,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
     
     def test_05(self):
         input_file_a =    TEST_DIR+"test_terg_01.sub_05.filtered.fixed.bam"
@@ -116,7 +113,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_06(self):
         input_file_a =    TEST_DIR+"test_terg_01.sub_06.filtered.fixed.bam"
@@ -163,9 +160,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
-        
-        # TESTs DISCORANT READS!
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_09(self):
         input_file_a =    TEST_DIR+"test_terg_01.sub_09.filtered.fixed.bam"
@@ -180,7 +175,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_10(self):
         input_file_a =    TEST_DIR+"test_terg_01.sub_10.filtered.fixed.bam"
@@ -210,7 +205,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_11(self):
         input_file_a =    TEST_DIR+"test_terg_02.fixed.bam"
@@ -225,7 +220,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
 def main():
     unittest.main()

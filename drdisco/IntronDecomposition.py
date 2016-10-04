@@ -1705,6 +1705,7 @@ class IntronDecomposition:
         return [sn for sn in subnets if sn != None]
 
     def filter_subnets(self, subnets):
+        logging.debug("init")
         k = 0
         for subnet in subnets:
             """Total of 8 reads is minimum, of which 2 must be
