@@ -12,8 +12,6 @@
 \usepackage{subcaption}
 \usepackage{amsthm}
 \usepackage[utf8]{inputenc}
-\usepackage{algpseudocode}
-\usepackage{algorithm}
 
 \usepackage{tikz}
 \usetikzlibrary{arrows}
@@ -195,16 +193,43 @@ Splice junctions are not taken into account in the pruning function.
 \end{figure*}
 
 \subsection{Re-joining splice junctions}
+The next step is to re-join splice junction(s).
+Each splice junction is only present at just two nodes, the boundaries of two exons.
+However, if you have a junction on the other side or in the middle of an exon, it is not directly connected to the splice junction.
+It is desired to have the exon junctions connected to the junctions.
+We would like to include the splice junctions to \textbf{all} edges that are in close proximity (450bp), possibly resulting into one splice junction linking several nodes together.
 
-The next step is to re-join splice junction(s). Currently, each splice junction is only present at just two vertices. However, if you have a break point that is on the other side or in the middle of an exon, it might be trivial to use information from the other side of the splice junction as well. We would like to include the splice junctions to all edges that are in close proximity (450bp), possibly resulting into one splice junction linking several nodes together.
+\begin{verbatim}
+thick arcs:
+                                ------------------------------------------
+                       ---------------------------------------------------
+                       ----------------------------------------------------------
+              -------------------------------------------------------------------
+
+ splice juncs:
+               -------  -------                                            -----
+             ||       ||       ||        |          $ ... $       |      ||     ||
+
+        
+        the goal is to add the splice juncs between the nodes
+\end{verbatim}
+
+
+\subsection{Extract subnetworks (by splice junctions)}
+In the RNA-Seq we find both intronic as exonic break points.
+Because intronic break points may be spliced, multiple junctions and thus multiple arcs may contribute to the same fusion gene.
+Therefore we would like to take all arcs corresponding to the same junction out of the graph together, just at once.
 We then extract subnetworks, sets of 2 nodes and 2 (directional) arcs that are joined by splice junctions.
-Then we merge subnetworks together based on their overall distance to other networks. This is because it often happens that novel exons are being used or that no splice junctions were present in the alignment. This may also merge intronic with splice-junction spanning reads.
+
+\subsection{Extract subnetworks}
+The complexity is that it may be possible that novel 
+Then we merge subnetworks together based on their overall distance to other networks.
+This is because it often happens that novel exons are being used or that no splice junctions were present in the alignment.
+This may also merge intronic with splice-junction spanning reads.
 We apply a filter on the subnetworks that uses the number of discordant reads, split reads and entropy (unique aligned reads in contrast to all reads involved).
 
-The reads spanning the genomic break point are most often not connected by any other read to the reads spanning the nearest splice junctions. They both end up in a separate 'network' of reads, to be merged afterwards:
-
-
-
+The reads spanning the genomic break point are most often not connected by any other read to the reads spanning the nearest splice junctions.
+They both end up in a separate 'network' of reads, to be merged afterwards:
 
 
 
