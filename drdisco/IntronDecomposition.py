@@ -266,25 +266,26 @@ class Node:
     def rfind_connected_sjuncs(self,left_nodes,depth=0):
         """Recursively finds all nodes that are connected by splice junctions"""
         
+        def rfind_connected_sjuncs_r(left_nodes,depth):
+            # results new in the current iteration
+            results_new = set()
+            for node in self.splice_edges.keys():
+                if node not in left_nodes:
+                    results_new.add(node)
+            
+            # old results, + recursive results
+            results_all = set(left_nodes).union(results_new)
+            
+            if depth < SJ_MAX_RECURSION_DEPTH:
+                for node in results_new:
+                    for edge in node.rfind_connected_sjuncs(results_all, depth + 1):
+                        results_all.add(edge)
+            
+            return results_all
+        
+        results_all = list(rfind_connected_sjuncs_r(left_nodes, 0))
+        
         #@todo return in genomic order...
-        
-        # results new in the current iteration
-        results_new = set()
-        for node in self.splice_edges.keys():
-            if node not in left_nodes:
-                results_new.add(node)
-        
-        # old results, + recursive results
-        results_all = set(left_nodes).union(results_new)
-        
-        if depth < SJ_MAX_RECURSION_DEPTH:
-            for node in results_new:
-                for edge in node.rfind_connected_sjuncs(results_all, depth + 1):
-                    results_all.add(edge)
-        
-        for x in results_all:
-            print results_all
-        
         return results_all
     
     def add_clip(self):
@@ -1238,7 +1239,6 @@ have edges to the same nodes of the already existing network,
         q = 0
         subnetworks = []
         while len(thicker_edges) > 0:
-            print "len(thicker_edges) = "+str(len(thicker_edges))
             start_point = thicker_edges[0][0]
             
             left_nodes = [start_point._origin]
@@ -1276,7 +1276,7 @@ have edges to the same nodes of the already existing network,
                         for mt in mutual_targets:
                             if mt.is_connected_to((left_node_i, left_node_j), right_nodes):
                                 # Add node
-                                right_nodes.add(mt)
+                                right_nodes.append(mt)
                                 
                                 for edge in mt.edges.keys():
                                     for l in left_nodes:
@@ -1330,6 +1330,26 @@ class Subnet(Chain):
         
         self.calc_clips()
         self.calc_scores()
+        
+        self.reorder_edges()
+    
+    def reorder_edges(self):
+        idx = {}
+        for edge in self.edges:
+            key1 = edge[0].get_scores()
+            key2 = str(edge[0]._origin.position)+"-"+str(edge[0]._target.position)
+            
+            if not idx.has_key(key1):
+                idx[key1] = {}
+            
+            idx[key1][key2] = edge
+        
+        ordered = []
+        for key1 in sorted(idx.keys(),reverse=True):
+            for key2 in sorted(idx[key1].keys()):
+                ordered.append(idx[key1][key2])
+        
+        self.edges = ordered
     
     def calc_clips(self):
         clips = 0
@@ -1507,6 +1527,7 @@ class Subnet(Chain):
 
         self.calc_clips()
         self.calc_scores()
+        self.reorder_edges()
 
 
 class IntronDecomposition:

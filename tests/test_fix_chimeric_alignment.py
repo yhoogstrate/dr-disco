@@ -31,8 +31,6 @@ from drdisco.ChimericAlignment import ChimericAlignment
 
 class TestChimericAlignment(unittest.TestCase):
     def test_01(self):
-        print("\n")
-        
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
         
@@ -57,8 +55,6 @@ class TestChimericAlignment(unittest.TestCase):
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
     def test_02(self):
-        print("\n")
-        
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
         
