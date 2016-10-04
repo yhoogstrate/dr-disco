@@ -57,6 +57,95 @@ def merge_frequency_tables(frequency_tables):
     
     return new_frequency_table
 
+##todo make static class BAM/SAMutils http://stackoverflow.com/questions/18679803/python-calling-method-without-self
+class BAMUtilities:
+    @staticmethod
+    def parse_SA(SA_tag):
+        sa_tags = SA_tag.split(";")
+        for i in range(len(sa_tags)):
+            sa_tags[i] = sa_tags[i].split(",")
+            sa_tags[i][1] = int(sa_tags[i][1])
+        
+        return sa_tags
+    
+    @staticmethod
+    def find_cigar_arcs(read):
+        """Tries to find ARCs introduced by:
+         - Hard clipping
+         - Soft clipping
+         - Splicing
+         - Deletion
+
+            M	BAM_CMATCH	0
+            I	BAM_CINS	1
+            D	BAM_CDEL	2
+            N	BAM_CREF_SKIP	3
+            S	BAM_CSOFT_CLIP	4
+            H	BAM_CHARD_CLIP	5
+            P	BAM_CPAD	6
+            =	BAM_CEQUAL	7
+            X	BAM_CDIFF	8"""
+        
+        tt = {
+            2:'cigar_deletion',
+            3:'cigar_splice_junction',
+            4:'cigar_soft_clip',
+            5:'cigar_hard_clip'
+        }
+        
+        offset = read.reference_start
+        solid = False
+        
+        for chunk in read.cigar:
+            if chunk[0] in tt.keys():# D N S H
+                """Small softclips occur all the time - introns and 
+                deletions of that size shouldn't add weight anyway
+                
+                1S 5M means:
+                startpoint-1 , startpoint => Softclip 
+                
+                5M 2S means:
+                startpoint +5, startpoint +5+2 => softclip
+                
+                In the first case, which I call left_clipping, the junction
+                occurs before the start position and it needs to be corrected
+                for
+                
+                @todo it's still a buggy implementation because the following
+                is theoretically possible too:
+                
+                5H 10S 5M
+                
+                in that case, the first arc should be -15,-10 and the
+                second -10,0. Maybe soft- and hard clipping should
+                be merged together?
+                """
+                
+                if chunk[0] in [4,5] and not solid:
+                    offset -= chunk[1]
+
+                if chunk[1] > SPLICE_JUNC_ACC_ERR:
+                    if solid:
+                        """Clips to the first node:
+                        M M M M M M M M M M S S S S S
+                                           <========]
+                        """
+                        #yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+                        yield ((offset + chunk[1]), offset , tt[chunk[0]])
+                    else:
+                        """Clips to the second node:
+                        S S S S S M M M M M M M M M M
+                        [========>
+                        """
+                        yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+
+            
+            if chunk[0] not in [4,5]:
+                solid = True
+            
+            offset += chunk[1]
+
+
 
 class Arc:
     """Connection between two genomic locations
@@ -540,6 +629,146 @@ class Chain:
             return list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand]
         except:
             return None
+    
+    def insert_chain(self,pysam_fh):
+        for read in pysam_fh.fetch():
+            sa = BAMUtilities.parse_SA(read.get_tag('SA'))
+            _chr = pysam_fh.get_reference_name(read.reference_id)
+            rg = read.get_tag('RG')
+            
+            pos1 = None
+            pos2 = None
+
+            if rg in [
+                'discordant_mates',
+                'spanning_paired_1',
+                'spanning_paired_1_r',
+                'spanning_paired_1_s',
+                'spanning_paired_1_t',
+                'spanning_paired_2',
+                'spanning_paired_2_r',
+                'spanning_paired_2_s',
+                'spanning_paired_2_t',
+                'spanning_singleton_1',
+                'spanning_singleton_1_r',
+                'spanning_singleton_2',
+                'spanning_singleton_2_r']:
+                pos1, pos2 = self.insert(read,sa[0])
+            
+            elif rg == 'silent_mate':
+                # usually in a exon?
+                if read.is_read1:
+                    # The complete mate is the secondary, meaning:
+                    # HI:i:1       HI:i:2
+                    # [====]---$---[====>-----<========]
+                    # The 'break' between the mates is from spanning_paired.2 <-> read
+                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
+                    
+                    broken_mate = sa[1]
+                    #broken_mate[1] += bam_parse_alignment_offset_using_cigar(broken_mate)
+
+                else:# is_read2
+                    # The complete mate is the primary, meaning:
+                    #                HI:i:1       HI:i:2
+                    # [========>-----<====]---$---[====]
+                    # The 'break' between the mates is from read <-> spanning_paired.1
+                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
+                    
+                    broken_mate = sa[0]
+                
+                #@todo silent mates do not make pairs but are one directional
+                # in their input - has to be fixed in order to allow arc_merging
+                #self.chain.insert(r,broken_mate)
+
+            else:
+                raise Exception("Unknown type read: '"+str(rg)+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
+            
+            """Find introns etc:
+            
+            Example 1: 
+            
+            5S10M15N10M2S
+            
+            S S S S S | | | | | | | | |---------------| | | | | | | | | S S
+            
+ soft-clip: <========]
+                                                                       [==>
+            Softclip are usually one-directional, from the sequenced base until
+            the end. If it is before the first M/= flag, it's direction should
+            be '-', otherwise '+' as it clips from the end. In principle the
+            soft/hard clips are not arcs but properties of nodes. One particular
+            base may have several soft/hard clips (from different locations but
+            adding weigt to the same node).
+            
+            Splice juncs are bi-directional, and real arcs.
+ 
+splice-junc:                           <=============>
+            """
+            
+            if pos1 != None and pos2 != None:
+                for internal_arc in BAMUtilities.find_cigar_arcs(read):
+                    if internal_arc[2] in ['cigar_splice_junction']:#, 'cigar_deletion'
+                        i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                                               internal_arc[0],
+                                               STRAND_FORWARD)
+                        i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                                               internal_arc[1],
+                                               STRAND_REVERSE)
+                    
+                    elif internal_arc[2] in ['cigar_deletion']:
+                        i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                                               internal_arc[0],
+                                               STRAND_FORWARD)
+                        i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                                               internal_arc[1],
+                                               STRAND_REVERSE)
+                        
+                        if i_pos1.get_dist(i_pos2,False) < MIN_DISCO_INS_SIZE:
+                            i_pos1 = None
+                            i_pos2 = None
+                    
+                    elif internal_arc[2] in ['cigar_soft_clip']:
+                        if rg in ['discordant_mates',
+                                  'spanning_paired_1',
+                                  'spanning_paired_1_r',
+                                  'spanning_paired_1_t',
+                                  'spanning_paired_2',
+                                  'spanning_paired_2_r',
+                                  'spanning_paired_2_t',
+                                  'spanning_singleton_1',
+                                  'spanning_singleton_1_r',
+                                  'spanning_singleton_2',
+                                  'spanning_singleton_2_r']:
+                            i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                                                 internal_arc[0],
+                                                 pos2.strand)
+                            i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
+                                                 internal_arc[1],
+                                                 pos1.strand)
+                        
+                        elif rg in ['spanning_paired_1_s',
+                                    'spanning_paired_2_s']:
+                            i_pos1 = None
+                            i_pos2 = None
+                        else:
+                            raise Exception("what todo here - "+rg)
+                    else:
+                        raise Exception("Arc type not implemented: %s\n\n%s", internal_arc,str(read))
+                    
+                    if internal_arc[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
+                        try:
+                            if i_pos1 != None:
+                                self.get_node_reference(i_pos2).add_clip()
+                        except:
+                            # This happens with some weird reads
+                            #if rg in ['spanning_paired_2','spanning_singleton_2_r']:
+                            #self.chain.create_node(i_pos2)
+                            #self.chain.get_node_reference(i_pos2).add_clip()
+                            #logging.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
+                            pass
+                    else:
+                        if i_pos1 != None:
+                            self.insert_entry(i_pos1,i_pos2,internal_arc[2],None,True)
     
     def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """ - Checks if Node exists at pos1, otherwise creates one
@@ -1377,7 +1606,8 @@ class Subnet(Chain):
 
         self.calc_clips()
         self.calc_scores()
-        
+
+
 class IntronDecomposition:
     def __init__(self,break_point):
         self.break_point = break_point
@@ -1393,7 +1623,7 @@ class IntronDecomposition:
         self.chain = Chain(pysam_fh)
         
         #@todo move function into Chain
-        self.insert_chain(pysam_fh)
+        self.chain.insert_chain(pysam_fh)
         thicker_arcs = self.chain.prune(PRUNE_INS_SIZE) # Makes arc thicker by lookin in the ins. size
         #@todo: thickre_arcs = self.index_arcs() and come up with class
         thicker_arcs = self.chain.rejoin_splice_juncs(thicker_arcs, PRUNE_INS_SIZE) # Merges arcs by splice junctions and other junctions
@@ -1437,156 +1667,6 @@ class IntronDecomposition:
                     return bam_fh
         
         raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
-    
-    def parse_SA(self,SA_tag):
-        sa_tags = SA_tag.split(";")
-        for i in range(len(sa_tags)):
-            sa_tags[i] = sa_tags[i].split(",")
-            sa_tags[i][1] = int(sa_tags[i][1])
-        
-        return sa_tags
-    
-    
-    def insert_chain(self,pysam_fh):
-        for read in pysam_fh.fetch():
-            sa = self.parse_SA(read.get_tag('SA'))
-            _chr = pysam_fh.get_reference_name(read.reference_id)
-            rg = read.get_tag('RG')
-            
-            pos1 = None
-            pos2 = None
-
-            if rg in [
-                'discordant_mates',
-                'spanning_paired_1',
-                'spanning_paired_1_r',
-                'spanning_paired_1_s',
-                'spanning_paired_1_t',
-                'spanning_paired_2',
-                'spanning_paired_2_r',
-                'spanning_paired_2_s',
-                'spanning_paired_2_t',
-                'spanning_singleton_1',
-                'spanning_singleton_1_r',
-                'spanning_singleton_2',
-                'spanning_singleton_2_r']:
-                pos1, pos2 = self.chain.insert(read,sa[0])
-            
-            elif rg == 'silent_mate':
-                # usually in a exon?
-                if read.is_read1:
-                    # The complete mate is the secondary, meaning:
-                    # HI:i:1       HI:i:2
-                    # [====]---$---[====>-----<========]
-                    # The 'break' between the mates is from spanning_paired.2 <-> read
-                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
-                    
-                    broken_mate = sa[1]
-                    #broken_mate[1] += bam_parse_alignment_offset_using_cigar(broken_mate)
-
-                else:# is_read2
-                    # The complete mate is the primary, meaning:
-                    #                HI:i:1       HI:i:2
-                    # [========>-----<====]---$---[====]
-                    # The 'break' between the mates is from read <-> spanning_paired.1
-                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
-                    
-                    broken_mate = sa[0]
-                
-                #@todo silent mates do not make pairs but are one directional
-                # in their input - has to be fixed in order to allow arc_merging
-                #self.chain.insert(r,broken_mate)
-
-            else:
-                raise Exception("Unknown type read: '"+str(rg)+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
-            
-            """Find introns etc:
-            
-            Example 1: 
-            
-            5S10M15N10M2S
-            
-            S S S S S | | | | | | | | |---------------| | | | | | | | | S S
-            
- soft-clip: <========]
-                                                                       [==>
-            Softclip are usually one-directional, from the sequenced base until
-            the end. If it is before the first M/= flag, it's direction should
-            be '-', otherwise '+' as it clips from the end. In principle the
-            soft/hard clips are not arcs but properties of nodes. One particular
-            base may have several soft/hard clips (from different locations but
-            adding weigt to the same node).
-            
-            Splice juncs are bi-directional, and real arcs.
- 
-splice-junc:                           <=============>
-            """
-            
-            if pos1 != None and pos2 != None:
-                for internal_arc in self.find_cigar_arcs(read):
-                    if internal_arc[2] in ['cigar_splice_junction']:#, 'cigar_deletion'
-                        i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                               internal_arc[0],
-                                               STRAND_FORWARD)
-                        i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                               internal_arc[1],
-                                               STRAND_REVERSE)
-                    
-                    elif internal_arc[2] in ['cigar_deletion']:
-                        i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                               internal_arc[0],
-                                               STRAND_FORWARD)
-                        i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                               internal_arc[1],
-                                               STRAND_REVERSE)
-                        
-                        if i_pos1.get_dist(i_pos2,False) < MIN_DISCO_INS_SIZE:
-                            i_pos1 = None
-                            i_pos2 = None
-                    
-                    elif internal_arc[2] in ['cigar_soft_clip']:
-                        if rg in ['discordant_mates',
-                                  'spanning_paired_1',
-                                  'spanning_paired_1_r',
-                                  'spanning_paired_1_t',
-                                  'spanning_paired_2',
-                                  'spanning_paired_2_r',
-                                  'spanning_paired_2_t',
-                                  'spanning_singleton_1',
-                                  'spanning_singleton_1_r',
-                                  'spanning_singleton_2',
-                                  'spanning_singleton_2_r']:
-                            i_pos1 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                                 internal_arc[0],
-                                                 pos2.strand)
-                            i_pos2 = BreakPosition(pysam_fh.get_reference_name(read.reference_id),
-                                                 internal_arc[1],
-                                                 pos1.strand)
-                        
-                        elif rg in ['spanning_paired_1_s',
-                                    'spanning_paired_2_s']:
-                            i_pos1 = None
-                            i_pos2 = None
-                        else:
-                            raise Exception("what todo here - "+rg)
-                    else:
-                        raise Exception("Arc type not implemented: %s\n\n%s", internal_arc,str(read))
-                    
-                    if internal_arc[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
-                        try:
-                            if i_pos1 != None:
-                                self.chain.get_node_reference(i_pos2).add_clip()
-                        except:
-                            # This happens with some weird reads
-                            #if rg in ['spanning_paired_2','spanning_singleton_2_r']:
-                            #self.chain.create_node(i_pos2)
-                            #self.chain.get_node_reference(i_pos2).add_clip()
-                            #logging.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
-                            pass
-                    else:
-                        if i_pos1 != None:
-                            self.chain.insert_entry(i_pos1,i_pos2,internal_arc[2],None,True)
-    
     
     def export(self, fh):
         fh.write(str(self))
@@ -1733,79 +1813,3 @@ splice-junc:                           <=============>
         
         logging.info("* Filtered "+str(k)+" of the "+str(len(subnets))+" subnetwork(s)")
         return subnets
-
-    def find_cigar_arcs(self,read):
-        """Tries to find ARCs introduced by:
-         - Hard clipping
-         - Soft clipping
-         - Splicing
-         - Deletion
-
-            M	BAM_CMATCH	0
-            I	BAM_CINS	1
-            D	BAM_CDEL	2
-            N	BAM_CREF_SKIP	3
-            S	BAM_CSOFT_CLIP	4
-            H	BAM_CHARD_CLIP	5
-            P	BAM_CPAD	6
-            =	BAM_CEQUAL	7
-            X	BAM_CDIFF	8"""
-        
-        tt = {
-            2:'cigar_deletion',
-            3:'cigar_splice_junction',
-            4:'cigar_soft_clip',
-            5:'cigar_hard_clip'
-        }
-        
-        offset = read.reference_start
-        solid = False
-        
-        for chunk in read.cigar:
-            if chunk[0] in tt.keys():# D N S H
-                """Small softclips occur all the time - introns and 
-                deletions of that size shouldn't add weight anyway
-                
-                1S 5M means:
-                startpoint-1 , startpoint => Softclip 
-                
-                5M 2S means:
-                startpoint +5, startpoint +5+2 => softclip
-                
-                In the first case, which I call left_clipping, the junction
-                occurs before the start position and it needs to be corrected
-                for
-                
-                @todo it's still a buggy implementation because the following
-                is theoretically possible too:
-                
-                5H 10S 5M
-                
-                in that case, the first arc should be -15,-10 and the
-                second -10,0. Maybe soft- and hard clipping should
-                be merged together?
-                """
-                
-                if chunk[0] in [4,5] and not solid:
-                    offset -= chunk[1]
-
-                if chunk[1] > SPLICE_JUNC_ACC_ERR:
-                    if solid:
-                        """Clips to the first node:
-                        M M M M M M M M M M S S S S S
-                                           <========]
-                        """
-                        #yield (offset , (offset + chunk[1]) , tt[chunk[0]])
-                        yield ((offset + chunk[1]), offset , tt[chunk[0]])
-                    else:
-                        """Clips to the second node:
-                        S S S S S M M M M M M M M M M
-                        [========>
-                        """
-                        yield (offset , (offset + chunk[1]) , tt[chunk[0]])
-
-            
-            if chunk[0] not in [4,5]:
-                solid = True
-            
-            offset += chunk[1]
