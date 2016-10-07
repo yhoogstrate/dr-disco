@@ -1597,9 +1597,9 @@ class IntronDecomposition:
         #@todo: thicker_edges = self.index_edges() and come up with class
         thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size
         thicker_edges = chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
-        #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
         chain.reinsert_edges(thicker_edges)
         
+        #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
         subnets = chain.extract_subnetworks(thicker_edges)
         ##subnets = self.filter_subnets_on_identical_nodes(subnets)
         subnets = self.merge_overlapping_subnets(subnets, PRUNE_INS_SIZE)
