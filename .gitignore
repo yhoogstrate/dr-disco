@@ -38,3 +38,4 @@ truncated.*
 *.swp
 .venv
 .directory
+/previous_R_data

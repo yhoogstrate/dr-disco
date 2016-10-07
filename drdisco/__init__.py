@@ -42,7 +42,7 @@ PRUNE_INS_SIZE = 450
 SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error
 MAX_GENOMIC_DIST = 999999999
 
-SJ_MAX_RECURSION_DEPTH = 10
+SJ_MAX_RECURSION_DEPTH = 5
 
 
 # translation tables:

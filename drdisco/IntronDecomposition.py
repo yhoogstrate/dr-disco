@@ -1,10 +1,11 @@
 #!/usr/bin/env python2
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
+# https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
 """
-Tries to figure out within a discordant RNA-Seq read alignment:
- - Tries to explain introns and exons by fusion transcripts
+Tries to find genomic and exon to exon break points within a discordant
+RNA-Seq read alignment.
 """
 
 #http://www.samformat.info/sam-format-flag
@@ -31,6 +32,19 @@ def entropy(frequency_table):
         return entropy / (math.log(n) / math.log(2.0))
 
 def merge_frequency_tables(frequency_tables):
+    """
+    Merges different frequency tables.
+    
+    Parameters
+    ----------
+    frequency_tables: list
+        [{'key1': int}, {'key1': int, 'key2: int}]
+    
+    Returns
+    -------
+    list
+        {'key1': int, 'key2: int}
+    """
     new_frequency_table = {}
     for t in frequency_tables:
         for key in t.keys():
@@ -488,6 +502,7 @@ class BreakPosition:
 class Chain:
     def __init__(self,pysam_fh):
         self.idxtree = GenomeIntervalTree()
+        #self.scoringtree = []
         self.pysam_fh = pysam_fh
     
     def __iter__(self):
@@ -531,6 +546,7 @@ class Chain:
             return None
     
     def insert_alignment(self):
+        logging.debug("starting inserting alignment data")
         for read in self.pysam_fh.fetch():
             sa = BAMExtract.BAMExtract.parse_SA(read.get_tag('SA'))
             _chr = self.pysam_fh.get_reference_name(read.reference_id)
@@ -675,6 +691,8 @@ splice-junc:                           <=============>
                     else:
                         if i_pos1 != None:
                             self.insert_entry(i_pos1,i_pos2,internal_edge[2],None,True)
+        
+        logging.debug("alignment data loaded")
     
     def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """ - Checks if Node exists at pos1, otherwise creates one
@@ -974,8 +992,11 @@ splice-junc:                           <=============>
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
     def get_start_point(self):
-        """Returns all nodes in the chain,
-        ordered by the higest number of counts
+        """Returns the top scoring edges in the chain
+        
+        By doing this iteratively, and removing the top edge in the mean time, you get some kind of unlogical ordering function
+        @todo - this trick is silly: it uses a genometree and all recursive children of the nodes
+                Add a set or list of vector that keeps track of all Edges ordered by a certain score on top of the tree?
         """
         maxscore = 0
         edge = None
@@ -1015,6 +1036,9 @@ splice-junc:                           <=============>
         #self.print_chain()
         
         while candidate != None:
+            #print "- pruning candidate"
+            #if str(candidate) == "chr21:42860320/42860321(+)->chr21:42861520/42861521(-):(spanning_paired_1_t:4)":
+            #    print "- pruning THE candidate!"
             self.prune_edge(candidate, insert_size)
             candidates.append((candidate, candidate.get_complement()))
             
@@ -1039,17 +1063,20 @@ splice-junc:                           <=============>
         
         edge_complement = edge.get_complement()
         
+        i = 0
         for edge_m in self.search_edges_between(node1.position, node2.position, insert_size):
+            i += 1
             edge_mc = edge_m.get_complement()
             
             edge.merge_edge(edge_m)
             edge_complement.merge_edge(edge_mc)
             
             self.remove_edge(edge_m)
+            
             # complement is automatically removed after removing the fwd
             #self.remove_edge(edge_mc)
         
-        return None
+        return i
     
     def merge_splice_juncs(self,uncertainty):
         logging.info("Merging splice juncs")
@@ -1487,7 +1514,7 @@ class Subnet(Chain):
             for lnode_t in subnet_t.get_lnodes():
                 dist = abs(lnode.position.get_dist(lnode_t.position, True))
                 if dist == MAX_GENOMIC_DIST:
-                    return MAX_GENOMIC_DIST
+                    return (None, None, MAX_GENOMIC_DIST)
                 
                 if dist < ldist:
                     ldist = dist
@@ -1496,13 +1523,42 @@ class Subnet(Chain):
             for rnode_t in subnet_t.get_rnodes():
                 dist = abs(rnode.position.get_dist(rnode_t.position, True))
                 if dist == MAX_GENOMIC_DIST:
-                    return MAX_GENOMIC_DIST
+                    return (None, None, MAX_GENOMIC_DIST)
                 
                 if dist < rdist:
                     rdist = dist
         
-        return math.sqrt(pow(ldist,2) + pow(rdist, 2))
+        return (ldist, rdist, math.sqrt(pow(ldist,2) + pow(rdist, 2)))
+    
+    def find_distances(self, subnet_t):
+        """
+            - Must compare Edges with Edges:
+            
+            self.edges:
+            
+         s1 [-------]
+         s2 [---------------------]
+            
+            subnet_t.edges:
+            
+         t1    [----------------------------------------]
+         t2     [-----------------]
+         t3 [------------]
+            
+            This should return a vector containing min(2,3) = 2 distance entries:
+            
+            s1-t3   (dist s1.lnode <-> t3.lnode , dist s1.rnode <-> t3.rnode , RMSQD)
+            s2-t2   (dist s2.lnode <-> t2.lnode , dist s2.rnode <-> t2.rnode , RMSQD)
+            
+            In order to be acceptable (this should be part of the merge_overlapping_subnets), each distance should:
+             - RMSQD < math.fucn
+             - min(ldist,rdist) < insert size
+            Such that always one node is within the insert size of a node in the other subnet and the maximum distance can still be explained by exon distsances
         
+        @todo
+        """
+        pass
+    
     def get_lnodes(self):
         lnodes = set()
         
@@ -1541,12 +1597,12 @@ class IntronDecomposition:
         #@todo: thicker_edges = self.index_edges() and come up with class
         thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size
         thicker_edges = chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
+        #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
         chain.reinsert_edges(thicker_edges)
         
-        #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
         subnets = chain.extract_subnetworks(thicker_edges)
         ##subnets = self.filter_subnets_on_identical_nodes(subnets)
-        subnets = self.merge_overlapping_subnets(subnets)
+        subnets = self.merge_overlapping_subnets(subnets, PRUNE_INS_SIZE)
         self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
         # If circos:
@@ -1655,7 +1711,7 @@ class IntronDecomposition:
         
         #return new_subnets
 
-    def merge_overlapping_subnets(self, subnets):
+    def merge_overlapping_subnets(self, subnets, insert_size):
         """Merges very closely adjacent subnets based on the smallest
         internal distance. E.g. if we have a subnet having 1 and one
         having 2 edges:
@@ -1691,7 +1747,10 @@ class IntronDecomposition:
                 for j in range(i+1,n):
                     if subnets[j] != None:
                         dist = subnets[i].find_distance(subnets[j])
-                        if dist <= MAX_SUBNET_MERGE_DIST:
+                        #@todo use this one day
+                        #subnets[i].find_distances(subnets[j])
+                        
+                        if dist[2] <= MAX_SUBNET_MERGE_DIST and min(dist[0],dist[1]) < insert_size:
                             candidates.append(subnets[j])
                             subnets[j] = None
             

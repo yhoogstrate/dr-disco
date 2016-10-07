@@ -199,6 +199,9 @@ However, if you have a junction on the other side or in the middle of an exon, i
 It is desired to have the exon junctions connected to the junctions.
 We would like to include the splice junctions to \textbf{all} edges that are in close proximity (450bp), possibly resulting into one splice junction linking several nodes together.
 
+
+For every `thicker\_edge', hence, edge returned after pruning, 
+
 \subsection{Extract subnetworks (by splice junctions)}
 In our data we find both intronic and exonic break points.
 Because intronic break points may be spliced, multiple junctions and thus multiple arcs may contribute to the same fusion gene.
@@ -233,7 +236,34 @@ They both end up in a separate 'network' of reads, to be merged afterwards:
 
 
 
+% other sections?
+...
 
+\subsection{Merge overlapping subnets}
+
+Merges very closely adjacent subnets based on the smallest internal distance.
+E.g. if we have a subnet having 1 and one having 2 edges:
+        
+  snA:  |       |            ~             |
+        |        --------------------------  edgeA1
+         ----------------------------------  edgeA2
+
+  snB         |                        |
+               ------------------------      edgeB1
+
+        We would like to filter based on the distance between edgeA1 and
+        edgeB1.
+        
+        We also don't want to have a growth pattern, i.e. that based on
+        merging snB to snA, snC becomes part of it. Although it may be
+        true it can become problematc as I've seen with FuMa.
+        
+        So, idea is:
+        loop over all subnets i;
+            loop over all subnets j > i
+                if subnet j should be merged with i, remeber it into M
+            
+            merge all subnets in M into i, and remove the former subnets
 
 
 \end{document}

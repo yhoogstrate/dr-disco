@@ -80,7 +80,7 @@ def CLI_detect_intronic_break_points(
 @click.argument('bam_output_file')
 @click.argument('bam_input_file', type=click.Path(exists=True))
 def CLI_bam_extract_regions(region1,region2,bam_output_file,bam_input_file):
-    c = BAMExtract.BAMExtract(bam_input_file)
+    c = BAMExtract(bam_input_file)
     c.extract(region1, region2, bam_output_file)
 
 
