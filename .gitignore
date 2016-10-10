@@ -39,3 +39,4 @@ truncated.*
 .venv
 .directory
 /previous_R_data
+*.backup

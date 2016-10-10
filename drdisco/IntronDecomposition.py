@@ -277,30 +277,36 @@ class Node:
         self.edges = {}
         self.splice_edges = {}
     
-    def rfind_connected_sjuncs(self,left_nodes,depth=0):
+    def rfind_connected_sjuncs(self,left_nodes,insert_size_to_travel):
         """Recursively finds all nodes that are connected by splice junctions"""
         
-        def rfind_connected_sjuncs_r(left_nodes,depth):
-            # results new in the current iteration
-            results_new = set()
-            for node in self.splice_edges.keys():
-                if node not in left_nodes:
-                    results_new.add(node)
-            
-            # old results, + recursive results
-            results_all = set(left_nodes).union(results_new)
-            
-            if depth < SJ_MAX_RECURSION_DEPTH:
-                for node in results_new:
-                    for edge in node.rfind_connected_sjuncs(results_all, depth + 1):
+        #@todo only lnodes are taken into account? / not sure about this; name left_nodes is confusing
+        
+        results_new2 = {}
+        for edge_n in self.splice_edges.keys():
+            edge = self.splice_edges[edge_n]
+            d1 = abs(self.position.get_dist(edge[1]._target.position,False))
+            d2 = abs(self.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
+            d = min(d1,d2)
+            if d <= insert_size_to_travel and edge_n not in left_nodes:
+                dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
+                if not results_new2.has_key(dkey):
+                    results_new2[dkey] = set()
+                results_new2[dkey].add(edge_n)
+        
+        # old results, + recursive results
+        results_all = set(left_nodes)
+        for depth in results_new2.keys():
+            results_all = results_all.union(results_new2[depth])
+        
+        # only recusively add to the new ones
+        for depth in results_new2.keys():
+            if depth > 0:
+                for node in results_new2[depth]:
+                    for edge in self.rfind_connected_sjuncs(results_all, depth):
                         results_all.add(edge)
-            
-            return results_all
         
-        results_all = list(rfind_connected_sjuncs_r(left_nodes, 0))
-        
-        #@todo return in genomic order...
-        return results_all
+        return list(results_all)
     
     def add_clip(self):
         self.clips += 1
@@ -1273,8 +1279,8 @@ have edges to the same nodes of the already existing network,
             
             ## The original nodes have been emptied, so the most important
             ## edge's are now separated.
-            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes)
-            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes)
+            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes,450)
+            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes,450)
             
             subedges = []
             
