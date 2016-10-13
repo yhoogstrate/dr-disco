@@ -61,21 +61,24 @@
 \section{Methods}
 The tool \textit{dr-disco intronic} tool tries to estimate break points on 2 levels: the exon-exon and the intron-intron boundaries (in case of an intron to intron DNA break point). It takes several steps to accomplish this, described below:
 
+\clearpage
+
 \subsection{Data structure}
-The input is an alignment file in the BAM format that specifically contains discordant reads.
-Typically those alignments contain aligned reads with an insert sizes that are either too small (overlapping the other mate) or too large (exceeding any reasonable exon length).
-The former are typically evidence for local indels or inversions, but seem to occur so often due to library preparation that we deliberately filter them out.
-For this we use the criterion that the distance between the aligned reads must at least be 450 ($\sim1.5 \times$ insert size) if they are aligned to the same chromosome.
+The input for \textit{dr-disco} is an alignment file in the BAM format, that specifically contains discordant reads produced by RNA-STAR.
+Typically those alignments contain aligned reads with an insert sizes that are either too small (e.g. overlapping the other mate) or too large (exceeding any reasonable exon length).
+The former may be evidence for small local indels or inversions, but seem to occur most often due to library preparation. Therefore we deliberately filter those out.
+For this we use the criterion that the distance between the aligned reads must at least be larger than the insert size. Because the insert size is $~sim 300bp$ and we want to have a certain confidence, also for other functions, we set the insert size to $1.5 \times$ insert size$=450bp$). Hence, we filter out discordant reads if they are smaller than this size and aligned to the same chromosome.
 % Todo: give absolute stats on percentage removal
-The remaining reads can either be classified into singletons or paired end reads.
+Remaining reads can either be classified into \textit{singletons} or \textit{paired end reads}.
 Singletons are reads of which one of the mates was excluded from the alignment while the alignment of the remaining mate was considered discordant.
 With BAM/SAM specification it is not possible to describe an inter-chromosomal junction into one single entry.
-What is done in RNA-STARs discordant alignment is that discordant reads are being split up into two alignments, of which one is classified as \textit{secondary alignment}.
-Because of this the algorithm deals with doubles or triples of aligned reads for singletons and paired end reads respectively.
+In RNA-STARs discordant alignment files discordant reads are being split up into two separate alignments, i.e. two entries, of which one is classified as \textit{secondary alignment}.
+Hence, discordant reads are represented with doubles or triples of aligned reads for singletons and paired end reads.
 
-The main data structure of this application is a \textit{Graph}. There are typically two types of split reads; all singletons are considered to be split reads while paired end reads are only considered split reads if one of the mates is split up.
+The main data structure of this application is a \textit{graph}. There are typically two types of split reads; all singletons are considered to be split reads while paired end reads are only considered split reads if one of the mates is split up.
 The remaining mate is then considered a \textit{silent mate} because it only anchors the alignment.
-Spanning reads are a double of paired end reads of which none is split up. We classify reads as follows:
+Spanning reads are a double of paired end reads of which none has been split up.
+We classify such reads as follows:
 \begin{itemize}
 	\item Split read
 	\begin{itemize}
@@ -94,13 +97,13 @@ Spanning reads are a double of paired end reads of which none is split up. We cl
 	\end{itemize}
 \end{itemize}
 
-According to the subtype and additional information (e.g. strand and clipping flags) the exact junction in the alignment will be determined.
-Also, if an aligned chunk contains a splice junction or and indel annotation, this will be considered as a separate type of junction too.
-If any of the two positions of a junction does not exist, the position will be inserted into the graph.
-When the nodes are all present in the graph, and the edge between the two positions do not exists in the graph, the edge will be inserted (bi-directional) into the graph.
-The edge will be annotated such that the weight of the subtype gets increased by one.
-The nodes of the graph are also inserted into a genomic-range index (intervaltree-bio python package) to quickly target specific subregions of the graph.
-Each node has a property describing the number of (soft/hard)-clips were found in corresponding mates, illustrated in figure \ref{fig:edges_clips}.
+According to the subtype and additional information (e.g. strand and clipping flags) the breakpoints and strands of the junction are estimated.
+Also, if an aligned chunk contains a splice junction or and indel annotation, this will be considered as a separate type of junction and will be included in the graph as well.
+If any of the two breakpoints of a junction does not exist, the position will be inserted into the graph as a \textit{node}.
+When all nodes of a junction are present in the graph, and the edge between the two positions does not exists in the graph, the junction will be inserted as a (bi-directional) \textit{edge} into the graph, connecting the two corresponding breakpoints.
+The edge will be annotated such that the weight of the subtype of corresponding reads gets increased by one.
+The nodes of the graph are also inserted into a genomic-range index (intervaltree-bio python package) to quickly target specific subregions in the graph.
+Lastly, each node has a property describing the number of (soft/hard)-clips found in corresponding mates, illustrated in figure \ref{fig:edges_clips}.
 
 \begin{figure}
 % xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
@@ -121,8 +124,11 @@ Each node has a property describing the number of (soft/hard)-clips were found i
 \label{fig:edges_clips}
 \end{figure}
 
+\clearpage
+
+
 \subsection{Pruning (the graph)}
-Let's assume we have the following alignment, we would like to translate into a graph:
+Consider the alignment below as example we would like to transform into a graph:
 \begin{verbatim}
 chr1:
   80        90        100
@@ -140,21 +146,6 @@ chr2:
                  [--read-03--]
 \end{verbatim}
 The corresponding graph would look like presented in figure \ref{fig:pruning_graph} (left).
-Hence, in this graph each node is a genomic location and edges represent the junctions in the alignment.
-The graph contains two split reads that break from \verb|chr1:100| to \verb|chr2:900| and a spanning read aligned from \verb|chr1:90| to \verb|chr2:910|.
-We see that we have actually two very closely adjacent edges; the split and discordant edge differ on both their nodes not more than 10bp.
-It is very likely that those two different detected junctions are actually coming from the same genomic event.
-Discordant reads do usually not cover the actual break point but are closely adjacent while on the other hand split reads should be falling on the break exactly.
-In order to combine this information, this distance of each of the nodes needs to be reasonable, which would mean for the sequencing data that it should not exceed the insert size of the sequencing reads.
-Therefore we added the pruning step that merges edges of this type together.
-
-Pruning starts by finding the edge with the highest weight, looking for both its corresponding vertices for arcs that have their edges in no more than the insert size (450bp) away and are in the same orientation.
-Because split reads have a higher probability to be exactly on the break point, they have an increased weight for estimating the highest weight.
-
-The data structure of the pruned example is given in figure \ref{fig:pruning_graph} (right).
-Although the total weight of all edges stays identical, the number of edges and nodes shall decrease with every pruning operation and the graph shall become smaller in size.
-Splice junctions are not taken into account in the pruning function.
-
 
 \begin{figure*}
 % xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
@@ -192,11 +183,37 @@ Splice junctions are not taken into account in the pruning function.
 \label{fig:pruning_graph}
 \end{figure*}
 
+Hence, in this graph each node is a genomic location and edges represent the junctions in the alignment.
+The graph contains two split reads that break from \verb|chr1:100| to \verb|chr2:900| and a spanning read aligned from \verb|chr1:90| to \verb|chr2:910|.
+In this graph we have actually very closely adjacent edges; the edges with split and discordant reads differ on both nodes not more than 10bp.
+It is very likely that those two edges are actually coming from the same genomic event.
+Discordant reads do usually not cover the actual break point but are closely adjacent while on the other hand split reads should be falling on the break exactly.
+In order to combine this information, this distance of each of the nodes needs to be reasonable, which would mean for the sequencing data that it should not exceed the insert size of the sequencing reads.
+Therefore we added the pruning step that merges edges of this type together.
+
+Pruning starts by finding the edge with the highest weight, looking for both its corresponding vertices for arcs that have their edges in no more than the insert size (450bp) away and are in the same orientation.
+Because split reads have a higher probability to be exactly on the break point, they have an increased weight for estimating the highest weight.
+
+The data structure of the pruned example is given in figure \ref{fig:pruning_graph} (right).
+Although the total weight of all edges stays identical, the number of edges and nodes shall decrease with every pruning operation and the graph shall become smaller in size.
+Splice junctions are not taken into account in the pruning function.
+
+\clearpage
+
 \subsection{Re-joining splice junctions}
-Each splice junction an edge between only two nodes.
-However, a break point of a junction on the opposide side or in the middle of an exon it is not directly connected to the splice junction while it is in close proximity.
-Because this junction may be comming from the same event as a junction that is alternatively spliced.
+% What does this function do:
+% - Add splice junctions to all nodes?
+% - Link nodes to each othed based on splice junctions? (I suppose it does both, which makes it easy to pull them down)
+%
+%if left_junc[1] != None:
+%    node1.splice_edges[node2] = left_junc
+%    node2.splice_edges[node1] = left_junc
+
+Each splice junction is represented as an edge between two nodes.
+However, different non-splice junctions may correspond to the same genomic event, due to alternative splicing.
+Currently, a breakpoint of a junction on the opposite side or in the middle of an exon it is not directly connected to the splice junction although it is in close proximity.
 Therefore it is desired to have the exon junctions connected to all junctions in close proximity.
+In other words, it would be desired to have the junctions themselves being directly connected to each other by the splice junctions.
 This step is referred to as \textit{re-joining splice junction(s)}.
 We would like to include the splice junctions to \textbf{all} edges that are in close proximity (450bp), possibly resulting into one splice junction linking several nodes together.
 
@@ -223,14 +240,81 @@ The prodedure goes as follows:
 For every `thicker\_edge', hence, edge returned after pruning, 
 
 
+\begin{figure*}
+% xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+  \node[main node] (1) {\small{chr1:1000}};
+  \node[main node] (2) [right of=1,color=gray] {\small{chr1:1250}};
+  \node[main node] (3) [right of=2,color=gray] {\small{chr1:2400}};
+  \node[main node] (4) [right of=3] {\small{chr1:2500}};
+  \node[main node] (5) [right of=4] {\small{chr2:200}};
+
+  \path[every node/.style={font=\sffamily\small}]
+    (1) edge [bend left] node {discordant: 1} (5)
+    (2) edge [bend left,color=gray] node {splice: 1} (3)
+    (3) edge [bend left,color=gray] node {splice: 1} (2)
+    (4) edge [bend left] node {split: 2} (5)
+    (5) edge [bend left] node {split: 2} (4)
+    (5) edge [bend left] node {discordant: 1} (1)
+;
+\end{tikzpicture}
+
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+  \node[main node] (1) {\small{chr1:1000}};
+  \node[main node] (2) [right of=1,color=gray] {\small{chr1:1250}};
+  \node[main node] (3) [right of=2,color=gray] {\small{chr1:2400}};
+  \node[main node] (4) [right of=3] {\small{chr1:2500}};
+  \node[main node] (5) [right of=4] {\small{chr2:200}};
+
+  \path[every node/.style={font=\sffamily\small}]
+    (1) edge [bend left] node {discordant: 1} (5)
+    (2) edge [bend left,color=gray] node {splice: 1} (3)
+    (3) edge [bend left,color=gray] node {splice: 1} (2)
+
+    (1) edge [color=gray,dotted] node {s-link} (2)
+    (2) edge [color=gray,dotted] node {$d_1=250$} (1)
+    (3) edge [color=gray,dotted] node {s-link} (4)
+    (4) edge [color=gray,dotted] node {$d_2=100$} (3)
+    
+    (4) edge [bend left] node {split: 2} (5)
+    (5) edge [bend left] node {split: 2} (4)
+    (5) edge [bend left] node {discordant: 1} (1)
+;
+\end{tikzpicture}
+
+\caption{Merge SJ}
+\label{fig:merge_sj}
+\end{figure*}
+
+\clearpage
+
 \subsection{Extract subnetworks}
-The initial focus on the method was on junctions, while multiple junctions may be related to the same genomic event.
-For example junctions in close genomic proximity, which were merged by pruning.
-Splice junctions that were attached to all nodes in the previous step, also form links that can connect junctions from the same genomic event based on splicing.
-If we start with a certain junction and look in both its directions within a certain range for splice junctions and continue this recursively, we can connect all junctions.
-This will however get too many unnecessary splice junctions and corresponding junctions connected, and caused very poor performance.
+In the previous step nodes have been connected by all splice junctions in close proximity.
+Therefore it is possible to extract corresponding junctions as a network, by recursively traversing their splice junctions.
+To ensure we may not miss any in-between edges, we will pull down all nodes first, and look for all existing edges in-between.
+We start with the highest scoring edge (2 split reads):
+
+
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+  \node[main node] (4) [right of=3] {\small{chr1:2500}};
+  \node[main node] (5) [right of=4] {\small{chr2:200}};
+
+  \path[every node/.style={font=\sffamily\small}]
+    (4) edge [bend left] node {split: 2} (5)
+    (5) edge [bend left] node {split: 2} (4)
+;
+\end{tikzpicture}
+
+\noindent We then take the breakpoints apart, and for each of them recursively find nodes connected by splice junctions.
 Key in this problem is that every junction may not be further away (in transcript length) than the insert size.
-Therefore we can start to do this recursively, with a recursion constraint based on the travelled exonic distance.
+Therefore we can do this recursively, with a recursion constraint based on the travelled exonic distance.
+
 
 In the following example we have two junctions ($j_1$ and $j_2$) that are in adjacent exons.
 In our data structure there are no exons, just splice junctions (SJ).
