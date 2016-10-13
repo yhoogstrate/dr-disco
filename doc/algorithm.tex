@@ -114,9 +114,9 @@ Lastly, each node has a property describing the number of (soft/hard)-clips foun
   \node[main node] (2) [right of=1] {\small{chr2:900}};
 
   \path[every node/.style={font=\sffamily\small}]
-    (1) edge [bend left] node {split: 1} (2)
+    (1) edge [bend left] node {} (2)
         edge [loop below,color=gray] node {clips: 1} (1)
-    (2) edge [bend left] node {split: 1} (1)
+    (2) edge [bend right] node {split: 1} (1)
         edge [loop below,color=gray] node {clips: 0} (2)
 ;
 \end{tikzpicture}
@@ -147,42 +147,6 @@ chr2:
 \end{verbatim}
 The corresponding graph would look like presented in figure \ref{fig:pruning_graph} (left).
 
-\begin{figure*}
-% xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
-\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
-                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
-
-  \node[main node] (1) {\small{chr1:90}};
-  \node[main node] (2) [right of=1] {\small{chr1:100}};
-  \node[main node] (3) [right of=2] {\small{chr2:900}};
-  \node[main node] (4) [right of=3] {\small{chr2:910}};
-
-  \path[every node/.style={font=\sffamily\small}]
-    (1) edge [bend left] node {discordant: 1} (4)
-%        edge [loop below] node {clips: 0} (4)
-    (2) edge [bend left] node {split: 2} (3)
-%        edge [loop below] node {clips: 0} (3)
-    (3) edge [bend left] node {split: 2} (2)
-%        edge [loop below] node {clips: 0} (2)
-    (4) edge [bend left] node {discordant: 1} (1)
-%        edge [loop below] node {clips: 0} (1)
-;
-\end{tikzpicture}
-\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
-                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
-
-  \node[main node] (1) {\small{chr1:100}};
-  \node[main node] (2) [right of=2] {\small{chr2:900}};
-
-  \path[every node/.style={font=\sffamily\small}]
-    (1) edge [bend left] node [text width=2cm,align=center]{split: 2, \\ discordant$^*$: 1} (2)
-    (2) edge [bend left] node [text width=2cm,align=center]{split: 2, \\ discordant$^*$: 1} (1)
-;
-\end{tikzpicture}
-\caption{Left: graph before pruning, right: after pruning}
-\label{fig:pruning_graph}
-\end{figure*}
-
 Hence, in this graph each node is a genomic location and edges represent the junctions in the alignment.
 The graph contains two split reads that break from \verb|chr1:100| to \verb|chr2:900| and a spanning read aligned from \verb|chr1:90| to \verb|chr2:910|.
 In this graph we have actually very closely adjacent edges; the edges with split and discordant reads differ on both nodes not more than 10bp.
@@ -197,6 +161,42 @@ Because split reads have a higher probability to be exactly on the break point, 
 The data structure of the pruned example is given in figure \ref{fig:pruning_graph} (right).
 Although the total weight of all edges stays identical, the number of edges and nodes shall decrease with every pruning operation and the graph shall become smaller in size.
 Splice junctions are not taken into account in the pruning function.
+
+\begin{figure*}
+% xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+  \node[main node] (1) {\small{chr1:90}};
+  \node[main node] (2) [right of=1] {\small{chr1:100}};
+  \node[main node] (3) [right of=2] {\small{chr2:900}};
+  \node[main node] (4) [right of=3] {\small{chr2:910}};
+
+  \path[every node/.style={font=\sffamily\small}]
+    (1) edge [bend left] node {} (4)
+    (4) edge [bend right] node {discordant: 1} (1)
+%        edge [loop below] node {clips: 0} (4)
+    (2) edge [bend right] node {split: 2} (3)
+    (3) edge [bend left] node {} (2)
+%        edge [loop below] node {clips: 0} (3)
+%        edge [loop below] node {clips: 0} (2)
+%        edge [loop below] node {clips: 0} (1)
+;
+\end{tikzpicture}
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+  \node[main node] (1) {\small{chr1:100}};
+  \node[main node] (2) [right of=2] {\small{chr2:900}};
+
+  \path[every node/.style={font=\sffamily\small}]
+    (1) edge [bend left] node [text width=2cm,align=center]{} (2)
+    (2) edge [bend right] node [text width=2cm,align=center]{split: 2, \\ discordant$^*$: 1} (1)
+;
+\end{tikzpicture}
+\caption{Left: graph before pruning, right: after pruning}
+\label{fig:pruning_graph}
+\end{figure*}
 
 \clearpage
 
@@ -240,7 +240,7 @@ The prodedure goes as follows:
 For every `thicker\_edge', hence, edge returned after pruning, 
 
 
-\begin{figure*}
+%\begin{figure*}
 % xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
@@ -252,12 +252,12 @@ For every `thicker\_edge', hence, edge returned after pruning,
   \node[main node] (5) [right of=4] {\small{chr2:200}};
 
   \path[every node/.style={font=\sffamily\small}]
-    (1) edge [bend left] node {discordant: 1} (5)
-    (2) edge [bend left,color=gray] node {splice: 1} (3)
-    (3) edge [bend left,color=gray] node {splice: 1} (2)
-    (4) edge [bend left] node {split: 2} (5)
-    (5) edge [bend left] node {split: 2} (4)
-    (5) edge [bend left] node {discordant: 1} (1)
+    (1) edge [bend left] node {} (5)
+    (5) edge [bend right] node {discordant: 1} (1)
+    (2) edge [bend right,color=gray] node {splice: 1} (3)
+    (3) edge [bend left,color=gray] node {} (2)
+    (4) edge [bend right] node {split: 2} (5)
+    (5) edge [bend left] node {} (4)
 ;
 \end{tikzpicture}
 
@@ -271,24 +271,25 @@ For every `thicker\_edge', hence, edge returned after pruning,
   \node[main node] (5) [right of=4] {\small{chr2:200}};
 
   \path[every node/.style={font=\sffamily\small}]
-    (1) edge [bend left] node {discordant: 1} (5)
-    (2) edge [bend left,color=gray] node {splice: 1} (3)
-    (3) edge [bend left,color=gray] node {splice: 1} (2)
+    (1) edge [bend left] node {} (5)
+    (5) edge [bend right] node {discordant: 1} (1)
+
+    (2) edge [bend right,color=gray] node {splice: 1} (3)
+    (3) edge [bend left,color=gray] node {} (2)
 
     (1) edge [color=gray,dotted] node {s-link} (2)
     (2) edge [color=gray,dotted] node {$d_1=250$} (1)
     (3) edge [color=gray,dotted] node {s-link} (4)
     (4) edge [color=gray,dotted] node {$d_2=100$} (3)
     
-    (4) edge [bend left] node {split: 2} (5)
-    (5) edge [bend left] node {split: 2} (4)
-    (5) edge [bend left] node {discordant: 1} (1)
+    (4) edge [bend right] node {split: 2} (5)
+    (5) edge [bend left] node {} (4)
 ;
 \end{tikzpicture}
 
-\caption{Merge SJ}
-\label{fig:merge_sj}
-\end{figure*}
+%\caption{Merge SJ}
+%\label{fig:merge_sj}
+%\end{figure*}
 
 \clearpage
 
@@ -301,13 +302,12 @@ We start with the highest scoring edge (2 split reads):
 
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
-
   \node[main node] (4) [right of=3] {\small{chr1:2500}};
   \node[main node] (5) [right of=4] {\small{chr2:200}};
 
   \path[every node/.style={font=\sffamily\small}]
-    (4) edge [bend left] node {split: 2} (5)
-    (5) edge [bend left] node {split: 2} (4)
+    (4) edge [bend left] node {} (5)
+    (5) edge [bend right] node {split: 2} (4)
 ;
 \end{tikzpicture}
 
@@ -316,71 +316,100 @@ Key in this problem is that every junction may not be further away (in transcrip
 Therefore we can do this recursively, with a recursion constraint based on the travelled exonic distance.
 
 
-In the following example we have two junctions ($j_1$ and $j_2$) that are in adjacent exons.
-In our data structure there are no exons, just splice junctions (SJ).
-In the following example we see how the data looks like:
-\begin{verbatim}
-            ___sj____
-           |         |
----[ exon1 ]---------[ exon2 ]--
-aatagcatcgatcgacttagctacgaacacag
-      |                |______ j1 ___
-      |_______________________ j2 ___
-\end{verbatim}
-While in the data structure this looks more like this:
-\begin{verbatim}
-            ___sj____
-           |         |
--------------------------------------
-      |                |______ j1 ___
-      |_______________________ j2 ___
-\end{verbatim}
-We start extracting the subnetwork by the junction with the highest score, i.e. number of corresponding reads.
-Let's  assume the start point is $j_1$, and the chosen insert size if 15.
-We need to find all splice junctions that are in less than the insert size available (\verb|=|):
-\begin{verbatim}
-            ___sj____
-           |         |
----------------------===-------------
-      |                |______ j1 ___
-      |_______________________ j2 ___
-\end{verbatim}
-For that splice junction, the distance to the next junction may not be longer than $15-3=12$.
-Fortunately, if we travel from the other end of \textit{SJ} to the end of $j_2$, we travel only 6 more bases (\verb|:|):
-\begin{verbatim}
-            ___sj____
-           |         |
-------::::::---------===-------------
-      |                |______ j1 ___
-      |_______________________ j2 ___
-\end{verbatim}
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+  \node[main node] (4) [] {\small{chr1:2500}};
+  \node[main node] (3) [below of=4,color=gray] {\small{chr1:2400}};
+  \node[main node] (2) [below of=3,color=gray] {\small{chr1:1250}};
+  \node[main node] (1) [below of=2]{\small{chr1:1000}};
+
+  \path[every node/.style={font=\sffamily\small}]
+    (2) edge [bend right,color=gray] node {splice: 1} (3)
+    (3) edge [bend left,color=gray] node {} (2)
+
+    (1) edge [color=gray,dotted] node {s-link} (2)
+    (2) edge [color=gray,dotted] node {$d_1=250$} (1)
+    (3) edge [color=gray,dotted] node {s-link} (4)
+    (4) edge [color=gray,dotted] node {$d_2=100$} (3)
+    (1) edge [bend left,color=black,dotted] node {$d=350$} (4)
+    (4) edge [bend right,color=black,dotted] node {} (1)
+;
+\end{tikzpicture}
+
+From this we get the following two `buckets' of nodes that may contain edges of our subnetwork:
+
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+  \node[main node] (1) {\small{chr1:1000}};
+  \node[main node] (4) [below of=1] {\small{chr1:2500}};
+  \node[main node] (5) [right of=4] {\small{chr2:200}};
 
 
+\node at (-0.5,1) [above=5mm, right=0mm] {\textsc{L-nodes} \quad\quad \textsc{R-nodes}};
+\draw [color=gray,thick](-1.05,-4.01) rectangle (1.55,1);
+\draw [color=gray,thick](1.75,-4.01) rectangle (4.2,1);
+
+  \path[every node/.style={font=\sffamily\small}]
+
+    (1) edge [color=gray,dotted] node {$d=350$} (4)
+    (4) edge [color=gray,dotted] node {} (1)
+    
+    (1) edge [bend left] node {discordant: 1} (5)
+    (5) edge [bend right] node {} (1)
+
+    (4) edge [bend right] node {split: 2} (5)
+    (5) edge [bend left] node {} (4)
+
+;
+\end{tikzpicture}
+
+We extract only edges of which its two nodes fall in both buckets, resulting in the subnetwork.
+We proceed with the next top edge until we have used all.
+
+\clearpage
 
 \subsection{Merge overlapping subnets}
-It may be possible that novel or unannotated exons exist and certain junctions did not get connected to the subnetwork by splice junctions.
+It may be possible that novel or unannotated exons exist, which are not being spliced by the aligner.
+In the corresponding graph no splice junctions shall appear and the subnetworking mechanism would not pull them down based on the splice criterion.
 A typical example is exon-0 in the TMPRSS2-ERG fusion gene.
-To also include those junctions, we merge subnetworks together based on their overall distance to other networks.
-This is because it often happens that novel exons are being used or that no splice junctions were present in the alignment.
+To compensate for this we would like to include the possibility to also expand subnetworks by some guilt-by-association system.
+However, the rules have to be really strict as this lead to unnecessary network expansion pretty easy.
+
+In this function we merge subnetworks together based on their overall distance to other networks.
 This may also merge intronic with splice-junction spanning reads.
-We apply a filter on the subnetworks that uses the number of discordant reads, split reads and entropy (unique aligned reads in contrast to all reads involved).
 
-The reads spanning the genomic break point are most often not connected by any other read to the reads spanning the nearest splice junctions.
-They both end up in a separate 'network' of reads, to be merged afterwards:
-
-Merges very closely adjacent subnets based on the smallest internal distance.
-E.g. if we have a subnet having 1 and one having 2 edges:
-
-\begin{verbatim}
-  snA:  |       |            ~             |
-        |        --------------------------  edgeA1
-         ----------------------------------  edgeA2
-
-  snB         |                        |
-               ------------------------      edgeB1
+This functiosn takes the overal genomic distance and filters based on the balance between the read count and the distance, trying to correct for realistic exon lengths.
 
 
-\end{verbatim}        
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+                    thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
+
+  \node[main node] (0) {\small{chr1:300}};
+  \node[main node] (1) [right of=0] {\small{chr1:500}};
+  \node[main node] (2) [right of=1] {\small{chr1:1000}};
+  \node[main node] (3) [right of=2] {\small{chr1:2500}};
+  \node[main node] (4) [below of=3] {\small{chr2:200}};
+
+  \path[every node/.style={font=\sffamily\small}]
+    (2) edge [bend right] node {discordant: 1} (4)
+    (4) edge [bend left] node {} (2)
+    (1) edge [bend right] node {discordant: 1} (4)
+    (4) edge [bend left] node {} (1)
+
+    (0) edge [color=gray,dotted] node {s-link} (1)
+    (1) edge [color=gray,dotted] node {$d=200$} (0)
+    
+    (2) edge [color=gray,dotted] node {s-link} (3)
+    (3) edge [color=gray,dotted] node {$d=350$} (2)
+    
+    (4) edge [bend left] node {} (3)
+    
+    (0) edge [bend right] node {discordant: 1} (4)
+    (4) edge [bend left] node {} (0)
+;
+\end{tikzpicture}
 
         We would like to filter based on the distance between edgeA1 and
         edgeB1.
@@ -395,6 +424,32 @@ E.g. if we have a subnet having 1 and one having 2 edges:
                 if subnet j should be merged with i, remeber it into M
             
             merge all subnets in M into i, and remove the former subnets
+
+
+\clearpage
+
+\subsection{Filtering}
+The steps above will produce a list with many false positives, which we try to filter out.
+It is based on :
+- the number of discordant reads, split reads
+- entropy (unique aligned reads in contrast to all reads involved).
+- clipping percentage
+
+\subsubsection{Intronic and exon break point}
+The last stap is to merge dual events:
+Merges closely adjacent subnets based on the smallest internal distance.
+E.g. if we have a subnet having 1 and one having 2 edges:
+
+\begin{verbatim}
+  snA:  |       |            ~             |
+        |        --------------------------  edgeA1
+         ----------------------------------  edgeA2
+
+  snB         |                        |
+               ------------------------      edgeB1
+
+
+\end{verbatim}        
 
 
 \end{document}
