@@ -222,17 +222,58 @@ The prodedure goes as follows:
 ...
 For every `thicker\_edge', hence, edge returned after pruning, 
 
-\subsection{Extract subnetworks (by splice junctions)}
-In our data we find both intronic and exonic break points.
-Because intronic break points may be spliced, multiple junctions and thus multiple arcs may contribute to the same fusion gene.
-Therefore we would like to take all arcs corresponding to the same junction out of the graph together, just at once.
-We then extract subnetworks, sets of 2 nodes and 2 (directional) arcs that are joined by splice junctions.
-
-
-
-
 
 \subsection{Extract subnetworks}
+The initial focus on the method was on junctions, while multiple junctions may be related to the same genomic event.
+For example junctions in close genomic proximity, which were merged by pruning.
+Splice junctions that were attached to all nodes in the previous step, also form links that can connect junctions from the same genomic event based on splicing.
+If we start with a certain junction and look in both its directions within a certain range for splice junctions and continue this recursively, we can connect all junctions.
+This will however get too many unnecessary splice junctions and corresponding junctions connected, and caused very poor performance.
+Key in this problem is that every junction may not be further away (in transcript length) than the insert size.
+Therefore we can start to do this recursively, with a recursion constraint based on the travelled exonic distance.
+
+In the following example we have two junctions ($j_1$ and $j_2$) that are in adjacent exons.
+In our data structure there are no exons, just splice junctions (SJ).
+In the following example we see how the data looks like:
+\begin{verbatim}
+            ___sj____
+           |         |
+---[ exon1 ]---------[ exon2 ]--
+aatagcatcgatcgacttagctacgaacacag
+      |                |______ j1 ___
+      |_______________________ j2 ___
+\end{verbatim}
+While in the data structure this looks more like this:
+\begin{verbatim}
+            ___sj____
+           |         |
+-------------------------------------
+      |                |______ j1 ___
+      |_______________________ j2 ___
+\end{verbatim}
+We start extracting the subnetwork by the junction with the highest score, i.e. number of corresponding reads.
+Let's  assume the start point is $j_1$, and the chosen insert size if 15.
+We need to find all splice junctions that are in less than the insert size available (\verb|=|):
+\begin{verbatim}
+            ___sj____
+           |         |
+---------------------===-------------
+      |                |______ j1 ___
+      |_______________________ j2 ___
+\end{verbatim}
+For that splice junction, the distance to the next junction may not be longer than $15-3=12$.
+Fortunately, if we travel from the other end of \textit{SJ} to the end of $j_2$, we travel only 6 more bases (\verb|:|):
+\begin{verbatim}
+            ___sj____
+           |         |
+------::::::---------===-------------
+      |                |______ j1 ___
+      |_______________________ j2 ___
+\end{verbatim}
+
+
+
+\subsection{Merge overlapping subnets}
 It may be possible that novel or unannotated exons exist and certain junctions did not get connected to the subnetwork by splice junctions.
 A typical example is exon-0 in the TMPRSS2-ERG fusion gene.
 To also include those junctions, we merge subnetworks together based on their overall distance to other networks.
@@ -243,22 +284,19 @@ We apply a filter on the subnetworks that uses the number of discordant reads, s
 The reads spanning the genomic break point are most often not connected by any other read to the reads spanning the nearest splice junctions.
 They both end up in a separate 'network' of reads, to be merged afterwards:
 
-
-
-% other sections?
-...
-
-\subsection{Merge overlapping subnets}
-
 Merges very closely adjacent subnets based on the smallest internal distance.
 E.g. if we have a subnet having 1 and one having 2 edges:
-        
+
+\begin{verbatim}
   snA:  |       |            ~             |
         |        --------------------------  edgeA1
          ----------------------------------  edgeA2
 
   snB         |                        |
                ------------------------      edgeB1
+
+
+\end{verbatim}        
 
         We would like to filter based on the distance between edgeA1 and
         edgeB1.
@@ -276,5 +314,4 @@ E.g. if we have a subnet having 1 and one having 2 edges:
 
 
 \end{document}
-
 
