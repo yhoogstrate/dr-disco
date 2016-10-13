@@ -222,6 +222,14 @@ class TestIntronicBreakDetection(unittest.TestCase):
         
         self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_12(self):
+        pass
+        """
+        Tests extracting subnetworks / connecting junctions by splice junctions
+        
+        #chr21:39795484-222=chr21:39795262
+        """
+
 def main():
     unittest.main()
 

@@ -193,13 +193,33 @@ Splice junctions are not taken into account in the pruning function.
 \end{figure*}
 
 \subsection{Re-joining splice junctions}
-The next step is to re-join splice junction(s).
-Each splice junction is only present at just two nodes, the boundaries of two exons.
-However, if you have a junction on the other side or in the middle of an exon, it is not directly connected to the splice junction.
-It is desired to have the exon junctions connected to the junctions.
+Each splice junction an edge between only two nodes.
+However, a break point of a junction on the opposide side or in the middle of an exon it is not directly connected to the splice junction while it is in close proximity.
+Because this junction may be comming from the same event as a junction that is alternatively spliced.
+Therefore it is desired to have the exon junctions connected to all junctions in close proximity.
+This step is referred to as \textit{re-joining splice junction(s)}.
 We would like to include the splice junctions to \textbf{all} edges that are in close proximity (450bp), possibly resulting into one splice junction linking several nodes together.
 
+\begin{verbatim}
+edges (junctions):
+          -------- ... ------        j1
+     ------------- ... ------        j2
+     ------------- ... ------------- j3
+------------------ ... ------------- j4
+nodes (genomic positions):
+|   |    |                   |     |
 
+ splice juncs:
+ --- ----                     -----
+:   :    :        ...        :     :
+\end{verbatim}
+In the example above we have 4 junctions ($j_1,\ldots,j_4$).
+
+Instead of adding the splice junctions to the Graph, we re-insert them as properties of the Nodes.
+
+%% Has to be changes / improved
+The prodedure goes as follows:
+...
 For every `thicker\_edge', hence, edge returned after pruning, 
 
 \subsection{Extract subnetworks (by splice junctions)}
@@ -208,18 +228,7 @@ Because intronic break points may be spliced, multiple junctions and thus multip
 Therefore we would like to take all arcs corresponding to the same junction out of the graph together, just at once.
 We then extract subnetworks, sets of 2 nodes and 2 (directional) arcs that are joined by splice junctions.
 
-\begin{verbatim}
-thick arcs:
-                   ------------------------------------------
-          ---------------------------------------------------
-          ----------------------------------------------------------
- -------------------------------------------------------------------
 
- splice juncs:
-  -------  -------                                            -----
-||       ||       ||        |          $ ... $       |      ||     ||
-
-\end{verbatim}
 
 
 
