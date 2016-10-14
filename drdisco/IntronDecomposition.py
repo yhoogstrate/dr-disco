@@ -663,7 +663,7 @@ splice-junc:                           <=============>
                                            internal_edge[1],
                                            STRAND_REVERSE)
                 
-                elif internal_edge[2] in ['cigar_deletion']:
+                elif internal_edge[2] in ['cigar_deletion']:#@todo merge with condition above?
                     #@todo _chr?
                     i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                            internal_edge[0],
@@ -678,7 +678,10 @@ splice-junc:                           <=============>
                         i_pos2 = None
                 
                 elif internal_edge[2] in ['cigar_soft_clip']:
-                    if pos1 != None and pos2 != None and rg in ['discordant_mates',
+                    if pos1 == None or rg in ['spanning_paired_1_s', 'spanning_paired_2_s']:
+                        i_pos1 = None
+                        i_pos2 = None
+                    elif rg in ['discordant_mates',
                               'spanning_paired_1',
                               'spanning_paired_1_r',
                               'spanning_paired_1_t',
@@ -689,19 +692,14 @@ splice-junc:                           <=============>
                               'spanning_singleton_1_r',
                               'spanning_singleton_2',
                               'spanning_singleton_2_r']:
-                        #@todo _chr?
-                        i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                             internal_edge[0],
-                                             pos2.strand)
-                        #@todo _chr?
-                        i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                             internal_edge[1],
-                                             pos1.strand)
-                    
-                    elif rg in ['spanning_paired_1_s',
-                                'spanning_paired_2_s']:
-                        i_pos1 = None
-                        i_pos2 = None
+                            #@todo _chr?
+                            i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                                 internal_edge[0],
+                                                 pos2.strand)
+                            #@todo _chr?
+                            i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                                 internal_edge[1],
+                                                 pos1.strand)
                     else:
                         raise Exception("what todo here - "+rg)
                 else:
@@ -1373,9 +1371,6 @@ have edges to the same nodes of the already existing network,
                 thicker_edges.remove(pop)
             
             subnetworks.append(Subnet(q,subedges))
-            
-            # @todo REMOVE THIS  - dev only:
-            break
         
         logging.info("Extracted "+str(len(subnetworks))+" subnetwork(s)")
         return subnetworks

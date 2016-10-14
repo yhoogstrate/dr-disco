@@ -40,3 +40,4 @@ truncated.*
 .directory
 /previous_R_data
 *.backup
+.~lock.*
