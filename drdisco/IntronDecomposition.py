@@ -288,30 +288,33 @@ class Node:
         
         #@todo only lnodes are taken into account? / not sure about this; name left_nodes is confusing
         print "Rfind d=",insert_size_to_travel,left_nodes
+        print 'self:',[self]
         results_new2 = {}
         for edge_n in self.splice_edges.keys():
-            edge = self.splice_edges[edge_n]
-            print ['self:',self, 'edge_n:',edge_n]
-            
-            # distance between the node self and the nodes of the exon junction
-            ds1 = abs(self.position.get_dist(edge[1]._target.position,False))
-            ds2 = abs(self.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
-            # distance between the target node and the nodes of the exon junction
-            dt1 = abs(edge_n.position.get_dist(edge[1]._target.position,False))
-            dt2 = abs(edge_n.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
-            # this has to be crossed i.e. if the one node is close to the left part of the SJ the other node must be close to the right part
-            d1 = ds1 + dt2
-            d2 = ds2 + dt1
-            d = min(d1,d2)
-            print " ds1,ds2",ds1,ds2
-            print " dt1,dt2",dt1,dt2
-            print " d1 ,d2 ",d1, d2
-            
-            if d <= insert_size_to_travel and edge_n not in left_nodes:
-                dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-                if not results_new2.has_key(dkey):
-                    results_new2[dkey] = set()
-                results_new2[dkey].add(edge_n)
+            if edge_n not in left_nodes:
+                edge = self.splice_edges[edge_n]
+                print '  * edge_n:',[edge_n]
+                
+                # distance between the node self and the nodes of the exon junction
+                ds1 = abs(self.position.get_dist(edge[1]._target.position,False))
+                ds2 = abs(self.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
+                # distance between the target node and the nodes of the exon junction
+                dt1 = abs(edge_n.position.get_dist(edge[1]._target.position,False))
+                dt2 = abs(edge_n.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
+                # this has to be crossed i.e. if the one node is close to the left part of the SJ the other node must be close to the right part
+                d1 = ds1 + dt2
+                d2 = ds2 + dt1
+                d = min(d1,d2)
+                print "  (ds1,ds2:",ds1,ds2,")(dt1,dt2:",dt1,dt2,"): [d1 ,d2]",d1, d2
+                
+                if d <= insert_size_to_travel:
+                    print "  YES, we can!"
+                    dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
+                    if not results_new2.has_key(dkey):
+                        results_new2[dkey] = set()
+                    results_new2[dkey].add(edge_n)
+                else:
+                    print "NO: ",d,">",insert_size_to_travel
         
         # old results, + recursive results
         results_all = set(left_nodes)
@@ -319,6 +322,7 @@ class Node:
             results_all = results_all.union(results_new2[depth])
         
         print ">>",results_all
+        print
         
         # only recusively add to the new ones
         for depth in results_new2.keys():
