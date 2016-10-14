@@ -287,12 +287,11 @@ class Node:
         """
         
         #@todo only lnodes are taken into account? / not sure about this; name left_nodes is confusing
-        print "Rfind d=",insert_size_to_travel
+        print "Rfind d=",insert_size_to_travel,left_nodes
         results_new2 = {}
         for edge_n in self.splice_edges.keys():
             edge = self.splice_edges[edge_n]
-            #print "<-->",edge_n
-            print [self, edge_n]
+            print ['self:',self, 'edge_n:',edge_n]
             
             # distance between the node self and the nodes of the exon junction
             ds1 = abs(self.position.get_dist(edge[1]._target.position,False))
@@ -304,9 +303,9 @@ class Node:
             d1 = ds1 + dt2
             d2 = ds2 + dt1
             d = min(d1,d2)
-            print "ds1,ds2",ds1,ds2
-            print "dt1,dt2",dt1,dt2
-            print "d1 ,d2 ",d1, d2
+            print " ds1,ds2",ds1,ds2
+            print " dt1,dt2",dt1,dt2
+            print " d1 ,d2 ",d1, d2
             
             if d <= insert_size_to_travel and edge_n not in left_nodes:
                 dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
@@ -319,11 +318,13 @@ class Node:
         for depth in results_new2.keys():
             results_all = results_all.union(results_new2[depth])
         
+        print ">>",results_all
+        
         # only recusively add to the new ones
         for depth in results_new2.keys():
             if depth > 0:
                 for node in results_new2[depth]:
-                    for edge in self.rfind_connected_sjuncs(results_all, depth):
+                    for edge in node.rfind_connected_sjuncs(results_all, depth):
                         results_all.add(edge)
         
         return list(results_all)
@@ -1368,6 +1369,9 @@ have edges to the same nodes of the already existing network,
                 thicker_edges.remove(pop)
             
             subnetworks.append(Subnet(q,subedges))
+            
+            # @todo REMOVE THIS  - dev only:
+            break
         
         logging.info("Extracted "+str(len(subnetworks))+" subnetwork(s)")
         return subnetworks
