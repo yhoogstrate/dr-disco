@@ -653,27 +653,11 @@ splice-junc:                           <=============>
             """
             
             for internal_edge in BAMExtract.BAMExtract.find_cigar_edges(read):
-                if internal_edge[2] in ['cigar_splice_junction']:#, 'cigar_deletion'
-                    #@todo _chr?
-                    i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                           internal_edge[0],
-                                           STRAND_FORWARD)
-                    #@todo _chr?
-                    i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                           internal_edge[1],
-                                           STRAND_REVERSE)
+                if internal_edge[2] in ['cigar_splice_junction','cigar_deletion']:#, 'cigar_deletion'
+                    i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
+                    i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
                 
-                elif internal_edge[2] in ['cigar_deletion']:#@todo merge with condition above?
-                    #@todo _chr?
-                    i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                           internal_edge[0],
-                                           STRAND_FORWARD)
-                    #@todo _chr?
-                    i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                           internal_edge[1],
-                                           STRAND_REVERSE)
-                    
-                    if i_pos1.get_dist(i_pos2,False) < MIN_DISCO_INS_SIZE:
+                    if internal_edge[2] in ['cigar_deletion'] and i_pos1.get_dist(i_pos2,False) < MIN_DISCO_INS_SIZE:
                         i_pos1 = None
                         i_pos2 = None
                 
