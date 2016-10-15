@@ -1,4 +1,8 @@
-2016-07-25	Youri Hoogstrate	v0.0.3
+2016-10-15	Youri Hoogstrate	v0.0.3
+    * Improved extract_subnetworks to extracting only by splice junctions
+      Traversing is now limited on the insert size
+
+2016-07-25	Youri Hoogstrate
 	* Improved pruning system in many ways and fixed special behaviour for
 	  spanning_singleton_1/2 by adding spanning_singleton_1/2_r because
 	  half of those were in the opposite strand. The HI-tag was used to
