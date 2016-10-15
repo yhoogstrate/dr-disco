@@ -17,6 +17,8 @@ from .CigarAlignment import *
 from .CircosController import *
 from .BAMExtract import BAMExtract
 
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
+strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
 
 # load cfg
 from . import *
@@ -205,7 +207,6 @@ class Edge:
         self.unique_alignments_idx[alignment_key] += 1
     
     def get_count(self, _type):
-        
         if not self._types.has_key(_type):
             return 0
         else:
@@ -224,13 +225,7 @@ class Edge:
         
         Later on spanning reads will be added, softclips will be added, etc.
         """
-        
-        score = 0
-
-        for _type in self.scoring_table.keys():
-            score += self.get_score(_type)
-        
-        return score
+        return sum([self.get_score(_type) for _type in self.scoring_table.keys()])
     
     def get_splice_score(self):
         #@todo use soft/hardclips or the nodes
@@ -248,7 +243,7 @@ class Edge:
             _max = _range[1]
             
         return (
-                #(self._origin.position.pos >= _min) and (self._origin.position.pos <= _max)
+                        #(self._origin.position.pos >= _min) and (self._origin.position.pos <= _max)
                  #or 
                          (self._target.position.pos >= _min) and (self._target.position.pos <= _max)
                 )
@@ -277,7 +272,7 @@ class Node:
         self.edges = {}
         self.splice_edges = {}
     
-    def rfind_connected_sjuncs(self,left_nodes,insert_size_to_travel):
+    def rfind_connected_sjuncs(self,nodes,insert_size_to_travel):
         """Recursively finds all nodes that are connected by splice junctions
         
         self: the node of which it's splice junctions are traversed in order to find more nodes that may not be already in the blak
@@ -285,16 +280,10 @@ class Node:
          -  [     ] splice edge: splice p1, splice p2
          
         """
-        
-        #@todo only lnodes are taken into account? / not sure about this; name left_nodes is confusing
-        print "Rfind d=",insert_size_to_travel,left_nodes
-        print 'self:',[self]
+        #@todo only lnodes are taken into account? / not sure about this; name nodes is confusing
         results_new2 = {}
-        for edge_n in self.splice_edges.keys():
-            if edge_n not in left_nodes:
-                edge = self.splice_edges[edge_n]
-                print '  * edge_n:',[edge_n]
-                
+        for edge_n, edge in self.splice_edges.items():
+            if edge_n not in nodes:
                 # distance between the node self and the nodes of the exon junction
                 ds1 = abs(self.position.get_dist(edge[1]._target.position,False))
                 ds2 = abs(self.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
@@ -305,24 +294,17 @@ class Node:
                 d1 = ds1 + dt2
                 d2 = ds2 + dt1
                 d = min(d1,d2)
-                print "  (ds1,ds2:",ds1,ds2,")(dt1,dt2:",dt1,dt2,"): [d1 ,d2]",d1, d2
                 
                 if d <= insert_size_to_travel:
-                    print "  YES, we can!"
                     dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
                     if not results_new2.has_key(dkey):
                         results_new2[dkey] = set()
                     results_new2[dkey].add(edge_n)
-                else:
-                    print "NO: ",d,">",insert_size_to_travel
         
         # old results, + recursive results
-        results_all = set(left_nodes)
+        results_all = set(nodes)
         for depth in results_new2.keys():
             results_all = results_all.union(results_new2[depth])
-        
-        print ">>",results_all
-        print
         
         # only recusively add to the new ones
         for depth in results_new2.keys():
@@ -653,6 +635,8 @@ splice-junc:                           <=============>
             """
             
             for internal_edge in BAMExtract.BAMExtract.find_cigar_edges(read):
+                i_pos1 = None
+                i_pos2 = None
                 if internal_edge[2] in ['cigar_splice_junction','cigar_deletion']:#, 'cigar_deletion'
                     i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
                     i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
@@ -663,8 +647,7 @@ splice-junc:                           <=============>
                 
                 elif internal_edge[2] in ['cigar_soft_clip']:
                     if pos1 == None or rg in ['spanning_paired_1_s', 'spanning_paired_2_s']:
-                        i_pos1 = None
-                        i_pos2 = None
+                        pass
                     elif rg in ['discordant_mates',
                               'spanning_paired_1',
                               'spanning_paired_1_r',
@@ -1156,7 +1139,7 @@ thick edges:
             i = -1
             for node1 in left_nodes[_chr]:
                 i += 1
-                j = -1                
+                j = -1
                 
                 for node2 in left_nodes[_chr]:
                     j += 1
@@ -1285,10 +1268,8 @@ have edges to the same nodes of the already existing network,
             
             ## The original nodes have been emptied, so the most important
             ## edge's are now separated.
-            print left_nodes[0]
             left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes,450)
-            #right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes,450)
-            print "\n\n"
+            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes,450)
             
             subedges = []
             
