@@ -23,15 +23,14 @@ Dr. Disco - testing fix-chimeric
 """
 
 import unittest,logging,sys,subprocess,filecmp,pysam,os
-logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
+import drdisco
+logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
 
 from drdisco.ChimericAlignment import ChimericAlignment
 
 
 class TestChimericAlignment(unittest.TestCase):
     def test_01(self):
-        print("\n")
-        
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
         
@@ -56,8 +55,6 @@ class TestChimericAlignment(unittest.TestCase):
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
     def test_02(self):
-        print("\n")
-        
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
         

@@ -107,8 +107,6 @@ class CigarAlignment:
         
     """
     def __init__(self,cigtup1,cigtup2):
-        logger = logging.getLogger(self.__class__.__name__)
-        
         self.cigtup1 = self.cleanup_cigar(cigtup1,[1,2,3])
         self.cigtup2 = self.cleanup_cigar(cigtup2,[1,2,3])
         

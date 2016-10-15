@@ -23,7 +23,8 @@ Dr. Disco - testing fix-chimeric
 """
 
 import unittest,logging,sys,subprocess,filecmp,pysam,os
-logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
+import drdisco
+logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
 
 from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
 from drdisco.IntronDecomposition import IntronDecomposition
@@ -40,138 +41,88 @@ if not os.path.exists(T_TEST_DIR):
 
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
-        #print("\n")
-        
         input_file_a =   TEST_DIR+"test_terg_01.sub_01.filtered.fixed.bam"
-        input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file  =     TEST_DIR+"test_01.out.dbed"
         output_file  = T_TEST_DIR+"test_01.out.dbed"
         
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
-        #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
-            
         fh = open(output_file, "w")
         ic.export(fh)
         fh.close()
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+    
     def test_02(self):
-        #print("\n")
-        
         input_file_a =   TEST_DIR+"test_terg_01.sub_02.filtered.fixed.bam"
-        input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file  =     TEST_DIR+"test_02.out.dbed"
         output_file  = T_TEST_DIR+"test_02.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+    
     def test_03(self):
-        #print("\n")
-        
         input_file_a =   TEST_DIR+"test_terg_01.sub_03.filtered.fixed.bam"
-        input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file  =     TEST_DIR+"test_03.out.dbed"
         output_file  = T_TEST_DIR+"test_03.out.dbed"
         
-        
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_04(self):
-        #print("\n")
-        
         input_file_a =    TEST_DIR+"test_terg_01.sub_04.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file  =      TEST_DIR+"test_04.out.dbed"
         output_file  =  T_TEST_DIR+"test_04.out.dbed"
         
-        
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+    
     def test_05(self):
-        #print("\n")
-        
         input_file_a =    TEST_DIR+"test_terg_01.sub_05.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file    =    TEST_DIR+"test_05.out.dbed"
         output_file  =  T_TEST_DIR+"test_05.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_06(self):
-        #print("\n")
-        
         input_file_a =    TEST_DIR+"test_terg_01.sub_06.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file  =      TEST_DIR+"test_06.out.dbed"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         output_file  =  T_TEST_DIR+"test_06.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -180,20 +131,13 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # by STAR? at least, throw a warning and don't terminate
 
     def test_07(self):
-        #print("\n")
-        
         input_file_a =    TEST_DIR+"test_terg_01.sub_07.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file    =    TEST_DIR+"test_07.out.dbed"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         output_file  =  T_TEST_DIR+"test_07.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -201,121 +145,95 @@ class TestIntronicBreakDetection(unittest.TestCase):
         #Not sure what 'true' here is exactly, as long as it does
         #not throw an exception
 
-
     def test_08(self):
-        #print("\n")
-        
         """Tests for including disco reads properly"""
         
         input_file_a =    TEST_DIR+"test_terg_01.sub_08.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file    =    TEST_DIR+"test_08.out.dbed"
         output_file  =  T_TEST_DIR+"test_08.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertEqual(n_candidates, 1)
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-        
-        # TEST FOR DISCORANT READS!
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_09(self):
-        #print("\n")
-        
         input_file_a =    TEST_DIR+"test_terg_01.sub_09.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file    =    TEST_DIR+"test_09.out.dbed"
         output_file  =  T_TEST_DIR+"test_09.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_10(self):
-        #print("\n")
-        
         input_file_a =    TEST_DIR+"test_terg_01.sub_10.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file    =    TEST_DIR+"test_10.out.dbed"
         output_file  =  T_TEST_DIR+"test_10.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file))
-
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
 
     def test_final(self):
-        #print("\n")
-        
         input_file_a =    TEST_DIR+"test_terg_01.filtered.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file    =    TEST_DIR+"test_final.out.dbed"
         output_file  =  T_TEST_DIR+"test_final.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        #self.assertEqual(n_candidates, 2)
-        #self.assertTrue(filecmp.cmp(test_file, output_file))
-
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_11(self):
-        #print("\n")
-        
         input_file_a =    TEST_DIR+"test_terg_02.fixed.bam"
-        input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file    =    TEST_DIR+"test_11.out.dbed"
         output_file  =  T_TEST_DIR+"test_11.out.dbed"
         
-        bps = FusionCatcher(input_file_f,"")
-        bps_i = bps.__iter__()
-        bp = bps_i.next()
-        
-        ic = IntronDecomposition(bp)
+        ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
-        n_candidates = ic.decompose(input_file_a)
+        n_candidates = ic.decompose()
         
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_12_extract_subnetworks(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_12.filtered.fixed.bam"
+        test_file    =    TEST_DIR+"test_12.out.dbed"
+        output_file  =  T_TEST_DIR+"test_12.out.dbed"
+        
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
+        
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+        
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
 def main():
     unittest.main()

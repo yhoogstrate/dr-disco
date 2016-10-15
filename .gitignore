@@ -1,21 +1,43 @@
-/*.txt
-*.png
-/samples
-.Rhistory
-tmp/
-/build
-*.pyc
-*.egg-info
-/dist
-/data*/*.swp
-/data
-*.swp
-.coverage
-/htmlcov/*
-/*.R
-/tests/fix-chimeric/*.bai
-.directory
+# Required for building
 /.cache
-/*.svg
+/build
+/dist
+/htmlcov/*
+*.coverage
+*.egg-info
+*.eggs
+*.pyc
+
+# Building doc
+/doc/*.aux
+/doc/*.dvi
+/doc/*.log
+/doc/*.out
+/doc/*.pdf
+/doc/*.synctex.gz
+/doc/*.tex
+/doc/*.toc
+
+# Required for testing
+tmp/
+*.bai
+/*.txt
 test.out
 truncated.*
+
+# Other / analysis
+/data
+/samples
+.Rhistory
+*.png
+/*.R
+/*.svg
+
+# Development / OS
+/data*/*.swp
+*.swp
+.venv
+.directory
+/previous_R_data
+*.backup
+.~lock.*

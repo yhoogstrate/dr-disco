@@ -26,33 +26,32 @@ import drdisco
 import unittest,logging,sys,subprocess,filecmp,pysam,os
 import click
 
-from drdisco import __version__, __author__, __homepage__
+import drdisco
 from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
+from drdisco.BAMExtract import *
 
-logging.basicConfig(level=logging.DEBUG,format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",stream=sys.stdout)
-
+logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
 
 
 def main():
     CLI()
 
-@click.version_option(__version__)
+@click.version_option(drdisco.__version__+"\n\n"+drdisco.__license_notice__+"\n\nWritten by "+drdisco.__author__+".\n\nFor more info please visit:\n"+drdisco.__homepage__)
 @click.group()
 def CLI():
     pass
 
 
 #@click.command(help="This tool requires the '*.Chimeric.out.sam' files of RNA STAR converted into BAM")
-@CLI.command(name="fix",short_help="Fixes chimeric SAM/BAM"
-"alignment produced by RNA-STAR")
-@click.option("--temp-dir","-t",type=click.Path(exists=True),default="/tmp",help="Path"
-"in which temporary files will be stored (default: /tmp)")
+@CLI.command(name="fix",short_help="Fixes chimeric SAM/BAM alignment produced by RNA-STAR")
+@click.option("--temp-dir","-t",type=click.Path(exists=True),default="/tmp")#,help="Path in which temporary files will be stored (default: /tmp)"
 @click.argument('output_alignment_file')
 @click.argument('input_alignment_file', type=click.Path(exists=True))
-def CLI_fix_chimeric_alignment(temp_dir,output_alignment_file,
-    input_alignment_file):
+def CLI_fix_chimeric_alignment(
+        temp_dir,output_alignment_file,
+        input_alignment_file):
     alignment_handle = ChimericAlignment(input_alignment_file)
     alignment_handle.convert(output_alignment_file,temp_dir)
 
@@ -64,17 +63,25 @@ def CLI_fix_chimeric_alignment(temp_dir,output_alignment_file,
 def CLI_detect_intronic_break_points(
         output_file,
         fusion_candidates_input_file,
-        bam_input_file
-    ):
-    bps = FusionCatcher(fusion_candidates_input_file,"")
-    bps_i = bps.__iter__()
-    bp = bps_i.next()
+        bam_input_file):
+    #bps = FusionCatcher(fusion_candidates_input_file,"")
+    #bps_i = bps.__iter__()
+    #bp = bps_i.next()
 
-    ic = IntronDecomposition(bp)
+    ic = IntronDecomposition(bam_input_file)
     #ic.annotate_genes(gobj)
-    n_candidates = ic.decompose(bam_input_file)
-
+    ic.decompose()
     ic.export(output_file)
+
+
+@CLI.command(name='bam-extract',short_help='Extract reads from two chromosomal positions (and also take the mates with the same name) - regions are in the format chr1:123-546')
+@click.argument('region1')
+@click.argument('region2')
+@click.argument('bam_output_file')
+@click.argument('bam_input_file', type=click.Path(exists=True))
+def CLI_bam_extract_regions(region1,region2,bam_output_file,bam_input_file):
+    c = BAMExtract(bam_input_file)
+    c.extract(region1, region2, bam_output_file)
 
 
 if __name__ == '__main__':

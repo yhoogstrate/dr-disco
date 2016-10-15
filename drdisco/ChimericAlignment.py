@@ -28,8 +28,6 @@ from drdisco import __version__, __author__, __homepage__
 
 class ChimericAlignment:
     def __init__(self,input_alignment_file):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        
         self.input_alignment_file = input_alignment_file
         self.test_pysam_version()
     
@@ -366,7 +364,7 @@ class ChimericAlignment:
                 self.set_read_group([reads_updated[0]],'spanning_paired_1')
                 self.set_read_group([reads_updated[1]],'spanning_paired_2')
             else:
-                self.logger.warn("Unexpected data...? please investigate further: "+str(reads_updated[0]))
+                logging.warn("Unexpected data...? please investigate further: "+str(reads_updated[0]))
                 self.set_read_group([reads_updated[0]],'silent_mate')
                 self.set_read_group([reads_updated[1]],'silent_mate')
             
@@ -452,11 +450,11 @@ class ChimericAlignment:
         #samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
         
         
-        self.logger.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
+        logging.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
         pysam.sort("-o",basename+".name-sorted.bam","-n",self.input_alignment_file)
         
         
-        self.logger.info("Fixing sam file")
+        logging.info("Fixing sam file")
         sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
         header = sam_file_discordant.header
         header['RG'] = [
@@ -493,26 +491,26 @@ class ChimericAlignment:
         fh.close()
         
         
-        self.logger.info("Converting fixed file into BAM")
+        logging.info("Converting fixed file into BAM")
         fhq = open(basename+".name-sorted.fixed.bam","wb")
         fhq.write(pysam.view('-bS',basename+".name-sorted.fixed.sam"))
         fhq.close()
         
         
-        self.logger.info("Sorting position based fixed file")
+        logging.info("Sorting position based fixed file")
         pysam.sort("-o",basename+".sorted.fixed.bam",basename+".name-sorted.fixed.bam")
         
         
-        self.logger.info("Indexing the position sorted bam file")
+        logging.info("Indexing the position sorted bam file")
         pysam.index(basename+".sorted.fixed.bam")
         
         
-        self.logger.info("Cleaning up temp files")
+        logging.info("Cleaning up temp files")
         for fname in [basename+".name-sorted.bam", basename+".name-sorted.fixed.sam", basename+".name-sorted.fixed.bam"]:
-            self.logger.debug("=> "+fname)
+            logging.debug("=> "+fname)
             os.remove(fname)
         
         
-        self.logger.info("Moving to final destination")
+        logging.info("Moving to final destination")
         os.rename(basename+".sorted.fixed.bam",bam_file_discordant_fixed)
         os.rename(basename+".sorted.fixed.bam"+".bai",bam_file_discordant_fixed+".bai")

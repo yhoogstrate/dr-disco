@@ -1,2 +1,2 @@
-chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	filter-status	score	soft+hardclips	n-split-reads	n-discordant-reads	n-arcs	n-nodes-A	n-nodes-B	entropy-bp-arc	entropy-all-arcs	data-structure
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	filter-status	score	soft+hardclips	n-split-reads	n-discordant-reads	n-edges	n-nodes-A	n-nodes-B	entropy-bp-edge	entropy-all-edges	data-structure
 chr21	39877811	-	chr21	42873374	+	valid	21	12	6	3	1	1	1	0.929896694048	0.929896694048	chr21:39877811/39877812(-)->chr21:42873374/42873375(+):(discordant_mates:3,spanning_paired_1:2,spanning_paired_2_t:4)
