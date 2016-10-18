@@ -364,10 +364,10 @@ class ChimericAlignment:
                 self.set_read_group([reads_updated[0]],'spanning_paired_1')
                 self.set_read_group([reads_updated[1]],'spanning_paired_2')
             else:
-                logging.warn("Unexpected data...? please investigate further: "+str(reads_updated[0]))
-                self.set_read_group([reads_updated[0]],'silent_mate')
-                self.set_read_group([reads_updated[1]],'silent_mate')
-            
+                # Tested in 'tests/fix-chimeric/test_terg_03.filtered.bam'
+                self.set_read_group([reads_updated[0]],'spanning_paired_2')
+                self.set_read_group([reads_updated[1]],'spanning_paired_1')
+
             self.set_read_group(mates_updated,'silent_mate')
             for a in reads_updated:
                 all_reads_updated.append(a)

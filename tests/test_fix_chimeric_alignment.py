@@ -78,6 +78,28 @@ class TestChimericAlignment(unittest.TestCase):
         
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
+    def test_03(self):
+        if not os.path.exists("tmp"):
+            os.mkdir("tmp")
+        
+        input_file =    "tests/fix-chimeric/test_terg_03.filtered.bam"
+        test_file =     "tests/fix-chimeric/test_terg_03.filtered.fixed.sam"
+        
+        output_file =   "tmp/test_terg_03.filtered.fixed.bam"
+        output_file_s = "tmp/test_terg_03.filtered.fixed.sam"
+        
+        
+        alignment_handle = ChimericAlignment(input_file)
+        alignment_handle.convert(output_file,"tmp")
+        
+        
+        # Bam2Sam
+        fhq = open(output_file_s,"w")
+        fhq.write(pysam.view(output_file))
+        fhq.close()
+        
+        self.assertTrue(filecmp.cmp(test_file, output_file_s),msg="diff '"+test_file+"' '"+output_file_s+"':\n"+subprocess.Popen(['diff',test_file,output_file_s], stdout=subprocess.PIPE).stdout.read())
+
 def main():
     unittest.main()
 
