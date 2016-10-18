@@ -1,0 +1,42 @@
+## test 13
+
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	filter-status	score	soft+hardclips	n-split-reads	n-discordant-reads	n-edges	n-nodes-A	n-nodes-B	entropy-bp-edge	entropy-all-edges	data-structure
+chr21	39956869	-	chr21	42883789	+	valid	358	267	116	23	21	12	9	0.893804400488	0.944595484075	chr21:39956869/39956870(-)->chr21:42883789/42883790(+):(discordant_mates:9,spanning_paired_1:29,spanning_paired_2_t:5,spanning_singleton_2_r:1)&chr21:39956869/39956870(-)->chr21:42870045/42870046(+):(discordant_mates:2,spanning_paired_1:28,spanning_singleton_1:1,spanning_singleton_2_r:1)&chr21:40064721/40064722(-)->chr21:42870045/42870046(+):(spanning_paired_1:7,spanning_paired_2_t:2,spanning_singleton_2_r:4)&chr21:39966567/39966568(-)->chr21:42870045/42870046(+):(discordant_mates:1,spanning_paired_1:6)&chr21:39956869/39956870(-)->chr21:42880007/42880008(+):(spanning_paired_1:4,spanning_singleton_1:2,spanning_singleton_2_r:1)&chr21:39966567/39966568(-)->chr21:42883789/42883790(+):(spanning_paired_1:3,spanning_paired_2_t:2,spanning_singleton_1:1)&chr21:40064721/40064722(-)->chr21:42883789/42883790(+):(spanning_paired_1:2,spanning_paired_2_t:3)&chr21:39956869/39956870(-)->chr21:42879876/42879877(+):(discordant_mates:1,spanning_paired_1:2,spanning_singleton_2_r:1)&chr21:39817544/39817545(-)->chr21:42870045/42870046(+):(discordant_mates:2,spanning_paired_1:2)&chr21:39969017/39969018(-)->chr21:42883789/42883790(+):(spanning_paired_2_t:2)&chr21:40067718/40067719(-)->chr21:42870045/42870046(+):(spanning_paired_1:2)&chr21:40067718/40067719(-)->chr21:42880007/42880008(+):(spanning_paired_1:2)&chr21:39966567/39966568(-)->chr21:42879876/42879877(+):(discordant_mates:1,spanning_paired_2_t:1)&chr21:39956869/39956870(-)->chr21:42869862/42869863(+):(discordant_mates:1,spanning_singleton_2_r:1)&chr21:40064721/40064722(-)->chr21:42880007/42880008(+):(spanning_paired_1:1)&chr21:39817426/39817427(-)->chr21:42879909/42879910(+):(discordant_mates:1)&chr21:39817450/39817451(-)->chr21:42879874/42879875(+):(discordant_mates:1)&chr21:39817495/39817496(-)->chr21:42870043/42870044(+):(discordant_mates:1)&chr21:39817510/39817511(-)->chr21:42883787/42883788(+):(discordant_mates:1)&chr21:39956871/39956872(-)->chr21:42883787/42883788(+):(discordant_mates:1)&chr21:39966531/39966532(-)->chr21:42883787/42883788(+):(discordant_mates:1)
+chr21	40104140	-	chr21	42867900	+	n_discordant_reads=3/4	83	54	27	3	2	2	2	0.945654654109	0.94790991314	chr21:40104140/40104141(-)->chr21:42867900/42867901(+):(discordant_mates:2,spanning_paired_1:1,spanning_paired_2_t:25,spanning_singleton_2_r:1)&chr21:40104142/40104143(-)->chr21:42868014/42868015(+):(discordant_mates:1)
+chr21	40073871	-	chr21	42883789	+	n_discordant_reads=3/4	59	162	19	3	3	1	3	0.958424899319	0.979614197798	chr21:40073871/40073872(-)->chr21:42883789/42883790(+):(discordant_mates:3,spanning_paired_1:5,spanning_paired_2_t:5)&chr21:40073871/40073872(-)->chr21:42870045/42870046(+):(spanning_paired_1:5,spanning_singleton_2_r:1)&chr21:40073871/40073872(-)->chr21:42880007/42880008(+):(spanning_paired_1:3)
+chr21	40056045	-	chr21	42870045	+	n_discordant_reads=3/6,n_support=11/24	27	151	8	3	4	2	4	1.0	0.947442758851	chr21:40056045/40056046(-)->chr21:42870045/42870046(+):(discordant_mates:1,spanning_paired_1:5)&chr21:40056045/40056046(-)->chr21:42883789/42883790(+):(discordant_mates:1,spanning_paired_1:2)&chr21:40056045/40056046(-)->chr21:42880007/42880008(+):(spanning_paired_1:1)&chr21:40055887/40055888(-)->chr21:42878380/42878381(+):(discordant_mates:1)
+
+
+
+chr21	39956767	+	chr21	42870116	-	n_discordant_reads=0/2,n_support=4/8	12	8	4	0	1	1	1	1.0	1.0	chr21:39956767/39956768(+)->chr21:42870116/42870117(-):(spanning_paired_1_t:4)
+chr21	39817544	-	chr21	42878371	+	n_discordant_reads=1/5,n_support=5/20	13	29	4	1	3	3	2	1.0	0.827729376771	chr21:39817544/39817545(-)->chr21:42878371/42878372(+):(spanning_paired_1:2)&chr21:40064721/40064722(-)->chr21:42878371/42878372(+):(spanning_paired_1:2)&chr21:39817410/39817411(-)->chr21:42878907/42878908(+):(discordant_mates:1)
+
+
+
+#do not (necessarily) merge - pre-mRNA:
+chr21	39850904	-	chr21	42877894	+	n_support=4/8	8	4	2	2	1	1	1	1.0	1.0	chr21:39850904/39850905(-)->chr21:42877894/42877895(+):(discordant_mates:2,spanning_paired_2_t:2)
+chr21	40096812	+	chr21	42868016	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	2	1	0	1	1	1	0.0	0.0	chr21:40096812/40096813(+)->chr21:42868016/42868017(-):(spanning_paired_1_t:1)
+chr21	39969017	-	chr21	42870045	+	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	2	71	1	0	1	1	1	0.0	0.0	chr21:39969017/39969018(-)->chr21:42870045/42870046(+):(spanning_singleton_1:1)
+chr21	39968827	-	chr21	42879876	+	entropy=0.0,n_discordant_reads=1/2,n_support=1/8	1	4	0	1	1	1	1	0.0	0.0	chr21:39968827/39968828(-)->chr21:42879876/42879877(+):(discordant_mates:1)
+
+
+#incorrectly pruned:
+chr21	39966545	-	chr21	42878372	+	n_support=3/8	3	0	0	3	1	1	1	0.579380164286	0.579380164286	chr21:39966545/39966546(-)->chr21:42878372/42878373(+):(discordant_mates:3)
+-> should be pruned into: chr21:39966566/39966567 -> chr21:42880024/42880025
+
+
+#  //  issue in multiple splice junctions? - very cool example to debug
+chr21	40064721	-	chr21	42880007	-	n_discordant_reads=0/2,n_support=2/8	2	20	2	0	1	1	1	1.0	1.0	chr21:40064721/40064722(-)->chr21:42880007/42880008(-):(spanning_paired_1_s:2)
+
+#did not get pruned?
+chr21	39817370	-	chr21	42883791	+	n_discordant_reads=4/8,n_support=4/32	4	0	0	4	4	4	4	0.0	1.0	chr21:39817370/39817371(-)->chr21:42883791/42883792(+):(discordant_mates:1)&chr21:39817451/39817452(-)->chr21:42883848/42883849(+):(discordant_mates:1)&chr21:39817485/39817486(-)->chr21:42883847/42883848(+):(discordant_mates:1)&chr21:39817526/39817527(-)->chr21:42883790/42883791(+):(discordant_mates:1)
+
+
+# Data really suggests a single read in the opposite strand
+chr21	40103950	+	chr21	42869215	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	2	1	0	1	1	1	0.0	0.0	chr21:40103950/40103951(+)->chr21:42869215/42869216(-):(spanning_paired_2:1)
+
+
+#noise, remove anything >40200000 && < 41000000:
+chr21	40834465	+	chr21	42870177	-	n_discordant_reads=2/3,n_support=2/12	2	0	0	2	2	1	2	0.0	1.0	chr21:40834465/40834466(+)->chr21:42870177/42870178(-):(discordant_mates:1)&chr21:40834465/40834466(+)->chr21:42870207/42870208(-):(discordant_mates:1)
+
+
