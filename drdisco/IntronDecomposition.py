@@ -1280,6 +1280,7 @@ have edges to the same nodes of the already existing network,
                     if left_node.edges.has_key(str(right_node.position)):
                         subedges.append( (left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) )
             
+            """
             ## Find all with one indirect step - these might be alternative junctions / exons
             i = -1
             for left_node_i in left_nodes:
@@ -1315,7 +1316,7 @@ have edges to the same nodes of the already existing network,
             #right_nodes = tmp
 
             ### @todo Redo code
-            
+            """
             
             # remove all the links to the edges in each of the nodes
             for node in left_nodes:
