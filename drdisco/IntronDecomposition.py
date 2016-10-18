@@ -1256,7 +1256,7 @@ have edges to the same nodes of the already existing network,
             Then do this in reverse(d) order, from `right_nodes` to
             `left_nodes`.
             """
-        logging.info("Initiated -- *** rnodes not yet implemented ***")
+        logging.info("Initiated")
         
         q = 0
         subnetworks = []
@@ -1330,7 +1330,7 @@ have edges to the same nodes of the already existing network,
             popme = set()
             for edge in subedges:
                 for edge2 in thicker_edges:
-                    if edge[0] == edge2[0] or edge[1] == edge2[0]:
+                    if edge[0] == edge2[0] or edge[1] == edge2[0]:#@todo use `if edge2[2] in edge:` instead?
                         popme.add(edge2)
             
             for pop in popme:
