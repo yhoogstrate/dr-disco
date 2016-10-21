@@ -26,9 +26,6 @@ chr21	39966545	-	chr21	42878372	+	n_support=3/8	3	0	0	3	1	1	1	0.579380164286	0.5
 #  //  issue in multiple splice junctions? - very cool example to debug
 chr21	40064721	-	chr21	42880007	-	n_discordant_reads=0/2,n_support=2/8	2	20	2	0	1	1	1	1.0	1.0	chr21:40064721/40064722(-)->chr21:42880007/42880008(-):(spanning_paired_1_s:2)
 
-#did not get pruned?
-chr21	39817370	-	chr21	42883791	+	n_discordant_reads=4/8,n_support=4/32	4	0	0	4	4	4	4	0.0	1.0	chr21:39817370/39817371(-)->chr21:42883791/42883792(+):(discordant_mates:1)&chr21:39817451/39817452(-)->chr21:42883848/42883849(+):(discordant_mates:1)&chr21:39817485/39817486(-)->chr21:42883847/42883848(+):(discordant_mates:1)&chr21:39817526/39817527(-)->chr21:42883790/42883791(+):(discordant_mates:1)
-
 
 # Data really suggests a single read in the opposite strand
 chr21	40103950	+	chr21	42869215	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	2	1	0	1	1	1	0.0	0.0	chr21:40103950/40103951(+)->chr21:42869215/42869216(-):(spanning_paired_2:1)
