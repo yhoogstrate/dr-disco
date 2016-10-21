@@ -842,9 +842,10 @@ splice-junc:                           <=============>
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
         elif rg in ["spanning_paired_1_s"]:
+            # Very clear example in S054 @ chr21:40,064,610-40,064,831
             pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                  (read.reference_start+bam_parse_alignment_offset(read.cigar)),
-                                 STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                                 STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
             
             pos2 = BreakPosition(parsed_SA_tag[0],
                      parsed_SA_tag[1],
@@ -857,7 +858,7 @@ splice-junc:                           <=============>
         
             pos2 = BreakPosition(parsed_SA_tag[0],
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                                 STRAND_REVERSE if parsed_SA_tag[4] == "+" else STRAND_FORWARD)
         
         elif rg not in ["silent_mate"]:
             raise Exception("Fatal Error, RG: "+rg)
