@@ -1618,23 +1618,14 @@ class IntronDecomposition:
         logging.info("initiated")
         
         def sq_dist(vec):
-            n = len(vec)
-            sq = [pow(x,2) for x in vec]
-            sum_of_squares = sum(sq)
-            if sum_of_squares > 0:
-                avg_d = float(sum_of_squares) / n
-            else:
-                avg_d = 0.0
-            sq_avg_d = math.sqrt(avg_d)
-            if n > 1:
-                print "v",vec
-                print "sq",sq
-                print "ss", sum_of_squares
-                print "avg:", avg_d
-                print "sq avg d", sq_avg_d
-                print
+            sum_of_squares = sum(pow(x,2) for x in vec)
             
-            return sq_avg_d
+            if sum_of_squares > 0:
+                avg_sq_d = float(sum_of_squares) / len(vec)
+            else:
+                avg_sq_d = 0.0
+            
+            return math.sqrt(avg_sq_d)
         
         ISIZE=450
         
@@ -1665,10 +1656,24 @@ class IntronDecomposition:
                             
                             if n_l_dist > 0 and n_r_dist > 0:
                                 new_merged = True
-                            
-                            #if n_l_dist > 0 or n_r_dist > 0:
-                                # ratio rules etc.
-                                #new_merged = True
+                            else:#@todo revise if / else / elif logic
+                                if n_l_dist > 0:
+                                    l_dist_ins_ratio = 1.0 * n_l_dist/len(l_dists)
+                                    if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
+                                        new_merged = True
+                                    elif l_dist_ins_ratio > 0.7 and rmsq_r_dist < 10000:
+                                        new_merged = True
+                                    elif l_dist_ins_ratio > 0.3 and rmsq_r_dist < 5000:
+                                        new_merged = True
+                                            
+                                if n_r_dist > 0:
+                                    r_dist_ins_ratio = 1.0 * n_r_dist/len(r_dists)
+                                    if r_dist_ins_ratio == 1.0 and rmsq_l_dist < 15000:
+                                        new_merged = True
+                                    elif r_dist_ins_ratio > 0.7 and rmsq_l_dist < 10000:
+                                        new_merged = True
+                                    elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
+                                        new_merged = True
                         
                         if classical_merged:
                             candidates.append(subnets[j])
@@ -1680,6 +1685,8 @@ class IntronDecomposition:
                             print n_r_dist,'/',len(r_dists),' sq:',rmsq_r_dist
                             if classical_merged:
                                 print " - Old!!"
+                                import sys
+                                sys.exit()
                             if new_merged:
                                 print " - New!!"
                             print 
