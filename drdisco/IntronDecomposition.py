@@ -1397,61 +1397,28 @@ class Subnet(Chain):
         return self.total_score
     
     def __str__(self):
-        """Make tabular output
-        
-        print "chr-A\t"
-        print "pos-A\t"
-        print "direction-A\t"
-        
-        print "chr-B\t"
-        print "pos-B\t"
-        print "direction-B\t"
-        
-        print "discarded\t"
-        
-        print "score\t"
-        print "soft+hardclips\t"
-        print "n-split-reads\t"
-        print "n-discordant-reads"
-        
-        print "n-edges\t"
-        print "n-nodes-A\t"
-        print "n-nodes-B\t"
-        
-        fh.write("entropy-bp-edge\t")
-        fh.write("entropy-all-edges\t")
-        """
-        out = ""
+        """Makes tabular output"""
         node_a = self.edges[0][0]._origin
         node_b = self.edges[0][0]._target
-        
-        out += str(node_a.position._chr)+"\t"
-        out += str(node_a.position.pos)+"\t"
-        out += strand_tt[node_a.position.strand]+"\t"
-        
-        out += str(node_b.position._chr)+"\t"
-        out += str(node_b.position.pos)+"\t"
-        out += strand_tt[node_b.position.strand]+"\t"
-        
-        out += ("valid" if self.discarded == [] else ','.join(self.discarded)) + "\t"
-        
-        out += str(self.total_score)+"\t"
-        out += str(self.total_clips)+"\t"
-        
-        out += str(self.get_n_split_reads())+"\t"
-        out += str(self.get_n_discordant_reads())+"\t"
-        
-        out += str(len(self.edges))+"\t"
         nodes_a, nodes_b = self.get_n_nodes()
-        out += str(nodes_a)+"\t"
-        out += str(nodes_b)+"\t"
         
-        out += str(self.edges[0][0].get_entropy())+"\t"
-        out += str(self.get_overall_entropy())+"\t"
-        
-        out += "&".join([str(edge[0]) for edge in self.edges])
-        
-        return out+"\n"
+        return (
+            "%s\t%s\t%s\t"
+            "%s\t%s\t%s\t"
+            "%s\t"
+            "%s\t%s\t%s\t%s\t"
+            "%s\t%s\t%s\t"
+            "%s\t%s\t"
+            "%s\n"
+              % (
+                    node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0][0]._origin.position.strand], # Pos-A
+                    node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0][0]._target.position.strand], # Pos-B
+                    ("valid" if self.discarded == [] else ','.join(self.discarded)), # Classification status
+                    self.total_score, self.total_clips, self.get_n_split_reads(), self.get_n_discordant_reads(), # Evidence stats
+                    len(self.edges), nodes_a, nodes_b, # Edges and nodes stats
+                    self.edges[0][0].get_entropy(), self.get_overall_entropy(), # Entropy stas
+                    "&".join([str(edge[0]) for edge in self.edges]) # Data structure
+            ))
     
     def get_overall_entropy(self):
         frequency_table = merge_frequency_tables([edge[0].unique_alignments_idx for edge in self.edges])
