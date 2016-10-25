@@ -9,7 +9,6 @@ RNA-Seq read alignment.
 """
 
 #http://www.samformat.info/sam-format-flag
-
 import logging,re,math,copy,sys
 import pysam
 from intervaltree_bio import GenomeIntervalTree, Interval
@@ -1029,12 +1028,9 @@ splice-junc:                           <=============>
         candidates = []
         k = 0
         candidate = self.get_start_point()
-        self.print_chain()
+        #self.print_chain()
         
         while candidate != None:
-            #print "- pruning candidate"
-            #if str(candidate) == "chr21:42860320/42860321(+)->chr21:42861520/42861521(-):(spanning_paired_1_t:4)":
-            #    print "- pruning THE candidate!"
             self.prune_edge(candidate, insert_size)
             candidates.append((candidate, candidate.get_complement()))
             
@@ -1076,7 +1072,6 @@ splice-junc:                           <=============>
     
     def merge_splice_juncs(self,uncertainty):
         logging.info("Merging splice juncs")
-        """@todo while loop?"""
         
         init = self.get_start_splice_junc()
         while init != None:
@@ -1093,8 +1088,6 @@ splice-junc:                           <=============>
                                 init_c.merge_edge(junc.get_complement())
                                 
                                 self.remove_edge(junc)
-                                
-                                #self.print_chain()
             
             init = self.get_start_splice_junc()
         
@@ -1281,44 +1274,6 @@ have edges to the same nodes of the already existing network,
                     if left_node.edges.has_key(str(right_node.position)):
                         subedges.append( (left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) )
             
-            """
-            ## Find all with one indirect step - these might be alternative junctions / exons
-            i = -1
-            for left_node_i in left_nodes:
-                j = -1
-                i += 1
-                
-                for left_node_j in left_nodes:
-                    j += 1
-                    
-                    if i < j:
-                        ## Find similar destinations
-                        mutual_targets = list(set(left_node_i.edges.keys()).intersection(left_node_j.edges.keys()))
-                        mutual_targets = [left_node_i.edges[mt]._target for mt in mutual_targets]
-                        
-                        for mt in mutual_targets:
-                            if mt.is_connected_to((left_node_i, left_node_j), right_nodes):
-                                # Add node
-                                right_nodes.append(mt)
-                                
-                                for edge in mt.edges.keys():
-                                    for l in left_nodes:
-                                        if str(l.position) == edge:
-                                            edge = mt.edges[edge]
-                                            edge_c = edge.get_complement()
-                                            
-                                            # Make sure order is correct:
-                                            subedges.append((edge_c,edge))
-            
-            ## Do inverse:
-            
-            #tmp = left_nodes
-            #left_nodes = right_nodes
-            #right_nodes = tmp
-
-            ### @todo Redo code
-            """
-            
             # remove all the links to the edges in each of the nodes
             for node in left_nodes:
                 for edge_u in subedges:
@@ -1403,14 +1358,13 @@ class Subnet(Chain):
         nodes_a, nodes_b = self.get_n_nodes()
         
         return (
-            "%s\t%s\t%s\t"
-            "%s\t%s\t%s\t"
+            "%s\t%i\t%s\t"
+            "%s\t%i\t%s\t"
             "%s\t"
-            "%s\t%s\t%s\t%s\t"
-            "%s\t%s\t%s\t"
-            "%s\t%s\t"
-            "%s\n"
-              % (
+            "%i\t%i\t%i\t%i\t"
+            "%i\t%i\t%i\t"
+            "%s\t%s\t"#%.2f\t%.2f\t
+            "%s\n" % (
                     node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0][0]._origin.position.strand], # Pos-A
                     node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0][0]._target.position.strand], # Pos-B
                     ("valid" if self.discarded == [] else ','.join(self.discarded)), # Classification status
@@ -1494,33 +1448,48 @@ class Subnet(Chain):
         return (ldist, rdist, math.sqrt(pow(ldist,2) + pow(rdist, 2)))
     
     def find_distances(self, subnet_t):
+        """ - Must be symmetrical i.e. (sn1.find_distances(s2) == s2.find_distances(s1)
+        if the distance of any edge == infty, return False
         """
-            - Must compare Edges with Edges:
-            
-            self.edges:
-            
-         s1 [-------]
-         s2 [---------------------]
-            
-            subnet_t.edges:
-            
-         t1    [----------------------------------------]
-         t2     [-----------------]
-         t3 [------------]
-            
-            This should return a vector containing min(2,3) = 2 distance entries:
-            
-            s1-t3   (dist s1.lnode <-> t3.lnode , dist s1.rnode <-> t3.rnode , RMSQD)
-            s2-t2   (dist s2.lnode <-> t2.lnode , dist s2.rnode <-> t2.rnode , RMSQD)
-            
-            In order to be acceptable (this should be part of the merge_overlapping_subnets), each distance should:
-             - RMSQD < math.fucn
-             - min(ldist,rdist) < insert size
-            Such that always one node is within the insert size of a node in the other subnet and the maximum distance can still be explained by exon distsances
         
-        @todo
-        """
-        pass
+        l_nodes_min = set(x for x in self.get_lnodes())
+        l_nodes_max = set(x for x in subnet_t.get_lnodes())
+        
+        r_nodes_min = set(x for x in self.get_rnodes())
+        r_nodes_max = set(x for x in subnet_t.get_rnodes())
+        
+        if len(l_nodes_min) >  len(l_nodes_max):
+            l_nodes_min, l_nodes_max = l_nodes_max, l_nodes_min
+        
+        if len(l_nodes_min) >  len(l_nodes_max):
+            l_nodes_min, l_nodes_max = l_nodes_max, l_nodes_min
+        
+        l_dists = []
+        r_dists = []
+        
+        for l_node in l_nodes_min:# makes it symmetrical
+            dist = MAX_GENOMIC_DIST
+            
+            for l_node_t in l_nodes_max:
+                dist = min(abs(l_node.position.get_dist(l_node_t.position, True)),dist)
+            
+            if dist == MAX_GENOMIC_DIST:
+                return False, False
+            else:
+                l_dists.append(dist)
+    
+        for r_node in r_nodes_min:# makes it symmetrical
+            dist = MAX_GENOMIC_DIST
+        
+            for r_node_t in r_nodes_max:
+                dist = min(abs(r_node.position.get_dist(r_node_t.position, True)),dist)
+            
+            if dist == MAX_GENOMIC_DIST:
+                return False, False
+            else:
+                r_dists.append(dist)
+        
+        return l_dists, r_dists
     
     def get_lnodes(self):
         lnodes = set()
@@ -1560,14 +1529,13 @@ class IntronDecomposition:
         #@todo: thicker_edges = self.index_edges() and come up with class
         thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size
         thicker_edges = chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
-        for te in thicker_edges:
-            print te[0]
-        print "-----------------------------------------"
+        #for te in thicker_edges:
+        #    print te[0]
+        #print "-----------------------------------------"
         chain.reinsert_edges(thicker_edges)
         
         #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
         subnets = chain.extract_subnetworks(thicker_edges)
-        ##subnets = self.filter_subnets_on_identical_nodes(subnets)
         subnets = self.merge_overlapping_subnets(subnets, PRUNE_INS_SIZE)
         self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
@@ -1610,72 +1578,16 @@ class IntronDecomposition:
         fh.write(str(self))
     
     def __str__(self):
-        out = "chr-A\t"
-        out += "pos-A\t"
-        out += "direction-A\t"
-        
-        out += "chr-B\t"
-        out += "pos-B\t"
-        out += "direction-B\t"
-        
-        out += "filter-status\t"
-        
-        out += "score\t"
-        out += "soft+hardclips\t"
-        out += "n-split-reads\t"
-        out += "n-discordant-reads\t"
-        
-        out += "n-edges\t"
-        out += "n-nodes-A\t"
-        out += "n-nodes-B\t"
-        
-        out += "entropy-bp-edge\t"
-        out += "entropy-all-edges\t"
-        
-        out += "data-structure\n"
-        
-        for subnet in self.results:
-            out += str(subnet)
-        
-        return out
-    
-    #def filter_subnets_on_identical_nodes(self, subnets):
-        ## This function is deprecated because it often happens that unknown exons are included
-        ##
-        #new_subnets = []
-        #_id = 0
-        ##1. filter based on nodes - if there are shared nodes, exclude sn
-        #all_nodes = set()
-        #for i in range(len(subnets)):
-            #subnet = subnets[i]
-            #rmme = False
-            #score = 0
-            #nodes = set()
-            #for dp in subnet:
-                #score += dp[0].get_scores()
-                
-                #nodes.add(dp[0]._origin)
-                #nodes.add(dp[0]._target)
-            
-            #clips = 0
-            #for n in nodes:
-                #if n in all_nodes:
-                    #rmme = True
-                #else:
-                    #all_nodes.add(n)
-                
-                #clips += n.clips
-            
-            #if rmme:
-                #subnets[i] = None
-            #else:
-                #i += 1
-                #sn = Subnet(_id, subnet)
-                #sn.total_clips = clips
-                #sn.total_score = score
-                #new_subnets.append(sn)
-        
-        #return new_subnets
+        return (
+            "chr-A"           "\t" "pos-A"             "\t" "direction-A""\t"
+            "chr-B"           "\t" "pos-B"             "\t" "direction-B""\t"
+            "filter-status"   "\t"
+            "score"           "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
+            "n-edges"         "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
+            "entropy-bp-edge" "\t" "entropy-all-edges" "\t"
+            "data-structure"  "\n"
+            "%s" % (''.join([str(subnet) for subnet in self.results]) )
+            )
 
     def merge_overlapping_subnets(self, subnets, insert_size):
         """Merges very closely adjacent subnets based on the smallest
@@ -1704,30 +1616,83 @@ class IntronDecomposition:
             merge all subnets in M into i, and remove the former subnets
         """
         logging.info("initiated")
+        
+        def sq_dist(vec):
+            n = len(vec)
+            sq = [pow(x,2) for x in vec]
+            sum_of_squares = sum(sq)
+            if sum_of_squares > 0:
+                avg_d = float(sum_of_squares) / n
+            else:
+                avg_d = 0.0
+            sq_avg_d = math.sqrt(avg_d)
+            if n > 1:
+                print "v",vec
+                print "sq",sq
+                print "ss", sum_of_squares
+                print "avg:", avg_d
+                print "sq avg d", sq_avg_d
+                print
+            
+            return sq_avg_d
+        
+        ISIZE=450
+        
         n = len(subnets)
         
         k = 0
         for i in range(n):
             if subnets[i] != None:
                 candidates = []
-                for j in range(i+1,n):
+                for j in range(i+1,n):# for i , j > i
                     if subnets[j] != None:
+                        classical_merged = False
+                        new_merged = False
+                        
                         dist = subnets[i].find_distance(subnets[j])
-                        #@todo use this one day
-                        #subnets[i].find_distances(subnets[j])
                         
                         if dist[2] <= MAX_SUBNET_MERGE_DIST and min(dist[0],dist[1]) < insert_size:
+                            classical_merged = True
+                        
+                        l_dists, r_dists = subnets[i].find_distances(subnets[j])
+                        if l_dists != False:# and r_dists != False:
+                            
+                            n_l_dist = sum([1 for x in l_dists if x < ISIZE])
+                            n_r_dist = sum([1 for x in r_dists if x < ISIZE])
+                            
+                            rmsq_l_dist = sq_dist(l_dists)
+                            rmsq_r_dist = sq_dist(r_dists)
+                            
+                            if n_l_dist > 0 and n_r_dist > 0:
+                                new_merged = True
+                            
+                            #if n_l_dist > 0 or n_r_dist > 0:
+                                # ratio rules etc.
+                                #new_merged = True
+                        
+                        if classical_merged:
                             candidates.append(subnets[j])
                             subnets[j] = None
-            
+                        
+                        if new_merged != classical_merged:
+                            print l_dists, r_dists
+                            print n_l_dist,'/',len(l_dists),' sq:',rmsq_l_dist
+                            print n_r_dist,'/',len(r_dists),' sq:',rmsq_r_dist
+                            if classical_merged:
+                                print " - Old!!"
+                            if new_merged:
+                                print " - New!!"
+                            print 
+                    
                 for sn_j in candidates:
                     subnets[i].merge(sn_j)
                     del(sn_j)
                     k += 1
+        subnets = [sn for sn in subnets if sn != None]
         
-        logging.info("Merged "+str(k)+" of the "+str(n)+" subnetwork(s)")
+        logging.info("Merged "+str(k)+" of the "+str(n)+" into "+str(len(subnets))+" merged subnetwork(s)")
         
-        return [sn for sn in subnets if sn != None]
+        return subnets
 
     def filter_subnets(self, subnets):
         logging.debug("init")
