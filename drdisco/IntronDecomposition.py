@@ -963,10 +963,10 @@ splice-junc:                           <=============>
         
         if range1[2] == -1:
             _min = range1[1]
-            _max = range1[0]
+            _max = range1[0] + SPLICE_JUNC_ACC_ERR
             interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
         else:
-            _max = range1[1]
+            _max = range1[1] - SPLICE_JUNC_ACC_ERR
             _min = range1[0]
             interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
         
@@ -1656,7 +1656,7 @@ class IntronDecomposition:
                             
                             if n_l_dist > 0 and n_r_dist > 0:
                                 new_merged = True
-                            else:#@todo revise if / else / elif logic
+                            else:#@todo revise if / else / elif logic, and use linear regression or sth like that
                                 if n_l_dist > 0:
                                     l_dist_ins_ratio = 1.0 * n_l_dist/len(l_dists)
                                     if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
@@ -1675,21 +1675,9 @@ class IntronDecomposition:
                                     elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
                                         new_merged = True
                         
-                        if classical_merged:
+                        if new_merged:
                             candidates.append(subnets[j])
                             subnets[j] = None
-                        
-                        if new_merged != classical_merged:
-                            print l_dists, r_dists
-                            print n_l_dist,'/',len(l_dists),' sq:',rmsq_l_dist
-                            print n_r_dist,'/',len(r_dists),' sq:',rmsq_r_dist
-                            if classical_merged:
-                                print " - Old!!"
-                                import sys
-                                sys.exit()
-                            if new_merged:
-                                print " - New!!"
-                            print 
                     
                 for sn_j in candidates:
                     subnets[i].merge(sn_j)
