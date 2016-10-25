@@ -36,7 +36,7 @@
 \title{dr-disco intronic}
 
 \author[1]{Youri Hoogstrate}
-\affil[1]{Department of Urology, Erasmus University Medical Center}
+\affil[1]{Department of Urology, Department of Bioinformatics, Erasmus University Medical Center}
 
 
 
@@ -55,19 +55,20 @@
 %\tableofcontents
 %\newpage
 
-\twocolumn
-%\doublespace
+%\twocolumn
+\doublespace
 
 \section{Methods}
-The tool \textit{dr-disco intronic} tool tries to estimate break points on 2 levels: the exon-exon and the intron-intron boundaries (in case of an intron to intron DNA break point). It takes several steps to accomplish this, described below:
-
-\clearpage
+The tool \textit{dr-disco intronic} tool tries to estimate break points on 2 levels in the data: (1) the exon-exon and the (2) intron-intron boundaries (in case of an intron to intron DNA break point).
+It takes several steps to accomplish this, described below:
 
 \subsection{Data structure}
-The input for \textit{dr-disco} is an alignment file in the BAM format, that specifically contains discordant reads produced by RNA-STAR.
-Typically those alignments contain aligned reads with an insert sizes that are either too small (e.g. overlapping the other mate) or too large (exceeding any reasonable exon length).
-The former may be evidence for small local indels or inversions, but seem to occur most often due to library preparation. Therefore we deliberately filter those out.
-For this we use the criterion that the distance between the aligned reads must at least be larger than the insert size. Because the insert size is $~sim 300bp$ and we want to have a certain confidence, also for other functions, we set the insert size to $1.5 \times$ insert size$=450bp$). Hence, we filter out discordant reads if they are smaller than this size and aligned to the same chromosome.
+The input for \textit{dr-disco} is an alignment file in BAM format, that specifically contains discordant reads produced by RNA-STAR.
+Typically those alignments contain aligned reads with insert sizes that are either too small (e.g. overlapping the other mate) or too large (exceeding any reasonable exon length).
+The former may be evidence for small local indels or inversions, but seem to occur most often due to library preparation as they form more or less a constant background in expressed genes.
+% stats on this
+Therefore we deliberately filter those out.
+For this we use the criterion that the distance between the aligned reads must at least be larger than the insert size. Because the insert size is $~\sim 300bp$ and we want to have a certain confidence, also for other functions, we set the insert size to $1.5 \times$ insert size$=450bp$). Hence, we filter out discordant reads if they are smaller than this size and aligned to the same chromosome.
 % Todo: give absolute stats on percentage removal
 Remaining reads can either be classified into \textit{singletons} or \textit{paired end reads}.
 Singletons are reads of which one of the mates was excluded from the alignment while the alignment of the remaining mate was considered discordant.
@@ -96,7 +97,6 @@ We classify such reads as follows:
 		\item PE-R2 aligned chunk 1 \& PE-R2 aligned chunk 2 \& silent mate R1
 	\end{itemize}
 \end{itemize}
-
 According to the subtype and additional information (e.g. strand and clipping flags) the breakpoints and strands of the junction are estimated.
 Also, if an aligned chunk contains a splice junction or and indel annotation, this will be considered as a separate type of junction and will be included in the graph as well.
 If any of the two breakpoints of a junction does not exist, the position will be inserted into the graph as a \textit{node}.
@@ -106,6 +106,7 @@ The nodes of the graph are also inserted into a genomic-range index (intervaltre
 Lastly, each node has a property describing the number of (soft/hard)-clips found in corresponding mates, illustrated in figure \ref{fig:edges_clips}.
 
 \begin{figure}
+\begin{center}
 % xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
@@ -122,31 +123,24 @@ Lastly, each node has a property describing the number of (soft/hard)-clips foun
 \end{tikzpicture}
 \caption{Left: graph before pruning, right: after pruning}
 \label{fig:edges_clips}
+\end{center}
 \end{figure}
-
-\clearpage
-
 
 \subsection{Pruning (the graph)}
 Consider the alignment below as example we would like to transform into a graph:
+\begin{figure}
 \begin{verbatim}
-chr1:
-  80        90        100
-..|....i....|....i....|....i..
-      [----read-01----|
-          [--read-02--|
-[--read-03--]
-
-
-chr2:      
-       900       910
-..i....|....i....|....i....|..
-       |--read-01--]
-       |----read-02---]
-                 [--read-03--]
+chr1:                                        chr2:
+  80        90        100                           900       910
+..|....i....|....i....|....i..               ..i....|....i....|....i....|..
+      [----read-01----|                             |--read-01--]
+          [--read-02--|                             |----read-02---]
+[--read-03--]                                                [--read-03--]
 \end{verbatim}
+\caption{Alignment of example data: two split reads (read 01 and read 02) and one discordant mate pair (read 03)}
+\label{fig:pruning_alignment}
+\end{figure}
 The corresponding graph would look like presented in figure \ref{fig:pruning_graph} (left).
-
 Hence, in this graph each node is a genomic location and edges represent the junctions in the alignment.
 The graph contains two split reads that break from \verb|chr1:100| to \verb|chr2:900| and a spanning read aligned from \verb|chr1:90| to \verb|chr2:910|.
 In this graph we have actually very closely adjacent edges; the edges with split and discordant reads differ on both nodes not more than 10bp.
@@ -162,7 +156,8 @@ The data structure of the pruned example is given in figure \ref{fig:pruning_gra
 Although the total weight of all edges stays identical, the number of edges and nodes shall decrease with every pruning operation and the graph shall become smaller in size.
 Splice junctions are not taken into account in the pruning function.
 
-\begin{figure*}
+\begin{figure}
+\begin{center}
 % xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
@@ -182,7 +177,9 @@ Splice junctions are not taken into account in the pruning function.
 %        edge [loop below] node {clips: 0} (2)
 %        edge [loop below] node {clips: 0} (1)
 ;
-\end{tikzpicture}
+\end{tikzpicture} \\
+\rule[0.5ex]{\textwidth}{0.4pt}
+\\
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
 
@@ -196,9 +193,9 @@ Splice junctions are not taken into account in the pruning function.
 \end{tikzpicture}
 \caption{Left: graph before pruning, right: after pruning}
 \label{fig:pruning_graph}
-\end{figure*}
+\end{center}
+\end{figure}
 
-\clearpage
 
 \subsection{Re-joining splice junctions}
 % What does this function do:
@@ -217,6 +214,8 @@ In other words, it would be desired to have the junctions themselves being direc
 This step is referred to as \textit{re-joining splice junction(s)}.
 We would like to include the splice junctions to \textbf{all} edges that are in close proximity (450bp), possibly resulting into one splice junction linking several nodes together.
 
+\begin{figure}
+\begin{center}
 \begin{verbatim}
 edges (junctions):
           -------- ... ------        j1
@@ -230,6 +229,10 @@ nodes (genomic positions):
  --- ----                     -----
 :   :    :        ...        :     :
 \end{verbatim}
+\end{center}
+\caption{Merging splice junctions from the perspective of edges}
+\label{fig:merge_sj_idea}
+\end{figure}
 In the example above we have 4 junctions ($j_1,\ldots,j_4$).
 
 Instead of adding the splice junctions to the Graph, we re-insert them as properties of the Nodes.
@@ -240,7 +243,8 @@ The prodedure goes as follows:
 For every `thicker\_edge', hence, edge returned after pruning, 
 
 
-%\begin{figure*}
+\begin{figure}
+\begin{center}
 % xref: http://tex.stackexchange.com/questions/45734/drawing-graphs-in-latex
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
@@ -260,7 +264,9 @@ For every `thicker\_edge', hence, edge returned after pruning,
     (5) edge [bend left] node {} (4)
 ;
 \end{tikzpicture}
-
+\\
+\rule[0.5ex]{\textwidth}{0.4pt}
+\\
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
 
@@ -286,12 +292,11 @@ For every `thicker\_edge', hence, edge returned after pruning,
     (5) edge [bend left] node {} (4)
 ;
 \end{tikzpicture}
+\end{center}
+\caption{Insert all splice junctions}
+\label{fig:merge_sj_2}
+\end{figure}
 
-%\caption{Merge SJ}
-%\label{fig:merge_sj}
-%\end{figure*}
-
-\clearpage
 
 \subsection{Extract subnetworks}
 In the previous step nodes have been connected by all splice junctions in close proximity.
@@ -299,7 +304,8 @@ Therefore it is possible to extract corresponding junctions as a network, by rec
 To ensure we may not miss any in-between edges, we will pull down all nodes first, and look for all existing edges in-between.
 We start with the highest scoring edge (2 split reads):
 
-
+\begin{figure}
+\begin{center}
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
   \node[main node] (4) [right of=3] {\small{chr1:2500}};
@@ -310,19 +316,22 @@ We start with the highest scoring edge (2 split reads):
     (5) edge [bend right] node {split: 2} (4)
 ;
 \end{tikzpicture}
-
+\end{center}
+\caption{Extract SN based on SJ 01}
+\label{fig:extract_sn_01}
+\end{figure}
 \noindent We then take the breakpoints apart, and for each of them recursively find nodes connected by splice junctions.
 Key in this problem is that every junction may not be further away (in transcript length) than the insert size.
 Therefore we can do this recursively, with a recursion constraint based on the travelled exonic distance.
 
-
+\begin{figure}
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
 
   \node[main node] (4) [] {\small{chr1:2500}};
-  \node[main node] (3) [below of=4,color=gray] {\small{chr1:2400}};
-  \node[main node] (2) [below of=3,color=gray] {\small{chr1:1250}};
-  \node[main node] (1) [below of=2]{\small{chr1:1000}};
+  \node[main node] (3) [right of=4,color=gray] {\small{chr1:2400}};
+  \node[main node] (2) [right of=3,color=gray] {\small{chr1:1250}};
+  \node[main node] (1) [right of=2]{\small{chr1:1000}};
 
   \path[every node/.style={font=\sffamily\small}]
     (2) edge [bend right,color=gray] node {splice: 1} (3)
@@ -332,13 +341,16 @@ Therefore we can do this recursively, with a recursion constraint based on the t
     (2) edge [color=gray,dotted] node {$d_1=250$} (1)
     (3) edge [color=gray,dotted] node {s-link} (4)
     (4) edge [color=gray,dotted] node {$d_2=100$} (3)
-    (1) edge [bend left,color=black,dotted] node {$d=350$} (4)
+    (1) edge [bend left,color=black,dotted] node {effective distance $d=350$} (4)
     (4) edge [bend right,color=black,dotted] node {} (1)
 ;
 \end{tikzpicture}
-
+\caption{Extract SN based on SJ 02}
+\label{fig:extract_sn_02}
+\end{figure}
 From this we get the following two `buckets' of nodes that may contain edges of our subnetwork:
-
+\begin{figure}
+\begin{center}
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
 
@@ -364,6 +376,10 @@ From this we get the following two `buckets' of nodes that may contain edges of 
 
 ;
 \end{tikzpicture}
+\end{center}
+\caption{Extract SN based on SJ 03}
+\label{fig:extract_sn_03}
+\end{figure}
 
 We extract only edges of which its two nodes fall in both buckets, resulting in the subnetwork.
 We proceed with the next top edge until we have used all.
@@ -382,7 +398,8 @@ This may also merge intronic with splice-junction spanning reads.
 
 This functiosn takes the overal genomic distance and filters based on the balance between the read count and the distance, trying to correct for realistic exon lengths.
 
-
+\begin{figure}
+\begin{center}
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
                     thick,main node/.style={circle,draw,font=\sffamily\Large\bfseries}]
 
@@ -410,6 +427,11 @@ This functiosn takes the overal genomic distance and filters based on the balanc
     (4) edge [bend left] node {} (0)
 ;
 \end{tikzpicture}
+\end{center}
+\caption{Merge overlapping SNs (problem)}
+\label{fig:merge_overlapping_subnets_01}
+\end{figure}
+
 
         We would like to filter based on the distance between edgeA1 and
         edgeB1.
