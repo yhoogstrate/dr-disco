@@ -10,6 +10,7 @@
 
 # Building doc
 /doc/*
+/doc
 
 # Required for testing
 tmp/
