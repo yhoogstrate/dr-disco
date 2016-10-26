@@ -30,6 +30,9 @@ from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
 from drdisco.CigarAlignment import *
 
 
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
+
+
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
         cig1 = "15S15M"
@@ -99,11 +102,20 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertEqual(aligned_cigars[0],ans1)
         self.assertEqual(aligned_cigars[1],ans2)
         
+    def test_05(self):
+        cig1 = "40S32M1I52M"
+        cig2 = "40M85S"
         
+        ans1 = [(4, 40), (0, 84)]
+        ans2 = [(0, 40), (4, 85)]
         
+        ca = CigarAlignment(cigar_to_cigartuple(cig1),cigar_to_cigartuple(cig2))
+        ca.fill_matrix()
+        aligned_cigars = ca.traceback_matrix()
         
-        
-    
+        self.assertEqual(aligned_cigars[0],ans1)
+        self.assertEqual(aligned_cigars[1],ans2)
+        self.assertEqual(ca.get_order(), STRAND_REVERSE)
 
 
 def main():

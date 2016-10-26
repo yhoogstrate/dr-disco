@@ -9,14 +9,8 @@
 *.pyc
 
 # Building doc
-/doc/*.aux
-/doc/*.dvi
-/doc/*.log
-/doc/*.out
-/doc/*.pdf
-/doc/*.synctex.gz
-/doc/*.tex
-/doc/*.toc
+/doc/*
+/doc
 
 # Required for testing
 tmp/
