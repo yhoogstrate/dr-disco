@@ -949,22 +949,18 @@ splice-junc:                           <=============>
         logging.info("Finding and merging other edges in close proximity (insert size)")
         
         candidates = []
-        k = 0
         candidate = self.get_start_point()
         #self.print_chain()
         
         while candidate != None:
             self.prune_edge(candidate, insert_size)
             candidates.append((candidate, candidate.get_complement()))
-            
-            # do not remove if splice junc exists?
-            self.remove_edge(candidate)
+            self.remove_edge(candidate)# do not remove if splice junc exists?
             
             candidate = self.get_start_point()
-            k += 1
         
         #self.print_chain()
-        logging.info("Pruned into "+str(k)+" candidate edge(s)")
+        logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
         return candidates
     
     #@todo ADD RECURSION DEPTH LIMIT
