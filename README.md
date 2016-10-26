@@ -1,6 +1,8 @@
 Dr. Disco
 =========
 
+[![Build Status](https://travis-ci.org/yhoogstrate/dr-disco.svg?branch=master)](https://travis-ci.org/yhoogstrate/dr-disco)
+
 Running RNA-STAR with fusion settings produces a ``....Chimeric.out.sam`` file, containing all discordant reads. This alignment does not properly link mates together because of some incorrect SAM-tags. This tool, `dr-disco fix-chimeric`, is able to solve these issues and allows you to view the discordant reads in IGV in much more detail. Because the tool makes the **disco**rdant alignments **healthy** again, we've named it **Dr. Disco**.
 
 Installation
