@@ -81,7 +81,7 @@ class Edge:
                }
     
     def __init__(self,_origin,_target):
-        if not isinstance(_target, Node) or not isinstance(_origin, Node):
+        if not isinstance(_target, Node) or not isinstance(_origin, Node):# pragma: no cover
             raise Exception("_origin and _target must be a Node")
         
         #self._strand = STRAND_UNDETERMINED
@@ -148,16 +148,9 @@ class Edge:
         return entropy(self.unique_alignments_idx)
     
     def get_complement(self):
-        """complement = self._target.edges[str(self._origin.position)]
-        
-        if complement == self:
-            raise Exception("err")
-        
-        return complement
-        """
         try:
             return self._target.edges[str(self._origin.position)]
-        except KeyError as err:
+        except KeyError as err:#todo write test for this
             raise KeyError("Could not find complement for edge:   "+str(self))
     
     def merge_edge(self,edge):
@@ -182,16 +175,16 @@ class Edge:
                     "spanning_singleton_2",
                     "spanning_singleton_1_r",
                     "spanning_singleton_2_r",
-                    "cigar_splice_junction",
+                    "cigar_splice_junction"
                     ]:
                 self.add_type(_type)
                 return True
-            elif _type not in ['silent_mate']:
+            elif _type not in ['silent_mate']:# pragma: no cover
                 raise Exception("Not sure what to do here with type: %s", _type)
         return False
     
     def add_type(self,_type):
-        if _type in ["cigar_soft_clip", 'cigar_hard_clip']:
+        if _type in ["cigar_soft_clip", 'cigar_hard_clip']:# pragma: no cover
             raise Exception("Clips shouldn't be added as edges, but as properties of Nodes")
         
         if not self._types.has_key(_type):
@@ -212,7 +205,7 @@ class Edge:
             return self._types[_type]
         
     def get_score(self,_type):  
-        if not self.scoring_table.has_key(_type):
+        if not self.scoring_table.has_key(_type):# pragma: no cover
             raise Exception("Not implemented _type: %s", _type)
         else:
             return self.get_count(_type)*self.scoring_table[_type]
@@ -226,11 +219,10 @@ class Edge:
         """
         return sum([self.get_score(_type) for _type in self.scoring_table.keys()])
     
-    def get_splice_score(self):
-        #@todo use soft/hardclips or the nodes
+    def get_splice_score(self):# pragma: no cover
         return (self.get_count('cigar_splice_junction'),self.get_clips())
     
-    def get_clips(self):
+    def get_clips(self):# pragma: no cover
         return self._origin.clips + self._target.clips
     
     def target_in_range(self,_range):
@@ -358,10 +350,10 @@ class Node:
             skey = str(edge._target.position)
         elif idx == "by-origin":
             skey = str(edge._origin.position)
-        else:
+        else:# pragma: no cover
             raise Exception("Invalid usage of function")
         
-        if not self.edges.has_key(skey):
+        if not self.edges.has_key(skey):# pragma: no cover
             raise Exception("Unknown key: %s", skey)
         
         self.edges[skey] = None
@@ -371,7 +363,7 @@ class Node:
         for k in sorted(self.edges.keys()):
             yield self.edges[k]
     
-    def __str__(self):
+    def __str__(self):# pragma: no cover
         out  = str(self.position)
         
         a = 0
@@ -391,39 +383,6 @@ class Node:
         else:
             return ""
 
-    def is_connected_to(self, nearby_nodes, complementary_nodes):
-        """The settings in this function may be very important to tune
-        in order to optimize the algorithm
-        
-        @todo's in future, add entropy of nearby nodes using e.g. the
-        cigar strings"""
-        
-        rmse = self.position.get_rmse(complementary_nodes)
-        
-        scores = []
-        for nearby_node in nearby_nodes:
-            p = nearby_node.edges[str(self.position)]
-            scores.append(p.get_scores())
-        
-        k = len(scores)
-        if k < 2:
-            raise Exception("nearby_nodes contains less than 2 elements with shared Edges")
-        
-        product = reduce(lambda x,y: x*y, scores)
-        
-        # based on rmse, product and k, determine a True or False
-        if product > (8*k):
-            # Average gene size = 10-15kb
-            # Asymptotic func:
-            # rmse <= 125000 - 110123/2^( product / 620 )
-            # rmse <= 125000 - 120000/2^( product / 1200)
-            # if rmse < max_rmse: valid data point
-            
-            max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
-            return (rmse <= max_rmse)
-        
-        return False
-
 def bam_parse_alignment_offset(cigartuple):
     pos = 0
     for chunk in cigartuple:
@@ -440,13 +399,6 @@ def bam_parse_alignment_offset(cigartuple):
         
         if chunk[0] in [0,2,3]:
             pos += chunk[1]
-    
-    return pos
-
-def bam_parse_alignment_end(read):
-    pos = read.reference_start
-    if not read.is_reverse:
-        pos += bam_parse_alignment_offset(read.cigar)
     
     return pos
 
@@ -487,11 +439,11 @@ class BreakPosition:
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(+)"
         elif self.strand == STRAND_REVERSE:
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
-        else:    
-            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(?)"
+        else:# pragma: no cover
+            raise Exception("Unstranded break detected - this should not happen")
     
     def get_dist(self, other_bp, strand_specific):
-        if not isinstance(other_bp, BreakPosition):
+        if not isinstance(other_bp, BreakPosition):# pragma: no cover
             raise Exception("Wrong data type used")
         
         if (not strand_specific or self.strand == other_bp.strand) and self._chr == other_bp._chr:
@@ -502,19 +454,11 @@ class BreakPosition:
             # in a way that interchromosomal breaks are 'larger' than
             # intrachromosomal ones
             return MAX_GENOMIC_DIST
-    
-    def get_rmse(self, pos_vec):
-        err = 0
-        for node in pos_vec:
-            pos = node.position
-            err += pow(self.get_dist(pos, True) , 2)
-        return math.sqrt(err)
 
 
-class Chain:
+class Graph:
     def __init__(self,pysam_fh):
         self.idxtree = GenomeIntervalTree()
-        #self.scoringtree = []
         self.pysam_fh = pysam_fh
     
     def __iter__(self):
@@ -522,11 +466,6 @@ class Chain:
             for element in sorted(self.idxtree[key]):
                 for strand in sorted(element[2].keys()):
                     yield element[2][strand]
-
-    def __iter_chr(self,key):
-        for element in sorted(self.idxtree[key]):
-            for strand in sorted(element[2].keys()):
-                yield element[2][strand]
     
     def create_node(self,pos):
         """Creates the Node but does not overwrite it
@@ -564,9 +503,8 @@ class Chain:
             _chr = self.pysam_fh.get_reference_name(read.reference_id)
             rg = read.get_tag('RG')
             
-            pos1 = None
-            pos2 = None
-
+            pos1, pos2 = None, None
+            
             if rg in [
                 'discordant_mates',
                 'spanning_paired_1',
@@ -606,9 +544,9 @@ class Chain:
                 
                 #@todo silent mates do not make pairs but are one directional
                 # in their input - has to be fixed in order to allow edge_merging
-                #self.chain.insert(r,broken_mate)
+                #self.graph.insert(r,broken_mate)
 
-            else:
+            else:# pragma: no cover
                 raise Exception("Unknown type read: '"+str(rg)+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
             
             """Find introns etc:
@@ -666,9 +604,9 @@ splice-junc:                           <=============>
                             i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                                  internal_edge[1],
                                                  pos1.strand)
-                    else:
+                    else:# pragma: no cover
                         raise Exception("what todo here - "+rg)
-                else:
+                else:# pragma: no cover
                     raise Exception("Edge type not implemented: %s\n\n%s", internal_edge,str(read))
                 
                 if internal_edge[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
@@ -678,8 +616,8 @@ splice-junc:                           <=============>
                     except:
                         # This happens with some weird reads
                         #if rg in ['spanning_paired_2','spanning_singleton_2_r']:
-                        #self.chain.create_node(i_pos2)
-                        #self.chain.get_node_reference(i_pos2).add_clip()
+                        #self.graph.create_node(i_pos2)
+                        #self.graph.get_node_reference(i_pos2).add_clip()
                         #logging.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
                         pass
                 else:
@@ -712,6 +650,8 @@ splice-junc:                           <=============>
             node1.new_edge(node2,_type,alignment_key,do_vice_versa)
         else:
             node1.new_edge(node2,_type,None,do_vice_versa)
+        
+        print node1
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional edge between read and sa-tag in the Chain
@@ -859,7 +799,7 @@ splice-junc:                           <=============>
                                  parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
                                  STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
         
-        elif rg not in ["silent_mate"]:
+        elif rg not in ["silent_mate"]:# pragma: no cover
             raise Exception("Fatal Error, RG: "+rg)
         
         if pos1 != None:# First check if insert size makes sense anyway (only for certain types of edges)
@@ -905,7 +845,7 @@ splice-junc:                           <=============>
         
         if node1.get_top_edge()[0] == None:
             self.remove_node(node1)
-
+        
         if node2.get_top_edge()[0] == None:
             self.remove_node(node2)
     
@@ -929,13 +869,6 @@ splice-junc:                           <=============>
         if len(new_element[2]) > 0:
             self.idxtree[pos._chr].add(new_element)
     
-    def pos_to_range(self,pos,_range,exclude_itself):
-        for _pos in range(_range[0], _range[1], _range[2]):
-            if exclude_itself and _pos == pos.pos:
-                continue
-            else:
-                yield BreakPosition(pos._chr, _pos, pos.strand)
-    
     def search_splice_edges_between(self,pos1,pos2, insert_size):
         # insert size is two directional
         target_range = (pos2.pos - insert_size, pos2.pos+ insert_size, None)
@@ -945,7 +878,76 @@ splice-junc:                           <=============>
                 node1 = interval[2][key]
                 for edge in node1.edges.values():
                     if edge.target_in_range(target_range):
-                        yield (edge)
+                        yield edge
+    
+    def print_chain(self):# pragma: no cover
+        print "**************************************************************"
+        for node in self:
+            _str = str(node)
+            if len(_str.strip()) > 0:
+                print _str
+        print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+    def get_start_point(self):
+        """Returns the top scoring edges in the chain
+        
+        By doing this iteratively, and removing the top edge in the mean time, you get some kind of unlogical ordering function
+        @todo - this trick is silly: it uses a genometree and all recursive children of the nodes
+                Add a set or list of vector that keeps track of all Edges ordered by a certain score on top of the tree?
+        """
+        maxscore = 0
+        edge = None
+        
+        for node in self:
+            _score, _edge, _node1, _node2 = node.get_top_edge()
+            if _edge != None and _score > maxscore:
+                maxscore = _score
+                edge = _edge
+        
+        return edge
+    
+    def prune(self,insert_size):
+        """Does some 'clever' tricks to merge edges together and reduce data points
+        """
+        logging.info("Finding and merging other edges in close proximity (insert size)")
+        
+        candidates = []
+        candidate = self.get_start_point()
+        #self.print_chain()
+        
+        while candidate != None:
+            self.prune_edge(candidate, insert_size)
+            candidates.append((candidate, candidate.get_complement()))
+            self.remove_edge(candidate)# do not remove if splice junc exists?
+            
+            candidate = self.get_start_point()
+        
+        #self.print_chain()
+        logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
+        return candidates
+    
+    def prune_edge(self, edge, insert_size):
+        ## @ todo double check if this is strand specific
+        
+        node1, node2 = edge._origin, edge._target
+        edge_complement = edge.get_complement()
+        
+        for edge_m in self.search_edges_between(node1.position, node2.position, insert_size):
+            d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
+            d2 = edge._target.position.get_dist(edge_m._target.position, True)
+            d = abs(d1)+abs(d2)
+            if d <= insert_size:
+                edge_mc = edge_m.get_complement()
+                
+                s1 = str(edge)
+                s2 = str(edge_m)
+                if s2.find('splice') > -1:
+                    print "---"+s1+"+"+s2+"---"
+                 
+                edge.merge_edge(edge_m)
+                edge_complement.merge_edge(edge_mc)
+                
+                self.remove_edge(edge_m) # complement is automatically removed after removing the fwd
     
     def search_edges_between(self,pos1, pos2, insert_size):
         """searches for reads inbetween two regions (e.g. break + ins. size):
@@ -976,122 +978,7 @@ splice-junc:                           <=============>
                     node_i = interval[2][pos1.strand]
                     for edge in node_i.edges.values():
                         if edge.target_in_range(range2) and edge._target.position.strand == pos2.strand:
-                            yield (edge)
-
-    def print_chain(self):
-        print "**************************************************************"
-        for node in self:
-            _str = str(node)
-            if len(_str.strip()) > 0:
-                print _str
-        print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-
-    def get_start_point(self):
-        """Returns the top scoring edges in the chain
-        
-        By doing this iteratively, and removing the top edge in the mean time, you get some kind of unlogical ordering function
-        @todo - this trick is silly: it uses a genometree and all recursive children of the nodes
-                Add a set or list of vector that keeps track of all Edges ordered by a certain score on top of the tree?
-        """
-        maxscore = 0
-        edge = None
-        
-        for node in self:
-            _score, _edge, _node1, _node2 = node.get_top_edge()
-            if _edge != None and _score > maxscore:
-                maxscore = _score
-                edge = _edge
-        
-        return edge
-    
-    def get_start_splice_junc(self):
-        """Returns the chain with the higest number of counts
-        """
-        maxscore = (0,0)
-        edge = None
-        
-        for node in self:
-            for _edge in node:
-                if _edge._origin.position._chr == _edge._target.position._chr:
-                    score = (_edge.get_count('cigar_splice_junction'),_edge.get_count('cigar_soft_clip'))
-                    if score[0] > maxscore[0] or (score[0] == maxscore[0] and score[1] > maxscore[1]):
-                        edge = _edge
-                        maxscore = score
-        
-        return edge
-    
-    def prune(self,insert_size):
-        """Does some 'clever' tricks to merge edges together and reduce data points
-        """
-        logging.info("Finding and merging other edges in close proximity (insert size)")
-        
-        candidates = []
-        k = 0
-        candidate = self.get_start_point()
-        #self.print_chain()
-        
-        while candidate != None:
-            self.prune_edge(candidate, insert_size)
-            candidates.append((candidate, candidate.get_complement()))
-            
-            # do not remove if splice junc exists?
-            self.remove_edge(candidate)
-            
-            candidate = self.get_start_point()
-            k += 1
-        
-        #self.print_chain()
-        logging.info("Pruned into "+str(k)+" candidate edge(s)")
-        return candidates
-    
-    #@todo ADD RECURSION DEPTH LIMIT
-    def prune_edge(self, edge, insert_size):
-        ## These types of edges fall within the same space / inst. size
-        ## they make the edges heavier
-        ## @ todo double check if this is strand specific
-        
-        node1 = edge._origin
-        node2 = edge._target
-        
-        edge_complement = edge.get_complement()
-        
-        i = 0
-        for edge_m in self.search_edges_between(node1.position, node2.position, insert_size):
-            i += 1
-            edge_mc = edge_m.get_complement()
-            
-            edge.merge_edge(edge_m)
-            edge_complement.merge_edge(edge_mc)
-            
-            self.remove_edge(edge_m)
-            
-            # complement is automatically removed after removing the fwd
-            #self.remove_edge(edge_mc)
-        
-        return i
-    
-    def merge_splice_juncs(self,uncertainty):
-        logging.info("Merging splice juncs")
-        
-        init = self.get_start_splice_junc()
-        while init != None:
-            init_c = init.get_complement()
-            
-            for xnode in self.idxtree[init._origin.position._chr].search(init._origin.position.pos - (uncertainty+1), init._origin.position.pos + (uncertainty + 1)):
-                for node in xnode[2].values():
-                    for junc in node:
-                        if junc.get_count('cigar_splice_junction') > 0 and junc not in [init, init_c]:
-                            d_origin = abs(junc._origin.position.pos - init._origin.position.pos)
-                            d_target = abs(junc._target.position.pos - init._target.position.pos)
-                            if d_origin <= uncertainty and d_target <= uncertainty:
-                                init.merge_edge(junc)
-                                init_c.merge_edge(junc.get_complement())
-                                
-                                self.remove_edge(junc)
-            
-            init = self.get_start_splice_junc()
-        
-        logging.debug("done")
+                            yield edge
     
     def rejoin_splice_juncs(self, thicker_edges, insert_size):
         """thicker edges go across the break point:
@@ -1175,7 +1062,7 @@ thick edges:
                                     dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
                                     sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
-
+                                    
                                     if dist_target1 < insert_size and dist_target2 < insert_size and sq_dist_target < right_junc[0]:
                                         right_junc = (sq_dist_target, splice_junc)
                             
@@ -1189,7 +1076,7 @@ thick edges:
         
         return thicker_edges
     
-    def extract_subnetworks(self,thicker_edges):
+    def extract_subnetworks_by_splice_junctions(self,thicker_edges):
         """ Here we add additional nodes an edge's current `left_node` 
 or `right_node` using the `guilt-by-association` principle. Sometimes nodes
 have edges to the same nodes of the already existing network,
@@ -1298,7 +1185,7 @@ have edges to the same nodes of the already existing network,
         return subnetworks
 
 
-class Subnet(Chain):
+class Subnet():
     def __init__(self,_id,edges):
         self._id = _id
         self.edges = edges
@@ -1411,42 +1298,6 @@ class Subnet(Chain):
     def get_n_discordant_reads(self):
         return sum([edge[0].get_count("discordant_mates") for edge in self.edges])
     
-    def find_distance(self, subnet_t):
-        """
-        Later on correct for that these are closer:
-        |    |     ... ~ ...   |
-           |                   |
-        
-        than these:
-        |    |     ... ~ ...   |
-      |                        |
-        """
-        if not isinstance(subnet_t, Subnet):
-            raise Exception("subnet_t must be Subnet")
-        
-        ldist = MAX_GENOMIC_DIST
-        rdist = MAX_GENOMIC_DIST
-
-        for lnode in self.get_lnodes():
-            for lnode_t in subnet_t.get_lnodes():
-                dist = abs(lnode.position.get_dist(lnode_t.position, True))
-                if dist == MAX_GENOMIC_DIST:
-                    return (None, None, MAX_GENOMIC_DIST)
-                
-                if dist < ldist:
-                    ldist = dist
-        
-        for rnode in self.get_rnodes():
-            for rnode_t in subnet_t.get_rnodes():
-                dist = abs(rnode.position.get_dist(rnode_t.position, True))
-                if dist == MAX_GENOMIC_DIST:
-                    return (None, None, MAX_GENOMIC_DIST)
-                
-                if dist < rdist:
-                    rdist = dist
-        
-        return (ldist, rdist, math.sqrt(pow(ldist,2) + pow(rdist, 2)))
-    
     def find_distances(self, subnet_t):
         """ - Must be symmetrical i.e. (sn1.find_distances(s2) == s2.find_distances(s1)
         if the distance of any edge == infty, return False
@@ -1461,8 +1312,8 @@ class Subnet(Chain):
         if len(l_nodes_min) >  len(l_nodes_max):
             l_nodes_min, l_nodes_max = l_nodes_max, l_nodes_min
         
-        if len(l_nodes_min) >  len(l_nodes_max):
-            l_nodes_min, l_nodes_max = l_nodes_max, l_nodes_min
+        if len(r_nodes_min) >  len(r_nodes_max):
+            r_nodes_min, r_nodes_max = r_nodes_max, r_nodes_min
         
         l_dists = []
         r_dists = []
@@ -1512,7 +1363,7 @@ class Subnet(Chain):
     def merge(self, subnet_m):
         for edge in subnet_m.edges:
             self.edges.append(edge)
-
+        
         self.calc_clips()
         self.calc_scores()
         self.reorder_edges()
@@ -1523,19 +1374,14 @@ class IntronDecomposition:
         self.pysam_fh = self.test_disco_alignment(alignment_file)
     
     def decompose(self):
-        chain = Chain(self.pysam_fh)
+        chain = Graph(self.pysam_fh)
         chain.insert_alignment()
         
-        #@todo: thicker_edges = self.index_edges() and come up with class
-        thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size
+        thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         thicker_edges = chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
-        #for te in thicker_edges:
-        #    print te[0]
-        #print "-----------------------------------------"
         chain.reinsert_edges(thicker_edges)
         
-        #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
-        subnets = chain.extract_subnetworks(thicker_edges)
+        subnets = chain.extract_subnetworks_by_splice_junctions(thicker_edges)
         subnets = self.merge_overlapping_subnets(subnets, PRUNE_INS_SIZE)
         self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
@@ -1557,11 +1403,10 @@ class IntronDecomposition:
         if bam_fh.header.has_key('PG'):
             for pg in bam_fh.header['PG']:
                 if pg['ID'] == 'drdisco_fix_chimeric':
-                    # create index if it does not exist
-                    try:
+                    try:# pragma: no cover
                         bam_fh.fetch()
-                    except:
-                        logging.info('Indexing BAM file with pysam: '+bam_fh.filename)
+                    except:# pragma: no cover
+                        logging.info('Indexing BAM file with pysam: '+bam_fh.filename)# create index if it does not exist
                         pysam.index(bam_fh.filename)
                         bam_fh = pysam.AlignmentFile(bam_fh.filename)
                     
@@ -1572,6 +1417,7 @@ class IntronDecomposition:
                     
                     return bam_fh
         
+        #@todo write simple test
         raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
     
     def export(self, fh):
@@ -1637,13 +1483,7 @@ class IntronDecomposition:
                 candidates = []
                 for j in range(i+1,n):# for i , j > i
                     if subnets[j] != None:
-                        classical_merged = False
                         new_merged = False
-                        
-                        dist = subnets[i].find_distance(subnets[j])
-                        
-                        if dist[2] <= MAX_SUBNET_MERGE_DIST and min(dist[0],dist[1]) < insert_size:
-                            classical_merged = True
                         
                         l_dists, r_dists = subnets[i].find_distances(subnets[j])
                         if l_dists != False:# and r_dists != False:
@@ -1653,6 +1493,15 @@ class IntronDecomposition:
                             
                             rmsq_l_dist = sq_dist(l_dists)
                             rmsq_r_dist = sq_dist(r_dists)
+                            
+                            """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
+                                if product > (8*k):
+                                    # Average gene size = 10-15kb
+                                    # rmse <= 125000 - 120000/2^( product / 1200)
+                                    # if rmse < max_rmse: valid data point
+                                    max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
+                                    return (rmse <= max_rmse)
+                            """
                             
                             if n_l_dist > 0 and n_r_dist > 0:
                                 new_merged = True
