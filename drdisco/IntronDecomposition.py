@@ -851,7 +851,7 @@ splice-junc:                           <=============>
         
         if node1.get_top_edge()[0] == None:
             self.remove_node(node1)
-
+        
         if node2.get_top_edge()[0] == None:
             self.remove_node(node2)
     
@@ -969,8 +969,6 @@ splice-junc:                           <=============>
     
     #@todo ADD RECURSION DEPTH LIMIT
     def prune_edge(self, edge, insert_size):
-        ## These types of edges fall within the same space / inst. size
-        ## they make the edges heavier
         ## @ todo double check if this is strand specific
         
         node1 = edge._origin
@@ -990,10 +988,7 @@ splice-junc:                           <=============>
                 edge.merge_edge(edge_m)
                 edge_complement.merge_edge(edge_mc)
                 
-                self.remove_edge(edge_m)
-                
-                # complement is automatically removed after removing the fwd
-                #self.remove_edge(edge_mc)
+                self.remove_edge(edge_m) # complement is automatically removed after removing the fwd
         
         return i
     
@@ -1093,7 +1088,7 @@ thick edges:
         
         return thicker_edges
     
-    def extract_subnetworks(self,thicker_edges):
+    def extract_subnetworks_by_splice_junctions(self,thicker_edges):
         """ Here we add additional nodes an edge's current `left_node` 
 or `right_node` using the `guilt-by-association` principle. Sometimes nodes
 have edges to the same nodes of the already existing network,
@@ -1394,16 +1389,11 @@ class IntronDecomposition:
         chain = Chain(self.pysam_fh)
         chain.insert_alignment()
         
-        #@todo: thicker_edges = self.index_edges() and come up with class
-        thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size
+        thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         thicker_edges = chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
-        #for te in thicker_edges:
-        #    print te[0]
-        #print "-----------------------------------------"
         chain.reinsert_edges(thicker_edges)
         
-        #subnets = extract_subnetworks_by_splice_junctions(thicker edges)
-        subnets = chain.extract_subnetworks(thicker_edges)
+        subnets = chain.extract_subnetworks_by_splice_junctions(thicker_edges)
         subnets = self.merge_overlapping_subnets(subnets, PRUNE_INS_SIZE)
         self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
