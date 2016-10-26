@@ -981,15 +981,19 @@ splice-junc:                           <=============>
         i = 0
         for edge_m in self.search_edges_between(node1.position, node2.position, insert_size):
             i += 1
-            edge_mc = edge_m.get_complement()
-            
-            edge.merge_edge(edge_m)
-            edge_complement.merge_edge(edge_mc)
-            
-            self.remove_edge(edge_m)
-            
-            # complement is automatically removed after removing the fwd
-            #self.remove_edge(edge_mc)
+            d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
+            d2 = edge._target.position.get_dist(edge_m._target.position, True)
+            d = abs(d1)+abs(d2)
+            if d<= insert_size:
+                edge_mc = edge_m.get_complement()
+                
+                edge.merge_edge(edge_m)
+                edge_complement.merge_edge(edge_mc)
+                
+                self.remove_edge(edge_m)
+                
+                # complement is automatically removed after removing the fwd
+                #self.remove_edge(edge_mc)
         
         return i
     
@@ -1512,15 +1516,11 @@ class IntronDecomposition:
                             rmsq_l_dist = sq_dist(l_dists)
                             rmsq_r_dist = sq_dist(r_dists)
                             
-                            """
-                            @todo work with polynomial equasion
-                            
-                                # based on rmse, product and k, determine a True or False
+                            """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
                                 if product > (8*k):
                                     # Average gene size = 10-15kb
                                     # rmse <= 125000 - 120000/2^( product / 1200)
                                     # if rmse < max_rmse: valid data point
-                                    
                                     max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
                                     return (rmse <= max_rmse)
                             """
