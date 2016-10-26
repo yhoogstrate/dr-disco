@@ -148,13 +148,6 @@ class Edge:
         return entropy(self.unique_alignments_idx)
     
     def get_complement(self):
-        """complement = self._target.edges[str(self._origin.position)]
-        
-        if complement == self:
-            raise Exception("err")
-        
-        return complement
-        """
         try:
             return self._target.edges[str(self._origin.position)]
         except KeyError as err:#todo write test for this
@@ -182,7 +175,7 @@ class Edge:
                     "spanning_singleton_2",
                     "spanning_singleton_1_r",
                     "spanning_singleton_2_r",
-                    "cigar_splice_junction",
+                    "cigar_splice_junction"
                     ]:
                 self.add_type(_type)
                 return True
@@ -463,7 +456,7 @@ class BreakPosition:
             return MAX_GENOMIC_DIST
 
 
-class Chain:
+class Graph:
     def __init__(self,pysam_fh):
         self.idxtree = GenomeIntervalTree()
         self.pysam_fh = pysam_fh
@@ -510,9 +503,8 @@ class Chain:
             _chr = self.pysam_fh.get_reference_name(read.reference_id)
             rg = read.get_tag('RG')
             
-            pos1 = None
-            pos2 = None
-
+            pos1, pos2 = None, None
+            
             if rg in [
                 'discordant_mates',
                 'spanning_paired_1',
@@ -552,7 +544,7 @@ class Chain:
                 
                 #@todo silent mates do not make pairs but are one directional
                 # in their input - has to be fixed in order to allow edge_merging
-                #self.chain.insert(r,broken_mate)
+                #self.graph.insert(r,broken_mate)
 
             else:# pragma: no cover
                 raise Exception("Unknown type read: '"+str(rg)+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
@@ -624,8 +616,8 @@ splice-junc:                           <=============>
                     except:
                         # This happens with some weird reads
                         #if rg in ['spanning_paired_2','spanning_singleton_2_r']:
-                        #self.chain.create_node(i_pos2)
-                        #self.chain.get_node_reference(i_pos2).add_clip()
+                        #self.graph.create_node(i_pos2)
+                        #self.graph.get_node_reference(i_pos2).add_clip()
                         #logging.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
                         pass
                 else:
@@ -658,6 +650,8 @@ splice-junc:                           <=============>
             node1.new_edge(node2,_type,alignment_key,do_vice_versa)
         else:
             node1.new_edge(node2,_type,None,do_vice_versa)
+        
+        print node1
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional edge between read and sa-tag in the Chain
@@ -884,39 +878,8 @@ splice-junc:                           <=============>
                 node1 = interval[2][key]
                 for edge in node1.edges.values():
                     if edge.target_in_range(target_range):
-                        yield (edge)
+                        yield edge
     
-    def search_edges_between(self,pos1, pos2, insert_size):
-        """searches for reads inbetween two regions (e.g. break + ins. size):
-        
-        [     ]                   [     ]
-         |  |                       | |
-         |   -----------------------  |
-          ----------------------------
-        
-        @todo: correct for splice junction width
-        @todo use idxtree.search()
-        """
-        range1 = self.get_range(pos1,insert_size,False)
-        range2 = self.get_range(pos2,insert_size,False)
-        
-        if range1[2] == -1:
-            _min = range1[1]
-            _max = range1[0] + SPLICE_JUNC_ACC_ERR
-            interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
-        else:
-            _max = range1[1] - SPLICE_JUNC_ACC_ERR
-            _min = range1[0]
-            interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
-        
-        for interval in interval_iterator:
-            if interval[0] != pos1.pos:
-                if interval[2].has_key(pos1.strand):
-                    node_i = interval[2][pos1.strand]
-                    for edge in node_i.edges.values():
-                        if edge.target_in_range(range2) and edge._target.position.strand == pos2.strand:
-                            yield (edge)
-
     def print_chain(self):# pragma: no cover
         print "**************************************************************"
         for node in self:
@@ -963,30 +926,59 @@ splice-junc:                           <=============>
         logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
         return candidates
     
-    #@todo ADD RECURSION DEPTH LIMIT
     def prune_edge(self, edge, insert_size):
         ## @ todo double check if this is strand specific
         
-        node1 = edge._origin
-        node2 = edge._target
-        
+        node1, node2 = edge._origin, edge._target
         edge_complement = edge.get_complement()
         
-        i = 0
         for edge_m in self.search_edges_between(node1.position, node2.position, insert_size):
-            i += 1
             d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
             d2 = edge._target.position.get_dist(edge_m._target.position, True)
             d = abs(d1)+abs(d2)
-            if d<= insert_size:
+            if d <= insert_size:
                 edge_mc = edge_m.get_complement()
                 
+                s1 = str(edge)
+                s2 = str(edge_m)
+                if s2.find('splice') > -1:
+                    print "---"+s1+"+"+s2+"---"
+                 
                 edge.merge_edge(edge_m)
                 edge_complement.merge_edge(edge_mc)
                 
                 self.remove_edge(edge_m) # complement is automatically removed after removing the fwd
+    
+    def search_edges_between(self,pos1, pos2, insert_size):
+        """searches for reads inbetween two regions (e.g. break + ins. size):
         
-        return i
+        [     ]                   [     ]
+         |  |                       | |
+         |   -----------------------  |
+          ----------------------------
+        
+        @todo: correct for splice junction width
+        @todo use idxtree.search()
+        """
+        range1 = self.get_range(pos1,insert_size,False)
+        range2 = self.get_range(pos2,insert_size,False)
+        
+        if range1[2] == -1:
+            _min = range1[1]
+            _max = range1[0] + SPLICE_JUNC_ACC_ERR
+            interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
+        else:
+            _max = range1[1] - SPLICE_JUNC_ACC_ERR
+            _min = range1[0]
+            interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
+        
+        for interval in interval_iterator:
+            if interval[0] != pos1.pos:
+                if interval[2].has_key(pos1.strand):
+                    node_i = interval[2][pos1.strand]
+                    for edge in node_i.edges.values():
+                        if edge.target_in_range(range2) and edge._target.position.strand == pos2.strand:
+                            yield edge
     
     def rejoin_splice_juncs(self, thicker_edges, insert_size):
         """thicker edges go across the break point:
@@ -1070,7 +1062,7 @@ thick edges:
                                     dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
                                     sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
-
+                                    
                                     if dist_target1 < insert_size and dist_target2 < insert_size and sq_dist_target < right_junc[0]:
                                         right_junc = (sq_dist_target, splice_junc)
                             
@@ -1193,7 +1185,7 @@ have edges to the same nodes of the already existing network,
         return subnetworks
 
 
-class Subnet(Chain):
+class Subnet():
     def __init__(self,_id,edges):
         self._id = _id
         self.edges = edges
@@ -1371,7 +1363,7 @@ class Subnet(Chain):
     def merge(self, subnet_m):
         for edge in subnet_m.edges:
             self.edges.append(edge)
-
+        
         self.calc_clips()
         self.calc_scores()
         self.reorder_edges()
@@ -1382,7 +1374,7 @@ class IntronDecomposition:
         self.pysam_fh = self.test_disco_alignment(alignment_file)
     
     def decompose(self):
-        chain = Chain(self.pysam_fh)
+        chain = Graph(self.pysam_fh)
         chain.insert_alignment()
         
         thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
