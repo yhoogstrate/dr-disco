@@ -894,12 +894,12 @@ splice-junc:                           <=============>
                 if edge not in edges:
                     score = edge.get_scores()
                     if score > 0:
-                        edge_c = edge.get_complement()
+                        #edge_c = edge.get_complement()
                         edges.add(edge)
-                        edges.add(edge_c)
+                        #edges.add(edge_c)
                         
-                        edges_tuple.append((edge,score+1,order))
-                        edges_tuple.append((edge.get_complement(),score,order))
+                        edges_tuple.append((edge,score,order))
+                        #edges_tuple.append((edge.get_complement(),score,order))
                         order -= 1
         
         del(edges,order)

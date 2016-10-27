@@ -1,3 +1,7 @@
+2016-10-27	Youri Hoogstrate	v0.0.5
+	* Uses a single index structure for accessing all edges in a sorted
+	  manner in order to improve the speed of pruning
+
 2016-10-26	Youri Hoogstrate	v0.0.4
 	* Total distance in pruning (sum of two sides) may not be more than
       the insert size
