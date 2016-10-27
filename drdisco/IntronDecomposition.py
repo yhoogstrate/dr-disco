@@ -907,11 +907,7 @@ splice-junc:                           <=============>
         self.edge_idx = [edge[0] for edge in sorted(edges_tuple, key=operator.itemgetter(1, 2), reverse=True)]
     
     def get_start_point(self):
-        """Returns the top scoring edges in the chain
-        
-        By doing this iteratively, and removing the top edge in the mean time, you get some kind of unlogical ordering function
-        @todo - this trick is silly: it uses a genometree and all recursive children of the nodes
-                Add a set or list of vector that keeps track of all Edges ordered by a certain score on top of the tree?
+        """Returns the top scoring edges in the chain ordered by (1) score and (2) genomic position to get consistent output
         """
         if len(self.edge_idx) > 0:
             top_scoring = self.edge_idx[0]
@@ -1279,7 +1275,7 @@ class Subnet():
                     ("valid" if self.discarded == [] else ','.join(self.discarded)), # Classification status
                     self.total_score, self.total_clips, self.get_n_split_reads(), self.get_n_discordant_reads(), # Evidence stats
                     len(self.edges), nodes_a, nodes_b, # Edges and nodes stats
-                    self.edges[0][0].get_entropy(), self.get_overall_entropy(), # Entropy stas
+                    self.edges[0][0].get_entropy(), self.get_overall_entropy(), # Entropy stats
                     "&".join([str(edge[0]) for edge in self.edges]) # Data structure
             ))
     
@@ -1446,6 +1442,13 @@ class IntronDecomposition:
         fh.write(str(self))
     
     def __str__(self):
+        ordered = []
+        order = 0 # Order of top-edge in subnet
+        for subnet in self.results:
+            ordered.append((subnet, subnet.total_score, subnet.get_overall_entropy(), order))
+            order -= 1
+        ordered = [subnet[0] for subnet in sorted(ordered, key=operator.itemgetter(1, 2, 3), reverse=True)]
+        
         return (
             "chr-A"           "\t" "pos-A"             "\t" "direction-A""\t"
             "chr-B"           "\t" "pos-B"             "\t" "direction-B""\t"
@@ -1454,7 +1457,7 @@ class IntronDecomposition:
             "n-edges"         "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
             "entropy-bp-edge" "\t" "entropy-all-edges" "\t"
             "data-structure"  "\n"
-            "%s" % (''.join([str(subnet) for subnet in self.results]) )
+            "%s" % (''.join([str(subnet) for subnet in ordered]) )
             )
 
     def merge_overlapping_subnets(self, subnets, insert_size):
