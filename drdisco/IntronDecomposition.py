@@ -888,12 +888,11 @@ splice-junc:                           <=============>
         edges = {}
         for node in self:
             for edge in node.edges.values():
-                score = edge.get_scores()
-                
-                ##@todo get complement here and if max(scores) > 0, insert
-                if edge not in edges.keys() and score > 0:
-                    edges[edge] = score+1
-                    edges[edge.get_complement()] = score
+                if edge not in edges.keys():
+                    score = edge.get_scores()
+                    if score > 0:
+                        edges[edge] = score+1
+                        edges[edge.get_complement()] = score
         
         self.edge_idx = sorted(edges, key=edges.__getitem__, reverse=True)
     
