@@ -885,7 +885,9 @@ splice-junc:                           <=============>
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     
     def generate_edge_idx(self):
+        edges2 = []
         edges = {}
+        order = 0
         for node in self:
             for edge in node.edges.values():
                 if edge not in edges.keys():
@@ -893,8 +895,20 @@ splice-junc:                           <=============>
                     if score > 0:
                         edges[edge] = score+1
                         edges[edge.get_complement()] = score
+                        
+                        edges2.append((edge,score+1,order))
+                        edges2.append((edge.get_complement(),score,order))
+                        order += 1
         
-        self.edge_idx = sorted(edges, key=edges.__getitem__, reverse=True)
+        #print edges2
+        
+        import operator
+        #self.edge_idx = sorted(edges, key=edges.__getitem__, reverse=True)
+        list1 = sorted(edges2, key=operator.itemgetter(1, 2),reverse=True)
+        list2 = [edge[0] for edge in list1]
+        #print list1[0:3]
+        #print list2[0:3]
+        self.edge_idx = list2
     
     def get_start_point(self):
         """Returns the top scoring edges in the chain
@@ -910,6 +924,8 @@ splice-junc:                           <=============>
             self.edge_idx.remove(top_scoring)
             self.edge_idx.remove(top_scoring_c)
             
+            print ">>>",top_scoring.get_scores()
+            print top_scoring
             return top_scoring, top_scoring_c
         else:
             return None, None
