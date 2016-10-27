@@ -334,9 +334,9 @@ class Node:
                 top_edge = edge
         
         if top_edge != None:
-            return (maxscore, top_edge, self, top_edge._target)
+            return (maxscore, top_edge)#, self, top_edge._target)
         else:
-            return (None, None, None, None)
+            return (None, None)
     
     def new_edge(self,node2,edge_type,alignment_key,do_vice_versa):
         if do_vice_versa:
@@ -650,8 +650,6 @@ splice-junc:                           <=============>
             node1.new_edge(node2,_type,alignment_key,do_vice_versa)
         else:
             node1.new_edge(node2,_type,None,do_vice_versa)
-        
-        print node1
     
     def insert(self,read,parsed_SA_tag,specific_type = None):
         """Inserts a bi-drectional edge between read and sa-tag in the Chain
@@ -691,9 +689,7 @@ splice-junc:                           <=============>
          - spanning_paired_2 the breakpoint is at: start
         regardless of the strand (+/-)"""
         
-        pos1 = None
-        pos2 = None
-        
+        pos1, pos2 = None, None
         rg = read.get_tag('RG')
         
         if rg in ["discordant_mates"]:
@@ -887,7 +883,20 @@ splice-junc:                           <=============>
             if len(_str.strip()) > 0:
                 print _str
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
-
+    
+    def generate_edge_idx(self):
+        edges = {}
+        for node in self:
+            for edge in node.edges.values():
+                score = edge.get_scores()
+                
+                ##@todo get complement here and if max(scores) > 0, insert
+                if edge not in edges.keys() and score > 0:
+                    edges[edge] = score+1
+                    edges[edge.get_complement()] = score
+        
+        self.edge_idx = sorted(edges, key=edges.__getitem__, reverse=True)
+    
     def get_start_point(self):
         """Returns the top scoring edges in the chain
         
@@ -895,32 +904,35 @@ splice-junc:                           <=============>
         @todo - this trick is silly: it uses a genometree and all recursive children of the nodes
                 Add a set or list of vector that keeps track of all Edges ordered by a certain score on top of the tree?
         """
-        maxscore = 0
-        edge = None
-        
-        for node in self:
-            _score, _edge, _node1, _node2 = node.get_top_edge()
-            if _edge != None and _score > maxscore:
-                maxscore = _score
-                edge = _edge
-        
-        return edge
+        if len(self.edge_idx) > 0:
+            top_scoring = self.edge_idx[0]
+            top_scoring_c = top_scoring.get_complement()
+            
+            self.edge_idx.remove(top_scoring)
+            self.edge_idx.remove(top_scoring_c)
+            
+            return top_scoring, top_scoring_c
+        else:
+            return None, None
     
     def prune(self,insert_size):
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
         logging.info("Finding and merging other edges in close proximity (insert size)")
+        self.generate_edge_idx()
         
         candidates = []
-        candidate = self.get_start_point()
         #self.print_chain()
+        
+        candidate, candidate_c = self.get_start_point()
         
         while candidate != None:
             self.prune_edge(candidate, insert_size)
-            candidates.append((candidate, candidate.get_complement()))
+            candidates.append((candidate,candidate_c))
+            
             self.remove_edge(candidate)# do not remove if splice junc exists?
             
-            candidate = self.get_start_point()
+            candidate, candidate_c = self.get_start_point()
         
         #self.print_chain()
         logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
@@ -941,13 +953,14 @@ splice-junc:                           <=============>
                 
                 s1 = str(edge)
                 s2 = str(edge_m)
-                if s2.find('splice') > -1:
-                    print "---"+s1+"+"+s2+"---"
                  
                 edge.merge_edge(edge_m)
                 edge_complement.merge_edge(edge_mc)
                 
                 self.remove_edge(edge_m) # complement is automatically removed after removing the fwd
+                
+                self.edge_idx.remove(edge_m)
+                self.edge_idx.remove(edge_mc)
     
     def search_edges_between(self,pos1, pos2, insert_size):
         """searches for reads inbetween two regions (e.g. break + ins. size):
@@ -1562,5 +1575,5 @@ class IntronDecomposition:
             if len(subnet.discarded) > 0:
                 k += 1
         
-        logging.info("* Filtered "+str(k)+" of the "+str(len(subnets))+" subnetwork(s)")
+        logging.info("Filtered "+str(k)+" of the "+str(len(subnets))+" subnetwork(s)")
         return subnets
