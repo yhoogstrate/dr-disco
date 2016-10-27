@@ -9,7 +9,7 @@ RNA-Seq read alignment.
 """
 
 #http://www.samformat.info/sam-format-flag
-import logging,re,math,copy,sys
+import logging,re,math,copy,sys,operator
 import pysam
 from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
@@ -885,30 +885,26 @@ splice-junc:                           <=============>
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     
     def generate_edge_idx(self):
-        edges2 = []
-        edges = {}
+        edges = set()
+        edges_tuple = []
         order = 0
+        
         for node in self:
             for edge in node.edges.values():
-                if edge not in edges.keys():
+                if edge not in edges:
                     score = edge.get_scores()
                     if score > 0:
-                        edges[edge] = score+1
-                        edges[edge.get_complement()] = score
+                        edge_c = edge.get_complement()
+                        edges.add(edge)
+                        edges.add(edge_c)
                         
-                        edges2.append((edge,score+1,order))
-                        edges2.append((edge.get_complement(),score,order))
-                        order += 1
+                        edges_tuple.append((edge,score+1,order))
+                        edges_tuple.append((edge.get_complement(),score,order))
+                        order -= 1
         
-        #print edges2
+        del(edges,order)
         
-        import operator
-        #self.edge_idx = sorted(edges, key=edges.__getitem__, reverse=True)
-        list1 = sorted(edges2, key=operator.itemgetter(1, 2),reverse=True)
-        list2 = [edge[0] for edge in list1]
-        #print list1[0:3]
-        #print list2[0:3]
-        self.edge_idx = list2
+        self.edge_idx = [edge[0] for edge in sorted(edges_tuple, key=operator.itemgetter(1, 2), reverse=True)]
     
     def get_start_point(self):
         """Returns the top scoring edges in the chain
@@ -924,8 +920,6 @@ splice-junc:                           <=============>
             self.edge_idx.remove(top_scoring)
             self.edge_idx.remove(top_scoring_c)
             
-            print ">>>",top_scoring.get_scores()
-            print top_scoring
             return top_scoring, top_scoring_c
         else:
             return None, None
