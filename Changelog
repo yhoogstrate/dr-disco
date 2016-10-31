@@ -1,3 +1,7 @@
+2016-10-31	Youri Hoogstrate	v0.0.7
+	* Fixed a few small flaws in pruning (taking an alignment mistake
+	  offset of 3bp into account and pruning nodes an identical l-position
+
 2016-10-28	Youri Hoogstrate	v0.0.6
 	* Better order in final output file
 

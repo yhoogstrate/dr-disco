@@ -224,21 +224,7 @@ class Edge:
     
     def get_clips(self):# pragma: no cover
         return self._origin.clips + self._target.clips
-    
-    def target_in_range(self,_range):
-        if _range[0] > _range[1]:
-            _max = _range[0]
-            _min = _range[1]
-        else:
-            _min = _range[0]
-            _max = _range[1]
-            
-        return (
-                        #(self._origin.position.pos >= _min) and (self._origin.position.pos <= _max)
-                 #or 
-                         (self._target.position.pos >= _min) and (self._target.position.pos <= _max)
-                )
-    
+
     def __str__(self):
         typestring = []
         for _t in sorted(self._types.keys()):
@@ -478,18 +464,6 @@ class Graph:
         if not list(self.idxtree[pos._chr][pos.pos])[0][2].has_key(pos.strand):
             list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand] = Node(pos)
     
-    def get_range(self,pos,insert_size,inverse_strand):
-        if inverse_strand:
-            if pos.strand == STRAND_FORWARD:
-                return (pos.pos,(pos.pos-insert_size)-1,-1)
-            else:
-                return (pos.pos,(pos.pos+insert_size)+1,1)
-        else:
-            if pos.strand == STRAND_REVERSE:
-                return (pos.pos,(pos.pos-insert_size)-1,-1)
-            else:
-                return (pos.pos,(pos.pos+insert_size)+1,1)
-        
     def get_node_reference(self,pos):
         try:
             return list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand]
@@ -865,15 +839,12 @@ splice-junc:                           <=============>
         if len(new_element[2]) > 0:
             self.idxtree[pos._chr].add(new_element)
     
-    def search_splice_edges_between(self,pos1,pos2, insert_size):
-        # insert size is two directional
-        target_range = (pos2.pos - insert_size, pos2.pos+ insert_size, None)
-        
+    def search_splice_edges_between(self,pos1,pos2, insert_size):# insert size is two directional
         for interval in self.idxtree[pos1._chr].search(pos1.pos - insert_size, pos1.pos + insert_size + 1):
             for key in interval[2].keys():
                 node1 = interval[2][key]
                 for edge in node1.edges.values():
-                    if edge.target_in_range(target_range):
+                    if edge._target.position.pos >= (pos2.pos - insert_size) and (pos2.pos + insert_size):
                         yield edge
     
     def print_chain(self):# pragma: no cover
@@ -945,14 +916,13 @@ splice-junc:                           <=============>
     
     def prune_edge(self, edge, insert_size):
         ## @ todo double check if this is strand specific
-        
-        node1, node2 = edge._origin, edge._target
         edge_complement = edge.get_complement()
         
-        for edge_m in self.search_edges_between(node1.position, node2.position, insert_size):
+        for edge_m in self.search_edges_between(edge, insert_size):
             d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
             d2 = edge._target.position.get_dist(edge_m._target.position, True)
             d = abs(d1)+abs(d2)
+            
             if d <= insert_size:
                 edge_mc = edge_m.get_complement()
                 
@@ -967,36 +937,25 @@ splice-junc:                           <=============>
                 self.edge_idx.remove(edge_m)
                 self.edge_idx.remove(edge_mc)
     
-    def search_edges_between(self,pos1, pos2, insert_size):
-        """searches for reads inbetween two regions (e.g. break + ins. size):
+    def search_edges_between(self,edge_to_prune, insert_size):
+        """searches for other junctions in-between edge+insert size:"""
+        def pos_to_range(pos,insert_size):
+            if pos.strand == STRAND_REVERSE:
+                return (pos.pos-insert_size)-1, pos.pos + SPLICE_JUNC_ACC_ERR
+            else:
+                return pos.pos - SPLICE_JUNC_ACC_ERR, (pos.pos+insert_size)+1
         
-        [     ]                   [     ]
-         |  |                       | |
-         |   -----------------------  |
-          ----------------------------
+        pos1, pos2 = edge_to_prune._origin.position, edge_to_prune._target.position
         
-        @todo: correct for splice junction width
-        @todo use idxtree.search()
-        """
-        range1 = self.get_range(pos1,insert_size,False)
-        range2 = self.get_range(pos2,insert_size,False)
+        pos1_min, pos1_max = pos_to_range(pos1,insert_size)
+        pos2_min, pos2_max = pos_to_range(pos2,insert_size)
         
-        if range1[2] == -1:
-            _min = range1[1]
-            _max = range1[0] + SPLICE_JUNC_ACC_ERR
-            interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
-        else:
-            _max = range1[1] - SPLICE_JUNC_ACC_ERR
-            _min = range1[0]
-            interval_iterator = self.idxtree[pos1._chr].search(_min - 1, _max + 1)
-        
-        for interval in interval_iterator:
-            if interval[0] != pos1.pos:
-                if interval[2].has_key(pos1.strand):
-                    node_i = interval[2][pos1.strand]
-                    for edge in node_i.edges.values():
-                        if edge.target_in_range(range2) and edge._target.position.strand == pos2.strand:
-                            yield edge
+        for interval in self.idxtree[pos1._chr].search(pos1_min - 1, pos1_max + 1):
+            if interval[2].has_key(pos1.strand):
+                node_i = interval[2][pos1.strand]
+                for edge in node_i.edges.values():
+                    if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
+                        yield edge
     
     def rejoin_splice_juncs(self, thicker_edges, insert_size):
         """thicker edges go across the break point:
