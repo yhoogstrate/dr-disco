@@ -976,7 +976,6 @@ splice-junc:                           <=============>
         pos2_min, pos2_max = pos_to_range(pos2,insert_size)
         
         for interval in self.idxtree[pos1._chr].search(pos1_min - 1, pos1_max + 1):
-            #if interval[0] != pos1.pos:
             if interval[2].has_key(pos1.strand):
                 node_i = interval[2][pos1.strand]
                 for edge in node_i.edges.values():
