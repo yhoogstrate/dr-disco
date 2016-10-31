@@ -938,15 +938,7 @@ splice-junc:                           <=============>
                 self.edge_idx.remove(edge_mc)
     
     def search_edges_between(self,edge_to_prune, insert_size):
-        """searches for reads inbetween two regions (e.g. break + ins. size):
-        
-        [     ]                   [     ]
-         |  |                       | |
-         |   -----------------------  |
-          ----------------------------
-        
-        @todo use idxtree.search()
-        """
+        """searches for other junctions in-between edge+insert size:"""
         def pos_to_range(pos,insert_size):
             if pos.strand == STRAND_REVERSE:
                 return (pos.pos-insert_size)-1, pos.pos + SPLICE_JUNC_ACC_ERR
