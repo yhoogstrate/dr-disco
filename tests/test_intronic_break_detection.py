@@ -261,6 +261,20 @@ class TestIntronicBreakDetection(unittest.TestCase):
         
         self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_15_pruning_offset(self):
+        input_file_a =    TEST_DIR+"test_terg_03.sub_03m.filtered.fixed.bam"
+        test_file    =    TEST_DIR+"test_15.out.dbed"
+        output_file  =  T_TEST_DIR+"test_15.out.dbed"
+        
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
+        
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+        
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+
+
 def main():
     unittest.main()
 
