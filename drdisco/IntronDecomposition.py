@@ -439,7 +439,7 @@ class BreakPosition:
             # must be larger than any Hs chr reflecting natural distances
             # in a way that interchromosomal breaks are 'larger' than
             # intrachromosomal ones
-            return MAX_GENOMIC_DIST
+            return MAX_GENOME_DISTANCE
 
 
 class Graph:
@@ -552,7 +552,7 @@ splice-junc:                           <=============>
                     i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
                     i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
                 
-                    if internal_edge[2] in ['cigar_deletion'] and i_pos1.get_dist(i_pos2,False) < PRUNE_INS_SIZE:
+                    if internal_edge[2] in ['cigar_deletion'] and i_pos1.get_dist(i_pos2,False) < MAX_ACCEPTABLE_INSERT_SIZE:
                         i_pos1 = None
                         i_pos2 = None
                 
@@ -780,7 +780,7 @@ splice-junc:                           <=============>
                       'spanning_singleton_1',  'spanning_singleton_2',
                       'spanning_singleton_1_r','spanning_singleton_2_r']:
                 
-                if abs(pos1.get_dist(pos2,False)) < PRUNE_INS_SIZE:
+                if abs(pos1.get_dist(pos2,False)) < MAX_ACCEPTABLE_INSERT_SIZE:
                     pos1 = None
                     pos2 = None
             
@@ -839,12 +839,12 @@ splice-junc:                           <=============>
         if len(new_element[2]) > 0:
             self.idxtree[pos._chr].add(new_element)
     
-    def search_splice_edges_between(self,pos1,pos2, insert_size):# insert size is two directional
-        for interval in self.idxtree[pos1._chr].search(pos1.pos - insert_size, pos1.pos + insert_size + 1):
+    def search_splice_edges_between(self,pos1,pos2):# insert size is two directional
+        for interval in self.idxtree[pos1._chr].search(pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1):
             for key in interval[2].keys():
                 node1 = interval[2][key]
                 for edge in node1.edges.values():
-                    if edge._target.position.pos >= (pos2.pos - insert_size) and (pos2.pos + insert_size):
+                    if edge._target.position.pos >= (pos2.pos - MAX_ACCEPTABLE_INSERT_SIZE) and (pos2.pos + MAX_ACCEPTABLE_INSERT_SIZE):
                         yield edge
     
     def print_chain(self):# pragma: no cover
@@ -923,7 +923,7 @@ splice-junc:                           <=============>
             d2 = edge._target.position.get_dist(edge_m._target.position, True)
             d = abs(d1)+abs(d2)
             
-            if d <= PRUNE_INS_SIZE:
+            if d <= MAX_ACCEPTABLE_INSERT_SIZE:
                 edge_mc = edge_m.get_complement()
                 
                 s1 = str(edge)
@@ -941,9 +941,9 @@ splice-junc:                           <=============>
         """searches for other junctions in-between edge+insert size:"""
         def pos_to_range(pos):
             if pos.strand == STRAND_REVERSE:
-                return (pos.pos - PRUNE_INS_SIZE)-1, pos.pos + SPLICE_JUNC_ACC_ERR
+                return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE)-1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR
             else:
-                return pos.pos - SPLICE_JUNC_ACC_ERR, (pos.pos + PRUNE_INS_SIZE)+1
+                return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)+1
         
         pos1, pos2 = edge_to_prune._origin.position, edge_to_prune._target.position
         
@@ -957,7 +957,7 @@ splice-junc:                           <=============>
                     if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
                         yield edge
     
-    def rejoin_splice_juncs(self, thicker_edges, insert_size):
+    def rejoin_splice_juncs(self, thicker_edges):
         """thicker edges go across the break point:
 
 thick edges:
@@ -1004,15 +1004,15 @@ thick edges:
                     
                     if j > i:# Avoid unnecessary comparisons
                         if node1.position.strand == node2.position.strand:
-                            left_junc = (MAX_GENOMIC_DIST, None)
+                            left_junc = (MAX_GENOME_DISTANCE, None)
                             
-                            for splice_junc in self.search_splice_edges_between(node1.position, node2.position, insert_size):
+                            for splice_junc in self.search_splice_edges_between(node1.position, node2.position):
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_origin1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_origin2 = abs(splice_junc._target.position.get_dist(node2.position, False))
                                     sq_dist_origin = pow(dist_origin1, 2) + pow(dist_origin2, 2)
                                     
-                                    if dist_origin1 < insert_size and dist_origin2 < insert_size and sq_dist_origin < left_junc[0]:
+                                    if dist_origin1 < MAX_ACCEPTABLE_INSERT_SIZE and dist_origin2 < MAX_ACCEPTABLE_INSERT_SIZE and sq_dist_origin < left_junc[0]:
                                         left_junc = (sq_dist_origin, splice_junc)
                                 
                             if left_junc[1] != None:
@@ -1032,15 +1032,15 @@ thick edges:
                     
                     if j > i:# Avoid unnecessary comparisons
                         if node1.position.strand == node2.position.strand:
-                            right_junc = (MAX_GENOMIC_DIST, None)
+                            right_junc = (MAX_GENOME_DISTANCE, None)
                             
-                            for splice_junc in self.search_splice_edges_between(node1.position, node2.position, insert_size):
+                            for splice_junc in self.search_splice_edges_between(node1.position, node2.position):
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
                                     sq_dist_target = pow(dist_target1, 2) +pow(dist_target2, 2)
                                     
-                                    if dist_target1 < insert_size and dist_target2 < insert_size and sq_dist_target < right_junc[0]:
+                                    if dist_target1 < MAX_ACCEPTABLE_INSERT_SIZE and dist_target2 < MAX_ACCEPTABLE_INSERT_SIZE and sq_dist_target < right_junc[0]:
                                         right_junc = (sq_dist_target, splice_junc)
                             
                             if right_junc[1] != None:
@@ -1126,8 +1126,8 @@ have edges to the same nodes of the already existing network,
             
             ## The original nodes have been emptied, so the most important
             ## edge's are now separated.
-            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes, PRUNE_INS_SIZE)
-            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes, PRUNE_INS_SIZE)
+            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes, MAX_ACCEPTABLE_INSERT_SIZE)
+            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes, MAX_ACCEPTABLE_INSERT_SIZE)
             
             subedges = []
             
@@ -1296,23 +1296,23 @@ class Subnet():
         r_dists = []
         
         for l_node in l_nodes_min:# makes it symmetrical
-            dist = MAX_GENOMIC_DIST
+            dist = MAX_GENOME_DISTANCE
             
             for l_node_t in l_nodes_max:
                 dist = min(abs(l_node.position.get_dist(l_node_t.position, True)),dist)
             
-            if dist == MAX_GENOMIC_DIST:
+            if dist == MAX_GENOME_DISTANCE:
                 return False, False
             else:
                 l_dists.append(dist)
     
         for r_node in r_nodes_min:# makes it symmetrical
-            dist = MAX_GENOMIC_DIST
+            dist = MAX_GENOME_DISTANCE
         
             for r_node_t in r_nodes_max:
                 dist = min(abs(r_node.position.get_dist(r_node_t.position, True)),dist)
             
-            if dist == MAX_GENOMIC_DIST:
+            if dist == MAX_GENOME_DISTANCE:
                 return False, False
             else:
                 r_dists.append(dist)
@@ -1355,11 +1355,11 @@ class IntronDecomposition:
         chain.insert_alignment()
         
         thicker_edges = chain.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
-        thicker_edges = chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
+        thicker_edges = chain.rejoin_splice_juncs(thicker_edges) # Merges edges by splice junctions and other junctions
         chain.reinsert_edges(thicker_edges)
         
         subnets = chain.extract_subnetworks_by_splice_junctions(thicker_edges)
-        subnets = self.merge_overlapping_subnets(subnets, PRUNE_INS_SIZE)
+        subnets = self.merge_overlapping_subnets(subnets)
         self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
         # If circos:
@@ -1419,7 +1419,7 @@ class IntronDecomposition:
             "%s" % (''.join([str(subnet) for subnet in ordered]) )
             )
 
-    def merge_overlapping_subnets(self, subnets, insert_size):
+    def merge_overlapping_subnets(self, subnets):
         """Merges very closely adjacent subnets based on the smallest
         internal distance. E.g. if we have a subnet having 1 and one
         having 2 edges:
@@ -1470,8 +1470,8 @@ class IntronDecomposition:
                         l_dists, r_dists = subnets[i].find_distances(subnets[j])
                         if l_dists != False:# and r_dists != False:
                             
-                            n_l_dist = sum([1 for x in l_dists if x < PRUNE_INS_SIZE])
-                            n_r_dist = sum([1 for x in r_dists if x < PRUNE_INS_SIZE])
+                            n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
+                            n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
                             
                             rmsq_l_dist = sq_dist(l_dists)
                             rmsq_r_dist = sq_dist(r_dists)

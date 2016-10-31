@@ -34,9 +34,9 @@ __log_format__ = "[%(filename)s:%(lineno)s - %(funcName)s()] %(asctime)s - %(lev
 
 
 # parameters
-PRUNE_INS_SIZE = 450
-SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error or other general alignment mistakes
-MAX_GENOMIC_DIST = 999999999
+MAX_ACCEPTABLE_INSERT_SIZE = 450
+MAX_ACCEPTABLE_ALIGNMENT_ERROR = 3 # acceptable splice junction error or other general alignment mistakes
+MAX_GENOME_DISTANCE = 999999999
 
 
 # filter settings
