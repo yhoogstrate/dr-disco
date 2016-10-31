@@ -969,19 +969,19 @@ splice-junc:                           <=============>
             
         def pos_to_range(pos,insert_size):
             if pos.strand == STRAND_REVERSE:
-                return ((pos.pos-insert_size)-1,pos.pos,-1)
+                return (pos.pos-insert_size)-1, pos.pos + SPLICE_JUNC_ACC_ERR
             else:
-                return (pos.pos,(pos.pos+insert_size)+1,1)
+                return pos.pos - SPLICE_JUNC_ACC_ERR, (pos.pos+insert_size)+1
         
-        range1 = pos_to_range(pos1,insert_size)
-        range2 = pos_to_range(pos2,insert_size)
+        def pos_to_range2(pos,insert_size):
+            if pos.strand == STRAND_REVERSE:
+                return (pos.pos-insert_size)-1, pos.pos
+            else:
+                return pos.pos, (pos.pos+insert_size)+1
         
-        pos1_min = range1[0]
-        if range1[2] == -1:
-            pos1_max = range1[1] + SPLICE_JUNC_ACC_ERR
-        else:
-            pos1_max = range1[1] - SPLICE_JUNC_ACC_ERR
-            
+        pos1_min, pos1_max = pos_to_range(pos1,insert_size)
+        range2 = pos_to_range2(pos2,insert_size)
+        
         for interval in self.idxtree[pos1._chr].search(pos1_min - 1, pos1_max + 1):
             if interval[0] != pos1.pos:
                 if interval[2].has_key(pos1.strand):
