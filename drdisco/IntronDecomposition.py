@@ -249,7 +249,7 @@ class Node:
         self.edges = {}
         self.splice_edges = {}
     
-    def rfind_connected_sjuncs(self,nodes,insert_size_to_travel):
+    def recursively_find_connected_splice_junctions(self,nodes,insert_size_to_travel):
         """Recursively finds all nodes that are connected by splice junctions
         
         self: the node of which it's splice junctions are traversed in order to find more nodes that may not be already in the blak
@@ -257,7 +257,6 @@ class Node:
          -  [     ] splice edge: splice p1, splice p2
          
         """
-        #@todo only lnodes are taken into account? / not sure about this; name nodes is confusing
         results_new2 = {}
         for edge_n, edge in self.splice_edges.items():
             if edge_n not in nodes:
@@ -277,6 +276,7 @@ class Node:
                     if not results_new2.has_key(dkey):
                         results_new2[dkey] = set()
                     results_new2[dkey].add(edge_n)
+                    edges.add(edge[1])
         
         # old results, + recursive results
         results_all = set(nodes)
@@ -287,10 +287,12 @@ class Node:
         for depth in results_new2.keys():
             if depth > 0:
                 for node in results_new2[depth]:
-                    for edge in node.rfind_connected_sjuncs(results_all, depth):
-                        results_all.add(edge)
+                    additional_nodes, additional_edges = node.recursively_find_connected_splice_junctions(results_all, depth)
+                    for additional_node in additional_nodes:
+                        results_all.add(additional_node)
+                    edges = edges.union(additional_edges)
         
-        return list(results_all)
+        return list(results_all), edges
     
     def add_clip(self):
         self.clips += 1
@@ -1126,8 +1128,9 @@ have edges to the same nodes of the already existing network,
             
             ## The original nodes have been emptied, so the most important
             ## edge's are now separated.
-            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes, MAX_ACCEPTABLE_INSERT_SIZE)
-            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes, MAX_ACCEPTABLE_INSERT_SIZE)
+            left_nodes, left_splice_junctions = start_point._origin.recursively_find_connected_splice_junctions(left_nodes, MAX_ACCEPTABLE_INSERT_SIZE, set())
+            right_nodes, right_splice_junctions = start_point._target.recursively_find_connected_splice_junctions(right_nodes, MAX_ACCEPTABLE_INSERT_SIZE, set())
+            left_splice_junctions, right_splice_junctions = len(left_splice_junctions), len(right_splice_junctions)
             
             subedges = []
             
@@ -1156,16 +1159,18 @@ have edges to the same nodes of the already existing network,
             for pop in popme:
                 thicker_edges.remove(pop)
             
-            subnetworks.append(Subnet(q,subedges))
+            subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
         
         logging.info("Extracted "+str(len(subnetworks))+" subnetwork(s)")
         return subnetworks
 
 
 class Subnet():
-    def __init__(self,_id,edges):
+    def __init__(self,_id,edges,n_left_splice_junctions,n_right_splice_junctions):
         self._id = _id
         self.edges = edges
+        self.n_left_splice_junctions = n_left_splice_junctions
+        self.n_right_splice_junctions = n_right_splice_junctions
         self.total_clips = 0
         self.total_score = 0
         self.discarded = []
@@ -1227,6 +1232,7 @@ class Subnet():
             "%s\t"
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
+            "%i\t%i\t"
             "%s\t%s\t"#%.2f\t%.2f\t
             "%s\n" % (
                     node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0][0]._origin.position.strand], # Pos-A
@@ -1234,6 +1240,7 @@ class Subnet():
                     ("valid" if self.discarded == [] else ','.join(self.discarded)), # Classification status
                     self.total_score, self.total_clips, self.get_n_split_reads(), self.get_n_discordant_reads(), # Evidence stats
                     len(self.edges), nodes_a, nodes_b, # Edges and nodes stats
+                    self.n_left_splice_junctions, self.n_right_splice_junctions,
                     self.edges[0][0].get_entropy(), self.get_overall_entropy(), # Entropy stats
                     "&".join([str(edge[0]) for edge in self.edges]) # Data structure
             ))
@@ -1341,6 +1348,9 @@ class Subnet():
         for edge in subnet_m.edges:
             self.edges.append(edge)
         
+        self.n_left_splice_junctions += subnet_m.n_left_splice_junctions
+        self.n_right_splice_junctions += subnet_m.n_right_splice_junctions
+        
         self.calc_clips()
         self.calc_scores()
         self.reorder_edges()
@@ -1414,6 +1424,7 @@ class IntronDecomposition:
             "filter-status"   "\t"
             "score"           "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
             "n-edges"         "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
+            "n-splice-junc-A" "\t" "n-splice-junc-B"   "\t"
             "entropy-bp-edge" "\t" "entropy-all-edges" "\t"
             "data-structure"  "\n"
             "%s" % (''.join([str(subnet) for subnet in ordered]) )
