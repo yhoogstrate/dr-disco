@@ -34,7 +34,6 @@ __log_format__ = "[%(filename)s:%(lineno)s - %(funcName)s()] %(asctime)s - %(lev
 
 
 # parameters
-MIN_DISCO_INS_SIZE = 400
 PRUNE_INS_SIZE = 450
 SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error or other general alignment mistakes
 MAX_GENOMIC_DIST = 999999999

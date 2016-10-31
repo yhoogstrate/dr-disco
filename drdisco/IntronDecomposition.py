@@ -552,7 +552,7 @@ splice-junc:                           <=============>
                     i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
                     i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
                 
-                    if internal_edge[2] in ['cigar_deletion'] and i_pos1.get_dist(i_pos2,False) < MIN_DISCO_INS_SIZE:
+                    if internal_edge[2] in ['cigar_deletion'] and i_pos1.get_dist(i_pos2,False) < PRUNE_INS_SIZE:
                         i_pos1 = None
                         i_pos2 = None
                 
@@ -780,7 +780,7 @@ splice-junc:                           <=============>
                       'spanning_singleton_1',  'spanning_singleton_2',
                       'spanning_singleton_1_r','spanning_singleton_2_r']:
                 
-                if abs(pos1.get_dist(pos2,False)) < MIN_DISCO_INS_SIZE:
+                if abs(pos1.get_dist(pos2,False)) < PRUNE_INS_SIZE:
                     pos1 = None
                     pos2 = None
             
@@ -891,7 +891,7 @@ splice-junc:                           <=============>
         else:
             return None, None
     
-    def prune(self,insert_size):
+    def prune(self):
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
         logging.info("Finding and merging other edges in close proximity (insert size)")
@@ -903,7 +903,7 @@ splice-junc:                           <=============>
         candidate, candidate_c = self.get_start_point()
         
         while candidate != None:
-            self.prune_edge(candidate, insert_size)
+            self.prune_edge(candidate)
             candidates.append((candidate,candidate_c))
             
             self.remove_edge(candidate)# do not remove if splice junc exists?
@@ -914,16 +914,16 @@ splice-junc:                           <=============>
         logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
         return candidates
     
-    def prune_edge(self, edge, insert_size):
+    def prune_edge(self, edge):
         ## @ todo double check if this is strand specific
         edge_complement = edge.get_complement()
         
-        for edge_m in self.search_edges_between(edge, insert_size):
+        for edge_m in self.search_edges_between(edge):
             d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
             d2 = edge._target.position.get_dist(edge_m._target.position, True)
             d = abs(d1)+abs(d2)
             
-            if d <= insert_size:
+            if d <= PRUNE_INS_SIZE:
                 edge_mc = edge_m.get_complement()
                 
                 s1 = str(edge)
@@ -937,18 +937,18 @@ splice-junc:                           <=============>
                 self.edge_idx.remove(edge_m)
                 self.edge_idx.remove(edge_mc)
     
-    def search_edges_between(self,edge_to_prune, insert_size):
+    def search_edges_between(self,edge_to_prune):
         """searches for other junctions in-between edge+insert size:"""
-        def pos_to_range(pos,insert_size):
+        def pos_to_range(pos):
             if pos.strand == STRAND_REVERSE:
-                return (pos.pos-insert_size)-1, pos.pos + SPLICE_JUNC_ACC_ERR
+                return (pos.pos - PRUNE_INS_SIZE)-1, pos.pos + SPLICE_JUNC_ACC_ERR
             else:
-                return pos.pos - SPLICE_JUNC_ACC_ERR, (pos.pos+insert_size)+1
+                return pos.pos - SPLICE_JUNC_ACC_ERR, (pos.pos + PRUNE_INS_SIZE)+1
         
         pos1, pos2 = edge_to_prune._origin.position, edge_to_prune._target.position
         
-        pos1_min, pos1_max = pos_to_range(pos1,insert_size)
-        pos2_min, pos2_max = pos_to_range(pos2,insert_size)
+        pos1_min, pos1_max = pos_to_range(pos1)
+        pos2_min, pos2_max = pos_to_range(pos2)
         
         for interval in self.idxtree[pos1._chr].search(pos1_min - 1, pos1_max + 1):
             if interval[2].has_key(pos1.strand):
@@ -1126,8 +1126,8 @@ have edges to the same nodes of the already existing network,
             
             ## The original nodes have been emptied, so the most important
             ## edge's are now separated.
-            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes,450)
-            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes,450)
+            left_nodes = start_point._origin.rfind_connected_sjuncs(left_nodes, PRUNE_INS_SIZE)
+            right_nodes = start_point._target.rfind_connected_sjuncs(right_nodes, PRUNE_INS_SIZE)
             
             subedges = []
             
@@ -1354,7 +1354,7 @@ class IntronDecomposition:
         chain = Graph(self.pysam_fh)
         chain.insert_alignment()
         
-        thicker_edges = chain.prune(PRUNE_INS_SIZE) # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
+        thicker_edges = chain.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         thicker_edges = chain.rejoin_splice_juncs(thicker_edges, PRUNE_INS_SIZE) # Merges edges by splice junctions and other junctions
         chain.reinsert_edges(thicker_edges)
         
@@ -1457,8 +1457,6 @@ class IntronDecomposition:
             
             return math.sqrt(avg_sq_d)
         
-        ISIZE=450
-        
         n = len(subnets)
         
         k = 0
@@ -1472,8 +1470,8 @@ class IntronDecomposition:
                         l_dists, r_dists = subnets[i].find_distances(subnets[j])
                         if l_dists != False:# and r_dists != False:
                             
-                            n_l_dist = sum([1 for x in l_dists if x < ISIZE])
-                            n_r_dist = sum([1 for x in r_dists if x < ISIZE])
+                            n_l_dist = sum([1 for x in l_dists if x < PRUNE_INS_SIZE])
+                            n_r_dist = sum([1 for x in r_dists if x < PRUNE_INS_SIZE])
                             
                             rmsq_l_dist = sq_dist(l_dists)
                             rmsq_r_dist = sq_dist(r_dists)
