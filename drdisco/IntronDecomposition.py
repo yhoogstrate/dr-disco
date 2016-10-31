@@ -969,7 +969,7 @@ splice-junc:                           <=============>
             
         def pos_to_range(pos,insert_size):
             if pos.strand == STRAND_REVERSE:
-                return (pos.pos,(pos.pos-insert_size)-1,-1)
+                return ((pos.pos-insert_size)-1,pos.pos,-1)
             else:
                 return (pos.pos,(pos.pos+insert_size)+1,1)
         
@@ -977,8 +977,8 @@ splice-junc:                           <=============>
         range2 = pos_to_range(pos2,insert_size)
         
         if range1[2] == -1:
-            pos1_min = range1[1]
-            pos1_max = range1[0] + SPLICE_JUNC_ACC_ERR
+            pos1_min = range1[0]
+            pos1_max = range1[1] + SPLICE_JUNC_ACC_ERR
         else:
             pos1_max = range1[1] - SPLICE_JUNC_ACC_ERR
             pos1_min = range1[0]
