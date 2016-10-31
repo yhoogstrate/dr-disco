@@ -976,13 +976,12 @@ splice-junc:                           <=============>
         range1 = pos_to_range(pos1,insert_size)
         range2 = pos_to_range(pos2,insert_size)
         
+        pos1_min = range1[0]
         if range1[2] == -1:
-            pos1_min = range1[0]
             pos1_max = range1[1] + SPLICE_JUNC_ACC_ERR
         else:
             pos1_max = range1[1] - SPLICE_JUNC_ACC_ERR
-            pos1_min = range1[0]
-        
+            
         for interval in self.idxtree[pos1._chr].search(pos1_min - 1, pos1_max + 1):
             if interval[0] != pos1.pos:
                 if interval[2].has_key(pos1.strand):
