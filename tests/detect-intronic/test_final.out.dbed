@@ -8,7 +8,7 @@ chr21	39851814	+	chr21	39852667	-	entropy=0.0,n_discordant_reads=0/2,n_support=3
 chr21	39859611	+	chr21	39860278	-	entropy=0.0,n_discordant_reads=0/2,n_support=3/8	9	6	3	0	1	1	1	0.0	0.0	chr21:39859611/39859612(+)->chr21:39860278/39860279(-):(spanning_paired_1_t:3)
 chr21	39883871	+	chr21	39885212	-	entropy=0.0,n_discordant_reads=0/2,n_support=3/8	9	6	3	0	1	1	1	0.0	0.0	chr21:39883871/39883872(+)->chr21:39885212/39885213(-):(spanning_paired_2:3)
 chr21	42843732	+	chr21	42870116	-	entropy=0.0,n_discordant_reads=0/2,n_support=3/8	9	11	3	0	1	1	1	0.0	0.0	chr21:42843732/42843733(+)->chr21:42870116/42870117(-):(spanning_paired_2:3)
-chr21	39755685	+	chr21	39775541	-	n_discordant_reads=1/4,n_support=3/16	7	4	2	1	2	2	2	0.0	0.579380164286	chr21:39755685/39755686(+)->chr21:39775541/39775542(-):(spanning_paired_1_t:2)&chr21:39755756/39755757(+)->chr21:39775543/39775544(-):(discordant_mates:1)
+chr21	39755685	+	chr21	39775541	-	n_discordant_reads=1/2,n_support=3/8	7	4	2	1	1	1	1	0.579380164286	0.579380164286	chr21:39755685/39755686(+)->chr21:39775541/39775542(-):(discordant_mates:1,spanning_paired_1_t:2)
 chr21	39834195	+	chr21	39840659	-	n_discordant_reads=0/2,n_support=2/8	6	4	2	0	1	1	1	1.0	1.0	chr21:39834195/39834196(+)->chr21:39840659/39840660(-):(spanning_paired_1_t:2)
 chr21	39842038	+	chr21	39843053	-	n_discordant_reads=0/2,n_support=2/8	6	4	2	0	1	1	1	1.0	1.0	chr21:39842038/39842039(+)->chr21:39843053/39843054(-):(spanning_paired_2:2)
 chr21	39850667	+	chr21	39854268	-	n_discordant_reads=0/2,n_support=2/8	6	4	2	0	1	1	1	1.0	1.0	chr21:39850667/39850668(+)->chr21:39854268/39854269(-):(spanning_paired_1_t:2)
