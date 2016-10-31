@@ -224,21 +224,7 @@ class Edge:
     
     def get_clips(self):# pragma: no cover
         return self._origin.clips + self._target.clips
-    
-    def target_in_range(self,_range):
-        if _range[0] > _range[1]:
-            _max = _range[0]
-            _min = _range[1]
-        else:
-            _min = _range[0]
-            _max = _range[1]
-            
-        return (
-                        #(self._origin.position.pos >= _min) and (self._origin.position.pos <= _max)
-                 #or 
-                         (self._target.position.pos >= _min) and (self._target.position.pos <= _max)
-                )
-    
+
     def __str__(self):
         typestring = []
         for _t in sorted(self._types.keys()):
@@ -853,15 +839,12 @@ splice-junc:                           <=============>
         if len(new_element[2]) > 0:
             self.idxtree[pos._chr].add(new_element)
     
-    def search_splice_edges_between(self,pos1,pos2, insert_size):
-        # insert size is two directional
-        target_range = (pos2.pos - insert_size, pos2.pos+ insert_size, None)
-        
+    def search_splice_edges_between(self,pos1,pos2, insert_size):# insert size is two directional
         for interval in self.idxtree[pos1._chr].search(pos1.pos - insert_size, pos1.pos + insert_size + 1):
             for key in interval[2].keys():
                 node1 = interval[2][key]
                 for edge in node1.edges.values():
-                    if edge.target_in_range(target_range):
+                    if edge._target.position.pos >= (pos2.pos - insert_size) and (pos2.pos + insert_size):
                         yield edge
     
     def print_chain(self):# pragma: no cover
@@ -979,7 +962,7 @@ splice-junc:                           <=============>
             if interval[2].has_key(pos1.strand):
                 node_i = interval[2][pos1.strand]
                 for edge in node_i.edges.values():
-                    if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge.target_in_range((pos2_min, pos2_max)):
+                    if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
                         yield edge
     
     def rejoin_splice_juncs(self, thicker_edges, insert_size):
