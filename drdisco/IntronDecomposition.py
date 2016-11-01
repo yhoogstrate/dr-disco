@@ -1155,17 +1155,6 @@ have edges to the same nodes of the already existing network,
                         if right_node != start_point._target:
                             right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
             
-            
-            print "---- L:"
-            for x in left_splice_junctions:
-                print x
-                print ""
-            print "---- R:"
-            for x in right_splice_junctions:
-                print x
-                print ""
-            print "****"
-            
             del(left_splice_junctions_ds,right_splice_junctions_ds)
             
             # remove all the links to the edges in each of the nodes
