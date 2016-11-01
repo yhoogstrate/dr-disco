@@ -249,7 +249,7 @@ class Node:
         self.edges = {}
         self.splice_edges = {}
     
-    def recursively_find_connected_splice_junctions(self,nodes,insert_size_to_travel):
+    def recursively_find_connected_splice_junctions(self,nodes,insert_size_to_travel,edges):
         """Recursively finds all nodes that are connected by splice junctions
         
         self: the node of which it's splice junctions are traversed in order to find more nodes that may not be already in the blak
@@ -287,7 +287,7 @@ class Node:
         for depth in results_new2.keys():
             if depth > 0:
                 for node in results_new2[depth]:
-                    additional_nodes, additional_edges = node.recursively_find_connected_splice_junctions(results_all, depth)
+                    additional_nodes, additional_edges = node.recursively_find_connected_splice_junctions(results_all, depth, edges)
                     for additional_node in additional_nodes:
                         results_all.add(additional_node)
                     edges = edges.union(additional_edges)
