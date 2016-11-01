@@ -1,3 +1,6 @@
+2016-11-01	Youri Hoogstrate	v0.0.8
+	* Output includes columns containing the number of splice junctions
+
 2016-10-31	Youri Hoogstrate	v0.0.7
 	* Fixed a few small flaws in pruning (taking an alignment mistake
 	  offset of 3bp into account and pruning nodes an identical l-position
