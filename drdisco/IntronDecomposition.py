@@ -184,13 +184,10 @@ class Edge:
         return False
     
     def keep_splice_js_only(self):
-        print self
         for key in self._types.keys():
-            print key
             if key != "cigar_splice_junction":
                 del(self._types[key])
-        print self
-    
+        
     def add_type(self,_type):
         if _type in ["cigar_soft_clip", 'cigar_hard_clip']:# pragma: no cover
             raise Exception("Clips shouldn't be added as edges, but as properties of Nodes")
@@ -909,10 +906,6 @@ splice-junc:                           <=============>
             self.prune_edge(candidate)
             candidates.append((candidate,candidate_c))
             
-            if candidate._origin.position in [42852529,42852530,42860320,42860321]:
-                print "REMOVING:"
-                print candidate
-                
             self.remove_edge(candidate)# do not remove if splice junc exists?
             
             candidate, candidate_c = self.get_start_point()
@@ -1136,7 +1129,6 @@ have edges to the same nodes of the already existing network,
             left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions(left_nodes, MAX_ACCEPTABLE_INSERT_SIZE, {})
             right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions(right_nodes, MAX_ACCEPTABLE_INSERT_SIZE, {})
             
-            #print right_splice_junctions_ds
             left_splice_junctions = set()
             right_splice_junctions = set()
             
@@ -1160,11 +1152,13 @@ have edges to the same nodes of the already existing network,
             # remove all the links to the edges in each of the nodes
             for node in left_nodes:
                 for edge_u in subedges:
-                    for edge in edge_u:
+                    for edge in edge_u:# both normal and complement
                         key = str(edge._target.position)
                         if node.edges.has_key(key):
                             if node.edges[key].get_splice_score()[0] == 0:
                                 del(node.edges[key])
+                            else:
+                                node.edges[key].keep_splice_js_only()
 
             # pop subedges from thicker edges and redo until thicker edges is empty
             popme = set()
