@@ -1121,13 +1121,10 @@ have edges to the same nodes of the already existing network,
         while len(thicker_edges) > 0:
             start_point = thicker_edges[0][0]
             
-            left_nodes = [start_point._origin]
-            right_nodes = [start_point._target]
-            
             ## The original nodes have been emptied, so the most important
             ## edge's are now separated.
-            left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions(left_nodes, MAX_ACCEPTABLE_INSERT_SIZE, {})
-            right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions(right_nodes, MAX_ACCEPTABLE_INSERT_SIZE, {})
+            left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions([start_point._origin], MAX_ACCEPTABLE_INSERT_SIZE, {})
+            right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions([start_point._target], MAX_ACCEPTABLE_INSERT_SIZE, {})
             
             left_splice_junctions = set()
             right_splice_junctions = set()
@@ -1149,17 +1146,6 @@ have edges to the same nodes of the already existing network,
             
             del(left_splice_junctions_ds,right_splice_junctions_ds)
             
-            # remove all the links to the edges in each of the nodes
-            for node in left_nodes:
-                for edge_u in subedges:
-                    for edge in edge_u:# both normal and complement
-                        key = str(edge._target.position)
-                        if node.edges.has_key(key):
-                            if node.edges[key].get_splice_score()[0] == 0:
-                                del(node.edges[key])
-                            else:
-                                node.edges[key].keep_splice_js_only()
-
             # pop subedges from thicker edges and redo until thicker edges is empty
             popme = set()
             for edge in subedges:
