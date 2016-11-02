@@ -145,9 +145,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         #Not sure what 'true' here is exactly, as long as it does
         #not throw an exception
 
-    def test_08(self):
-        """Tests for including disco reads properly"""
-        
+    def test_08_test_inclusion_of_disco_reads(self):
         input_file_a =    TEST_DIR+"test_terg_01.sub_08.filtered.fixed.bam"
         #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
         test_file    =    TEST_DIR+"test_08.out.dbed"
@@ -190,7 +188,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"'")
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_final(self):
         input_file_a =    TEST_DIR+"test_terg_01.filtered.fixed.bam"

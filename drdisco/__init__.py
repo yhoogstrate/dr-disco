@@ -23,7 +23,7 @@
  <http://epydoc.sourceforge.net/manual-fields.html#fields-synonyms>
 """
 
-__version_info__ = ('0', '0', '7')
+__version_info__ = ('0', '0', '8')
 __version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.'.join(__version_info__[0:3])+"-"+__version_info__[3]
 __author__ = 'Youri Hoogstrate'
 __homepage__ = 'https://github.com/yhoogstrate/dr-disco'
@@ -34,9 +34,9 @@ __log_format__ = "[%(filename)s:%(lineno)s - %(funcName)s()] %(asctime)s - %(lev
 
 
 # parameters
-PRUNE_INS_SIZE = 450
-SPLICE_JUNC_ACC_ERR = 3 # acceptable splice junction error or other general alignment mistakes
-MAX_GENOMIC_DIST = 999999999
+MAX_ACCEPTABLE_INSERT_SIZE = 450
+MAX_ACCEPTABLE_ALIGNMENT_ERROR = 3 # acceptable splice junction error or other general alignment mistakes
+MAX_GENOME_DISTANCE = 999999999
 
 
 # filter settings

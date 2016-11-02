@@ -126,7 +126,7 @@ class BAMExtract:
                 if chunk[0] in [4,5] and not solid:
                     offset -= chunk[1]
 
-                if chunk[1] > SPLICE_JUNC_ACC_ERR:
+                if chunk[1] > MAX_ACCEPTABLE_ALIGNMENT_ERROR:
                     if solid:
                         """Clips to the first node:
                         M M M M M M M M M M S S S S S
