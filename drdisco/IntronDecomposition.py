@@ -183,6 +183,14 @@ class Edge:
                 raise Exception("Not sure what to do here with type: %s", _type)
         return False
     
+    def keep_splice_js_only(self):
+        print self
+        for key in self._types.keys():
+            print key
+            if key != "cigar_splice_junction":
+                del(self._types[key])
+        print self
+    
     def add_type(self,_type):
         if _type in ["cigar_soft_clip", 'cigar_hard_clip']:# pragma: no cover
             raise Exception("Clips shouldn't be added as edges, but as properties of Nodes")
@@ -315,21 +323,6 @@ class Node:
     
     def set_edge(self, edge):
         self.edges[str(edge._target.position)] = edge
-    
-    def get_top_edge(self):
-        maxscore = -1
-        top_edge = None
-        
-        for edge in self:
-            score = edge.get_scores()
-            if score > maxscore:
-                maxscore = score
-                top_edge = edge
-        
-        if top_edge != None:
-            return (maxscore, top_edge)#, self, top_edge._target)
-        else:
-            return (None, None)
     
     def new_edge(self,node2,edge_type,alignment_key,do_vice_versa):
         if do_vice_versa:
@@ -820,10 +813,10 @@ splice-junc:                           <=============>
         # Not necessary
         #del(edge)
         
-        if node1.get_top_edge()[0] == None:
+        if len(node1.edges) == 0:
             self.remove_node(node1)
         
-        if node2.get_top_edge()[0] == None:
+        if len(node2.edges) == 0:
             self.remove_node(node2)
     
     def remove_node(self,node):
@@ -863,6 +856,8 @@ splice-junc:                           <=============>
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     
     def generate_edge_idx(self):
+        logging.info("Creating edge index before pruning")
+        
         edges = set()
         edges_tuple = []
         order = 0
@@ -896,13 +891,14 @@ splice-junc:                           <=============>
             
             return top_scoring, top_scoring_c
         else:
+            del(self.edge_idx)
             return None, None
     
     def prune(self):
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
-        logging.info("Finding and merging other edges in close proximity (insert size)")
         self.generate_edge_idx()
+        logging.info("Finding and merging other edges in close proximity (insert size)")
         
         candidates = []
         #self.print_chain()
@@ -913,6 +909,10 @@ splice-junc:                           <=============>
             self.prune_edge(candidate)
             candidates.append((candidate,candidate_c))
             
+            if candidate._origin.position in [42852529,42852530,42860320,42860321]:
+                print "REMOVING:"
+                print candidate
+                
             self.remove_edge(candidate)# do not remove if splice junc exists?
             
             candidate, candidate_c = self.get_start_point()
@@ -928,7 +928,7 @@ splice-junc:                           <=============>
         for edge_m in self.search_edges_between(edge):
             d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
             d2 = edge._target.position.get_dist(edge_m._target.position, True)
-            d = abs(d1)+abs(d2)
+            d = abs(d1) + abs(d2)
             
             if d <= MAX_ACCEPTABLE_INSERT_SIZE:
                 edge_mc = edge_m.get_complement()
@@ -1163,7 +1163,8 @@ have edges to the same nodes of the already existing network,
                     for edge in edge_u:
                         key = str(edge._target.position)
                         if node.edges.has_key(key):
-                            del(node.edges[key])
+                            if node.edges[key].get_splice_score()[0] == 0:
+                                del(node.edges[key])
 
             # pop subedges from thicker edges and redo until thicker edges is empty
             popme = set()

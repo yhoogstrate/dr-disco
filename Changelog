@@ -1,3 +1,7 @@
+2016-11-02	Youri Hoogstrate	v0.0.9
+	* Fixes critical race condition in extracting subnetworks with Edges that
+	  are also splice junctions.
+
 2016-11-01	Youri Hoogstrate	v0.0.8
 	* Output includes columns containing the number of splice junctions
 
