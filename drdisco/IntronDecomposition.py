@@ -440,8 +440,8 @@ class BreakPosition:
 
 
 class Graph:
-    def __init__(self,pysam_fh):
-        self.idxtree = GenomeIntervalTree()
+    def __init__(self,pysam_fh , index_tree):
+        self.idxtree = index_tree
         self.pysam_fh = pysam_fh
     
     def __iter__(self):
@@ -1358,14 +1358,18 @@ class IntronDecomposition:
         self.pysam_fh = self.test_disco_alignment(alignment_file)
     
     def decompose(self):
-        chain = Graph(self.pysam_fh)
-        chain.insert_alignment()
+        fusion_junctions_idx = GenomeIntervalTree()
+        splice_junctions_idx = GenomeIntervalTree()# unstranded
         
-        thicker_edges = chain.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
-        thicker_edges = chain.rejoin_splice_juncs(thicker_edges) # Merges edges by splice junctions and other junctions
-        chain.reinsert_edges(thicker_edges)
+        fusion_junctions = Graph(self.pysam_fh, fusion_junctions_idx)
+        fusion_junctions.insert_alignment()
         
-        subnets = chain.extract_subnetworks_by_splice_junctions(thicker_edges)
+        
+        thicker_edges = fusion_junctions.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
+        thicker_edges = fusion_junctions.rejoin_splice_juncs(thicker_edges) # Merges edges by splice junctions and other junctions
+        fusion_junctions.reinsert_edges(thicker_edges)
+        
+        subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges)
         subnets = self.merge_overlapping_subnets(subnets)
         self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
         
