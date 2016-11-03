@@ -1184,22 +1184,12 @@ class BAMExtract(object):
             elif rg not in ["silent_mate"]:# pragma: no cover
                 raise Exception("Fatal Error, RG: "+rg)
             
-            if pos1 != None:# First check if insert size makes sense anyway (only for certain types of edges)
-                if rg in ['discordant_mates',
-                          'spanning_paired_2',     'spanning_paired_1',
-                          'spanning_paired_1_t',   'spanning_paired_2_t',
-                          'spanning_paired_1_s',   'spanning_paired_2_s',
-                          'spanning_singleton_1',  'spanning_singleton_2',
-                          'spanning_singleton_1_r','spanning_singleton_2_r']:
-                    
-                    if abs(pos1.get_dist(pos2,False)) < MAX_ACCEPTABLE_INSERT_SIZE:
-                        pos1 = None
-                        pos2 = None
-                
-                if pos2 != None:
-                    return (pos1, pos2, rg, (read.cigarstring,parsed_SA_tag[2]), False)
+            else:
+                raise Exception("Unnknown read group: %s", rg)
             
-            #else: raise Exception("should not occur?!")
+            if abs(pos1.get_dist(pos2,False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
+                return (pos1, pos2, rg, (read.cigarstring,parsed_SA_tag[2]), False)
+            
             return (None,None,None,None,None)
         
         logging.debug("Parsing reads to obtain fusion gene and splice junctions")
@@ -1221,58 +1211,13 @@ class BAMExtract(object):
                 if pos1 != None:
                     fusion_junctions.insert_entry(pos1, pos2, rg, junction, reinsert)
             
-            elif rg == 'silent_mate':
+            elif rg == 'silent_mate':# Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
-                """
-                if read.is_read1:
-                    # The complete mate is the secondary, meaning:
-                    # HI:i:1       HI:i:2
-                    # [====]---$---[====>-----<========]
-                    # The 'break' between the mates is from spanning_paired.2 <-> read
-                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
-                    
-                    broken_mate = sa[1]
-                    #broken_mate[1] += bam_parse_alignment_offset_using_cigar(broken_mate)
-
-                else:# is_read2
-                    # The complete mate is the primary, meaning:
-                    #                HI:i:1       HI:i:2
-                    # [========>-----<====]---$---[====]
-                    # The 'break' between the mates is from read <-> spanning_paired.1
-                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
-                    
-                    broken_mate = sa[0]
-                
-                #@todo silent mates do not make pairs but are one directional
-                # in their input - has to be fixed in order to allow edge_merging
-                #self.graph.insert(r,broken_mate)
-                """
 
             else:# pragma: no cover
                 raise Exception("Unknown type read: '"+str(rg)+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
             
-            """Find introns etc:
-            
-            Example 1: 
-            
-            5S10M15N10M2S
-            
-            S S S S S | | | | | | | | |---------------| | | | | | | | | S S
-            
- soft-clip: <========]
-                                                                       [==>
-            Softclip are usually one-directional, from the sequenced base until
-            the end. If it is before the first M/= flag, it's direction should
-            be '-', otherwise '+' as it clips from the end. In principle the
-            soft/hard clips are not edges but properties of nodes. One particular
-            base may have several soft/hard clips (from different locations but
-            adding weigt to the same node).
-            
-            Splice juncs are bi-directional, and real edges.
- 
-splice-junc:                           <=============>
-            """
-            
+            # Detect introns, clipping and insertions/deletions by SAM flags
             for internal_edge in self.find_cigar_edges(read):
                 i_pos1 = None
                 i_pos2 = None
@@ -1377,7 +1322,27 @@ splice-junc:                           <=============>
             H	BAM_CHARD_CLIP	5
             P	BAM_CPAD	6
             =	BAM_CEQUAL	7
-            X	BAM_CDIFF	8"""
+            X	BAM_CDIFF	8
+            
+            Example 1: 
+            
+            5S10M15N10M2S
+            
+            S S S S S | | | | | | | | |---------------| | | | | | | | | S S
+            
+ soft-clip: <========]
+                                                                       [==>
+            Softclip are usually one-directional, from the sequenced base until
+            the end. If it is before the first M/= flag, it's direction should
+            be '-', otherwise '+' as it clips from the end. In principle the
+            soft/hard clips are not edges but properties of nodes. One particular
+            base may have several soft/hard clips (from different locations but
+            adding weigt to the same node).
+            
+            Splice juncs are bi-directional, and real edges.
+ 
+splice-junc:                           <=============>
+            """
         
         tt = {
             2:'cigar_deletion',
