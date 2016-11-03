@@ -521,10 +521,11 @@ class Graph:
                     else:
                         node2 = edge._origin
                     
-                    d1 = abs(pos1.get_dist(node1.position, False))
-                    d2 = abs(pos2.get_dist(node2.position, False))
-                    if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
-                        yield pow(d1, 2) + pow(d2, 2) , edge
+                    d1 = abs(pos1.pos - node1.position.pos)
+                    if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
+                        d2 = abs(pos2.pos - node2.position.pos)
+                        if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
+                            yield pow(d1, 2) + pow(d2, 2) , edge
     
     def print_chain(self):# pragma: no cover
         print "**************************************************************"
@@ -636,48 +637,45 @@ thick edges:
         
         for edge in thicker_edges:
             if not left_nodes.has_key(edge._origin.position._chr):#lnodes
-                left_nodes[edge._origin.position._chr] = set()
-            left_nodes[edge._origin.position._chr].add(edge._origin)
+                left_nodes[edge._origin.position._chr] = {STRAND_FORWARD:set(), STRAND_REVERSE:set()}
+            left_nodes[edge._origin.position._chr][edge._origin.position.strand].add(edge._origin)
             
             if not right_nodes.has_key(edge._target.position._chr):#rnodes
-                right_nodes[edge._target.position._chr] = set()
-            right_nodes[edge._target.position._chr].add(edge._target)
+                right_nodes[edge._target.position._chr] = {STRAND_FORWARD:set(), STRAND_REVERSE:set()}
+            right_nodes[edge._target.position._chr][edge._target.position.strand].add(edge._target)
         
         ## 02 look for all left nodes if there is any set (i < j) where
         ## i and j span a splice junction
         for _chr in left_nodes.keys():
-            i = -1
-            for node1 in left_nodes[_chr]:
-                i += 1
-                j = -1
+            for strand in [STRAND_FORWARD, STRAND_REVERSE]:
+                left_nodes[_chr][strand] = list(left_nodes[_chr][strand])
                 
-                for node2 in left_nodes[_chr]:
-                    j += 1
+                while left_nodes[_chr][strand]:
+                    node1 = left_nodes[_chr][strand].pop()
                     
-                    if j > i:# Avoid unnecessary comparisons
-                        if node1.position.strand == node2.position.strand:
-                            left_junc = (MAX_GENOME_DISTANCE, None)
+                    for node2 in left_nodes[_chr][strand]:
+                        left_junc = (MAX_GENOME_DISTANCE, None)
+                        
+                        for sq_dist_origin, splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
+                            if sq_dist_origin < left_junc[0]:
+                                left_junc = (sq_dist_origin, splice_junc)
                             
-                            for sq_dist_origin, splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
-                                if sq_dist_origin < left_junc[0]:
-                                    left_junc = (sq_dist_origin, splice_junc)
-                                
-                            if left_junc[1] != None:
-                                node1.splice_edges[node2] = left_junc
-                                node2.splice_edges[node1] = left_junc
-                                
-                                k += 1
+                        if left_junc[1] != None:
+                            node1.splice_edges[node2] = left_junc
+                            node2.splice_edges[node1] = left_junc
+                            
+                            k += 1
+
+        del(left_nodes)
 
         for _chr in right_nodes.keys():
-            i = -1
-            for node1 in right_nodes[_chr]:
-                i += 1
-                j = -1
+            for strand in [STRAND_FORWARD, STRAND_REVERSE]:
+                right_nodes[_chr][strand] = list(right_nodes[_chr][strand])
                 
-                for node2 in right_nodes[_chr]:
-                    j += 1
+                while right_nodes[_chr][strand]:
+                    node1 = right_nodes[_chr][strand].pop()
                     
-                    if j > i:# Avoid unnecessary comparisons
+                    for node2 in right_nodes[_chr][strand]:
                         if node1.position.strand == node2.position.strand:
                             right_junc = (MAX_GENOME_DISTANCE, None)
                             
