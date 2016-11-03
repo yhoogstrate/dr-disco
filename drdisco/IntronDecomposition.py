@@ -434,7 +434,7 @@ class Graph:
         except:
             return None
     
-    def insert_edge(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
+    def insert_edge(self,pos1,pos2,_type,cigarstrs):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
@@ -463,6 +463,40 @@ class Graph:
         edge.add_type(_type, 1)
         if node1 == edge._origin:# Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
+    
+    def insert_splice_edge(self,pos1,pos2,_type,cigarstrs):
+        """ - Checks if Node exists at pos1, otherwise creates one
+            - Checks if Node exists at pos2, otherwise creates one
+            - Checks if Edge exists between them, otherwise inserts it into the Nodes
+         
+         cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
+        """
+        self.create_node(pos1)
+        self.create_node(pos2)
+        
+        node1 = self.get_node_reference(pos1)
+        node2 = self.get_node_reference(pos2)
+        
+        if cigarstrs != None:
+            # Hexadec saves more mem
+            short_pos1 = "%0.2X" % pos1.pos#str(pos1.pos)
+            short_pos2 = "%0.2X" % pos2.pos#str(pos2.pos)
+        
+            cigarstrs = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"+short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
+        
+        edge1 = node1.get_edge_to_node(node2)
+        if edge1 == None:
+            edge1 = Edge(node1, node2)
+            edge2 = Edge(node2, node1)
+            node1.insert_edge(edge1)
+            node2.insert_edge(edge2)
+        else:
+            edge2 = node2.get_edge_to_node(node1)
+        
+        edge1.add_type(_type, 1)
+        edge2.add_type(_type, 1)
+        #if node1 == edge._origin:# Avoid double insertion of all keys :) only do it if the positions don't get swapped
+        #    edge.add_alignment_key(cigarstrs)
     
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
@@ -516,10 +550,10 @@ class Graph:
             for key in interval[2].keys():
                 node1 = interval[2][key]
                 for edge in node1.edges.values():
-                    if node1 == edge._origin:
-                        node2 = edge._target
-                    else:
-                        node2 = edge._origin
+                    #if node1 == edge._origin:
+                    node2 = edge._target
+                    #else:
+                    #    node2 = edge._origin
                     
                     d1 = abs(pos1.pos - node1.position.pos)
                     if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
@@ -1137,9 +1171,9 @@ class BAMExtract(object):
                 raise Exception("Unnknown read group: %s", rg)
             
             if abs(pos1.get_dist(pos2,False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
-                return (pos1, pos2, rg, (read.cigarstring,parsed_SA_tag[2]), False)
+                return (pos1, pos2, rg, (read.cigarstring,parsed_SA_tag[2]))
             
-            return (None,None,None,None,None)
+            return (None,None,None,None)
         
         logging.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
@@ -1156,9 +1190,9 @@ class BAMExtract(object):
                 'spanning_paired_1_t',  'spanning_paired_2_t',
                 'spanning_singleton_1', 'spanning_singleton_1_r',
                 'spanning_singleton_2', 'spanning_singleton_2_r']:
-                pos1, pos2, rg, junction, reinsert = read_to_junction(read, sa[0])
+                pos1, pos2, rg, junction = read_to_junction(read, sa[0])
                 if pos1 != None:
-                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, reinsert)
+                    fusion_junctions.insert_edge(pos1, pos2, rg, junction)
             
             elif rg == 'silent_mate':# Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
@@ -1202,9 +1236,9 @@ class BAMExtract(object):
                 else:
                     if i_pos1 != None:
                         if internal_edge[2] == 'cigar_splice_junction':
-                            splice_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None,True)
+                            splice_junctions.insert_splice_edge(i_pos1,i_pos2,internal_edge[2],None)
                         else:
-                            fusion_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None,True)
+                            fusion_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None)
         
         logging.debug("alignment data loaded")
     
@@ -1357,6 +1391,9 @@ class IntronDecomposition:
         splice_junctions = Graph()
         
         alignment.extract_junctions(fusion_junctions, splice_junctions)
+        
+        #fusion_junctions.print_chain()
+        #splice_junctions.print_chain()
         
         thicker_edges = fusion_junctions.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         thicker_edges = fusion_junctions.rejoin_splice_juncs(thicker_edges, splice_junctions) # Merges edges by splice junctions and other junctions
