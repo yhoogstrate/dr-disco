@@ -233,18 +233,18 @@ class TestIntronicBreakDetection(unittest.TestCase):
         
         self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
     
-    #def test_13_merge_overlapping_subnetworks(self):
-        #input_file_a =    TEST_DIR+"test_terg_03.sub_01.filtered.fixed.bam"
-        #test_file    =    TEST_DIR+"test_13.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_13.out.dbed"
+    def test_13_merge_overlapping_subnetworks(self):
+        input_file_a =    TEST_DIR+"test_terg_03.sub_01.filtered.fixed.bam"
+        test_file    =    TEST_DIR+"test_13.out.dbed"
+        output_file  =  T_TEST_DIR+"test_13.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_14_test_inserting_spanning_paired_12_s(self):
         input_file_a =    TEST_DIR+"test_terg_03.sub_02.filtered.fixed.bam"
