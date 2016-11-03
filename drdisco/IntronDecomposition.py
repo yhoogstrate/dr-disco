@@ -256,7 +256,6 @@ class Edge:
     """
     
     scoring_table={
-               'cigar_splice_junction': 0,
                'discordant_mates': 1,
                'silent_mate': 0,
                'spanning_paired_1': 3,
@@ -425,9 +424,8 @@ class Edge:
 
 
 class Graph:
-    def __init__(self,pysam_fh):
+    def __init__(self):
         self.idxtree = GenomeIntervalTree()
-        self.pysam_fh = pysam_fh# This is needed to convert chromosome id's to actual names
     
     def __iter__(self):
         for key in self.idxtree:
@@ -477,169 +475,6 @@ class Graph:
         else:
             node1.new_edge(node2,_type,None,do_vice_versa)
     
-    def insert(self,read,parsed_SA_tag,specific_type = None):
-        """Inserts a bi-drectional edge between read and sa-tag in the Chain
-        determines the type of edge by @RG tag (done by dr-disco fix-chimeric)
-
-            spanning_singleton_2_r
-            spanning_paired_2_t (left-junc):
-            =======>
-             ======>
-               ====>
-
-            spanning_paired_2_s:
-            ---
-            spanning_singleton_1_r (right-junc):
-            spanning_paired_1_t    (right-junc):
-                      =======>
-                      ======>
-                      ====>
-            
-            spanning_paired_1_s:
-            ---
-            spanning_singleton_1:
-            spanning_paired_1:
-            <=======
-             <======
-               <====
-
-            spanning_singleton_2 (right junc):
-            spanning_paired_2 (right junc):
-                      <=======
-                      <======
-                      <====
-
-
-        This means that for:
-         - spanning_paired_1 the breakpoint is at: start + offset
-         - spanning_paired_2 the breakpoint is at: start
-        regardless of the strand (+/-)"""
-        
-        pos1, pos2 = None, None
-        rg = read.get_tag('RG')
-        
-        if rg in ["discordant_mates"]:
-            # How to distinguish between:
-            #
-            # Type 1:
-            # ===1===>|   |<===2===
-            
-            # Type 2:
-            # ===2===>|   |<===1===
-            
-            # Hypothetical:
-            #|<===1===    |<===2===
-            
-            if read.is_reverse:
-                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     read.reference_start,
-                                     STRAND_FORWARD)
-            else:
-                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     read.reference_start+bam_parse_alignment_offset(read.cigar),
-                                     STRAND_REVERSE)
-            
-            if parsed_SA_tag[4] == "-":
-                pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1],
-                                     STRAND_FORWARD)
-            else:
-                pos2 = BreakPosition(parsed_SA_tag[0],
-                                     bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
-                                     STRAND_REVERSE)
-        
-        elif rg in ["spanning_singleton_1", "spanning_paired_1"]:
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
-                                 STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
-            
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                                 parsed_SA_tag[1],
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
-
-        elif rg in ["spanning_singleton_1_r", "spanning_paired_1_t"]:
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 read.reference_start,
-                                 not read.is_reverse)
-            
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                                 parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
-        
-        elif rg in ["spanning_paired_1_r"]:
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
-                                 not read.is_reverse)
-            
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                                 parsed_SA_tag[1],
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
-        
-        elif rg in ["spanning_singleton_2", "spanning_paired_2"]:
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 read.reference_start,
-                                 read.is_reverse)
-            
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                                 parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-        
-        elif rg in ["spanning_singleton_2_r", "spanning_paired_2_t"]:
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                (read.reference_start+bam_parse_alignment_offset(read.cigar)),
-                                 read.is_reverse)
-            
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                                 parsed_SA_tag[1],
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-        
-        elif rg in ["spanning_paired_2_r"]:
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 read.reference_start,
-                                 read.is_reverse)
-            
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                                 parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-
-        elif rg in ["spanning_paired_1_s"]:
-            # Very clear example in S054 @ chr21:40,064,610-40,064,831  and implemented in test case 14
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 (read.reference_start+bam_parse_alignment_offset(read.cigar)),
-                                 STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
-            
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                     parsed_SA_tag[1],
-                     STRAND_REVERSE if parsed_SA_tag[4] == "+" else STRAND_FORWARD)
-         
-        elif rg in ["spanning_paired_2_s"]:
-            pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                             read.reference_start,
-                             STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
-        
-            pos2 = BreakPosition(parsed_SA_tag[0],
-                                 parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
-                                 STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
-        
-        elif rg not in ["silent_mate"]:# pragma: no cover
-            raise Exception("Fatal Error, RG: "+rg)
-        
-        if pos1 != None:# First check if insert size makes sense anyway (only for certain types of edges)
-            if rg in ['discordant_mates',
-                      'spanning_paired_2',     'spanning_paired_1',
-                      'spanning_paired_1_t',   'spanning_paired_2_t',
-                      'spanning_paired_1_s',   'spanning_paired_2_s',
-                      'spanning_singleton_1',  'spanning_singleton_2',
-                      'spanning_singleton_1_r','spanning_singleton_2_r']:
-                
-                if abs(pos1.get_dist(pos2,False)) < MAX_ACCEPTABLE_INSERT_SIZE:
-                    pos1 = None
-                    pos2 = None
-            
-            if pos2 != None:
-                self.insert_entry(pos1,pos2,rg,(read.cigarstring,parsed_SA_tag[2]),False)
-        
-        return (pos1, pos2)
     
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
@@ -796,9 +631,9 @@ class Graph:
         """searches for other junctions in-between edge+insert size:"""
         def pos_to_range(pos):
             if pos.strand == STRAND_REVERSE:
-                return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE)-1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR
+                return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE) - 1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR
             else:
-                return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)+1
+                return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE) + 1
         
         pos1, pos2 = edge_to_prune._origin.position, edge_to_prune._target.position
         
@@ -1239,6 +1074,134 @@ class BAMExtract(object):
         raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
     
     def extract_junctions(self, fusion_junctions, splice_junctions):
+        def read_to_junction(read, parsed_SA_tag, specific_type = None):
+            pos1, pos2 = None, None
+            rg = read.get_tag('RG')
+            
+            if rg in ["discordant_mates"]:
+                # How to distinguish between:
+                #
+                # Type 1:
+                # ===1===>|   |<===2===
+                
+                # Type 2:
+                # ===2===>|   |<===1===
+                
+                # Hypothetical:
+                #|<===1===    |<===2===
+                
+                if read.is_reverse:
+                    pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                         read.reference_start,
+                                         STRAND_FORWARD)
+                else:
+                    pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                         read.reference_start+bam_parse_alignment_offset(read.cigar),
+                                         STRAND_REVERSE)
+                
+                if parsed_SA_tag[4] == "-":
+                    pos2 = BreakPosition(parsed_SA_tag[0],
+                                         parsed_SA_tag[1],
+                                         STRAND_FORWARD)
+                else:
+                    pos2 = BreakPosition(parsed_SA_tag[0],
+                                         bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
+                                         STRAND_REVERSE)
+            
+            elif rg in ["spanning_singleton_1", "spanning_paired_1"]:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1],
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+
+            elif rg in ["spanning_singleton_1_r", "spanning_paired_1_t"]:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start,
+                                     not read.is_reverse)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+            
+            elif rg in ["spanning_paired_1_r"]:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     not read.is_reverse)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1],
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+            
+            elif rg in ["spanning_singleton_2", "spanning_paired_2"]:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start,
+                                     read.is_reverse)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            elif rg in ["spanning_singleton_2_r", "spanning_paired_2_t"]:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                    (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     read.is_reverse)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1],
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            elif rg in ["spanning_paired_2_r"]:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start,
+                                     read.is_reverse)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+
+            elif rg in ["spanning_paired_1_s"]:
+                # Very clear example in S054 @ chr21:40,064,610-40,064,831  and implemented in test case 14
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                         parsed_SA_tag[1],
+                         STRAND_REVERSE if parsed_SA_tag[4] == "+" else STRAND_FORWARD)
+             
+            elif rg in ["spanning_paired_2_s"]:
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                 read.reference_start,
+                                 STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
+            
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
+            elif rg not in ["silent_mate"]:# pragma: no cover
+                raise Exception("Fatal Error, RG: "+rg)
+            
+            if pos1 != None:# First check if insert size makes sense anyway (only for certain types of edges)
+                if rg in ['discordant_mates',
+                          'spanning_paired_2',     'spanning_paired_1',
+                          'spanning_paired_1_t',   'spanning_paired_2_t',
+                          'spanning_paired_1_s',   'spanning_paired_2_s',
+                          'spanning_singleton_1',  'spanning_singleton_2',
+                          'spanning_singleton_1_r','spanning_singleton_2_r']:
+                    
+                    if abs(pos1.get_dist(pos2,False)) < MAX_ACCEPTABLE_INSERT_SIZE:
+                        pos1 = None
+                        pos2 = None
+                
+                if pos2 != None:
+                    return (pos1, pos2, rg, (read.cigarstring,parsed_SA_tag[2]), False)
+            
+            #else: raise Exception("should not occur?!")
+            return (None,None,None,None,None)
+        
         logging.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
             sa = self.parse_SA(read.get_tag('SA'))
@@ -1254,10 +1217,13 @@ class BAMExtract(object):
                 'spanning_paired_1_t',  'spanning_paired_2_t',
                 'spanning_singleton_1', 'spanning_singleton_1_r',
                 'spanning_singleton_2', 'spanning_singleton_2_r']:
-                pos1, pos2 = fusion_junctions.insert(read, sa[0])
+                pos1, pos2, rg, junction, reinsert = read_to_junction(read, sa[0])
+                if pos1 != None:
+                    fusion_junctions.insert_entry(pos1, pos2, rg, junction, reinsert)
             
             elif rg == 'silent_mate':
-                # usually in a exon?
+                pass
+                """
                 if read.is_read1:
                     # The complete mate is the secondary, meaning:
                     # HI:i:1       HI:i:2
@@ -1280,6 +1246,7 @@ class BAMExtract(object):
                 #@todo silent mates do not make pairs but are one directional
                 # in their input - has to be fixed in order to allow edge_merging
                 #self.graph.insert(r,broken_mate)
+                """
 
             else:# pragma: no cover
                 raise Exception("Unknown type read: '"+str(rg)+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
@@ -1479,8 +1446,8 @@ class IntronDecomposition:
     def decompose(self):
         alignment = BAMExtract(self.alignment_file)
         
-        fusion_junctions = Graph(alignment.pysam_fh)
-        splice_junctions = Graph(alignment.pysam_fh)
+        fusion_junctions = Graph()
+        splice_junctions = Graph()
         
         alignment.extract_junctions(fusion_junctions, splice_junctions)
         
