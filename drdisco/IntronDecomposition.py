@@ -14,7 +14,6 @@ import pysam
 from intervaltree_bio import GenomeIntervalTree, Interval
 from .CigarAlignment import *
 from .CircosController import *
-from .BAMExtract import BAMExtract
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
 strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
@@ -55,6 +54,200 @@ def merge_frequency_tables(frequency_tables):
             new_frequency_table[key] += t[key]
     
     return new_frequency_table
+
+def bam_parse_alignment_offset(cigartuple):
+    pos = 0
+    for chunk in cigartuple:
+        """ M	BAM_CMATCH	0
+            I	BAM_CINS	1
+            D	BAM_CDEL	2
+            N	BAM_CREF_SKIP	3
+            S	BAM_CSOFT_CLIP	4
+            H	BAM_CHARD_CLIP	5
+            P	BAM_CPAD	6
+            =	BAM_CEQUAL	7
+            X	BAM_CDIFF	8
+            """
+        
+        if chunk[0] in [0,2,3]:
+            pos += chunk[1]
+    
+    return pos
+
+def bam_parse_alignment_pos_using_cigar(sa_tag):
+    """SA tag looks like this:
+        ['chr21', 42879876, '85S41M', '3', '-', '1']
+    """
+    
+    pos = sa_tag[1]
+    if sa_tag[4] == '+':
+        cigartuple = cigar_to_cigartuple(sa_tag[2])
+        pos += bam_parse_alignment_offset(cigartuple)
+    
+    return pos
+
+
+class BreakPosition:
+    """
+    Unambiguous data type that determines where a break point occurs.
+    
+    chr1:
+    | 0 | 1 | 2 | 3 | ~~~ 
+    
+    chr2:
+     ~~~ | 6 | 7 | 8 |
+     
+     string function of break points:
+     chr1:3/4 and chr2:5/6
+    """
+
+    def __init__(self,_chr,position_0_based,strand):
+        self._chr = _chr
+        self.pos = position_0_based
+        self.strand = strand
+
+    def __str__(self):
+        if self.strand == STRAND_FORWARD:
+            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(+)"
+        elif self.strand == STRAND_REVERSE:
+            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
+        else:# pragma: no cover
+            raise Exception("Unstranded break detected - this should not happen")
+    
+    def get_dist(self, other_bp, strand_specific):
+        if not isinstance(other_bp, BreakPosition):# pragma: no cover
+            raise Exception("Wrong data type used")
+        
+        if (not strand_specific or self.strand == other_bp.strand) and self._chr == other_bp._chr:
+            return other_bp.pos - self.pos
+        else:
+            # chr1 has 249 000 000 bp - by replacing all digits by 9 is
+            # must be larger than any Hs chr reflecting natural distances
+            # in a way that interchromosomal breaks are 'larger' than
+            # intrachromosomal ones
+            return MAX_GENOME_DISTANCE
+
+
+class Node:
+    """A Simple node, just a chromomal location( and strand)"""
+    
+    def __init__(self,position):
+        self.position = position
+        self.clips = 0
+        self.edges = {}
+        self.splice_edges = {}
+    
+    def get_connected_splice_junctions(self,nodes,insert_size_to_travel,edges):
+        """Recursively finds all nodes that are connected by splice junctions
+        
+        self: the node of which it's splice junctions are traversed in order to find more nodes that may not be already in the blak
+        self.splice_edges:
+         -  [     ] splice edge: splice p1, splice p2
+        """
+        results_new2 = {}
+        for edge_n, edge in self.splice_edges.items():
+            if edge_n not in nodes:
+                # distance between the node self and the nodes of the exon junction
+                ds1 = abs(self.position.get_dist(edge[1]._target.position,False))
+                ds2 = abs(self.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
+                # distance between the target node and the nodes of the exon junction
+                dt1 = abs(edge_n.position.get_dist(edge[1]._target.position,False))
+                dt2 = abs(edge_n.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
+                # this has to be crossed i.e. if the one node is close to the left part of the SJ the other node must be close to the right part
+                d1 = ds1 + dt2
+                d2 = ds2 + dt1
+                d = min(d1,d2)
+                
+                if d <= insert_size_to_travel:
+                    dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
+                    if not results_new2.has_key(dkey):
+                        results_new2[dkey] = set()
+                    results_new2[dkey].add(edge_n)
+                    
+                    if not edges.has_key(edge_n):
+                        edges[edge_n] = set()
+                    edges[edge_n].add(min(edge[1],edge[1].get_complement()))#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+        
+        # old results, + recursive results
+        all_nodes = set(nodes)
+        for depth in results_new2.keys():
+            all_nodes = all_nodes.union(results_new2[depth])
+        
+        # only recusively add to the new ones
+        for depth in results_new2.keys():
+            if depth > 0:
+                for node in results_new2[depth]:
+                    additional_nodes, additional_edges = node.get_connected_splice_junctions(all_nodes, depth, edges)
+                    for additional_node in additional_nodes:
+                        all_nodes.add(additional_node)
+                    for key,value in additional_edges.items():
+                        if not edges.has_key(key):
+                            edges[key] = set()
+                        edges[key].union(value)
+        
+        return list(all_nodes), edges
+    
+    def add_clip(self):
+        self.clips += 1
+    
+    def insert_edge(self,edge,edge_type,alignment_key):
+        skey = str(edge._target.position)
+        
+        if not self.edges.has_key(skey):
+            self.set_edge(edge)
+        
+        self.edges[skey].add_type(edge_type)
+        
+        if alignment_key != None:# Splice junctions should be skipped for entropy
+            self.edges[skey].add_alignment_key(alignment_key)
+    
+    def set_edge(self, edge):
+        self.edges[str(edge._target.position)] = edge
+    
+    def new_edge(self,node2,edge_type,alignment_key,do_vice_versa):
+        if do_vice_versa:
+            node2.new_edge(self,edge_type,alignment_key,False)
+        
+        edge = Edge(self,node2)
+        self.insert_edge(edge,edge_type,alignment_key)
+    
+    def remove_edge(self,edge,idx):
+        if idx == "by-target":
+            skey = str(edge._target.position)
+        elif idx == "by-origin":
+            skey = str(edge._origin.position)
+        else:# pragma: no cover
+            raise Exception("Invalid usage of function")
+        
+        if not self.edges.has_key(skey):# pragma: no cover
+            raise Exception("Unknown key: %s", skey)
+        
+        self.edges[skey] = None
+        del(self.edges[skey])
+    
+    def __iter__(self):
+        for k in sorted(self.edges.keys()):
+            yield self.edges[k]
+    
+    def __str__(self):# pragma: no cover
+        out  = str(self.position)
+        
+        a = 0
+        for sedge in self.edges:
+            edge = self.edges[sedge]
+            filtered_edges = {x:edge._types[x] for x in sorted(edge._types.keys()) if x not in ['cigar_soft_clip','cigar_hard_clip']}
+            len_edges = len(filtered_edges)
+            a += len_edges
+            if len_edges > 0:
+                out += "\n\t-> "+str(edge._target.position)+" "+str(filtered_edges)
+
+        
+        if a > 0:
+            out += "\n\t-> soft/hard clips: "+str(self.clips)
+            
+            return out+"\n"
+        else:
+            return ""
 
 
 class Edge:
@@ -245,203 +438,9 @@ class Edge:
         return out
 
 
-class Node:
-    """A Simple node, just a chromomal location( and strand)"""
-    
-    def __init__(self,position):
-        self.position = position
-        self.clips = 0
-        self.edges = {}
-        self.splice_edges = {}
-    
-    def get_connected_splice_junctions(self,nodes,insert_size_to_travel,edges):
-        """Recursively finds all nodes that are connected by splice junctions
-        
-        self: the node of which it's splice junctions are traversed in order to find more nodes that may not be already in the blak
-        self.splice_edges:
-         -  [     ] splice edge: splice p1, splice p2
-        """
-        results_new2 = {}
-        for edge_n, edge in self.splice_edges.items():
-            if edge_n not in nodes:
-                # distance between the node self and the nodes of the exon junction
-                ds1 = abs(self.position.get_dist(edge[1]._target.position,False))
-                ds2 = abs(self.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
-                # distance between the target node and the nodes of the exon junction
-                dt1 = abs(edge_n.position.get_dist(edge[1]._target.position,False))
-                dt2 = abs(edge_n.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
-                # this has to be crossed i.e. if the one node is close to the left part of the SJ the other node must be close to the right part
-                d1 = ds1 + dt2
-                d2 = ds2 + dt1
-                d = min(d1,d2)
-                
-                if d <= insert_size_to_travel:
-                    dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-                    if not results_new2.has_key(dkey):
-                        results_new2[dkey] = set()
-                    results_new2[dkey].add(edge_n)
-                    
-                    if not edges.has_key(edge_n):
-                        edges[edge_n] = set()
-                    edges[edge_n].add(min(edge[1],edge[1].get_complement()))#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
-        
-        # old results, + recursive results
-        all_nodes = set(nodes)
-        for depth in results_new2.keys():
-            all_nodes = all_nodes.union(results_new2[depth])
-        
-        # only recusively add to the new ones
-        for depth in results_new2.keys():
-            if depth > 0:
-                for node in results_new2[depth]:
-                    additional_nodes, additional_edges = node.get_connected_splice_junctions(all_nodes, depth, edges)
-                    for additional_node in additional_nodes:
-                        all_nodes.add(additional_node)
-                    for key,value in additional_edges.items():
-                        if not edges.has_key(key):
-                            edges[key] = set()
-                        edges[key].union(value)
-        
-        return list(all_nodes), edges
-    
-    def add_clip(self):
-        self.clips += 1
-    
-    def insert_edge(self,edge,edge_type,alignment_key):
-        skey = str(edge._target.position)
-        
-        if not self.edges.has_key(skey):
-            self.set_edge(edge)
-        
-        self.edges[skey].add_type(edge_type)
-        
-        if alignment_key != None:# Splice junctions should be skipped for entropy
-            self.edges[skey].add_alignment_key(alignment_key)
-    
-    def set_edge(self, edge):
-        self.edges[str(edge._target.position)] = edge
-    
-    def new_edge(self,node2,edge_type,alignment_key,do_vice_versa):
-        if do_vice_versa:
-            node2.new_edge(self,edge_type,alignment_key,False)
-        
-        edge = Edge(self,node2)
-        self.insert_edge(edge,edge_type,alignment_key)
-    
-    def remove_edge(self,edge,idx):
-        if idx == "by-target":
-            skey = str(edge._target.position)
-        elif idx == "by-origin":
-            skey = str(edge._origin.position)
-        else:# pragma: no cover
-            raise Exception("Invalid usage of function")
-        
-        if not self.edges.has_key(skey):# pragma: no cover
-            raise Exception("Unknown key: %s", skey)
-        
-        self.edges[skey] = None
-        del(self.edges[skey])
-    
-    def __iter__(self):
-        for k in sorted(self.edges.keys()):
-            yield self.edges[k]
-    
-    def __str__(self):# pragma: no cover
-        out  = str(self.position)
-        
-        a = 0
-        for sedge in self.edges:
-            edge = self.edges[sedge]
-            filtered_edges = {x:edge._types[x] for x in sorted(edge._types.keys()) if x not in ['cigar_soft_clip','cigar_hard_clip']}
-            len_edges = len(filtered_edges)
-            a += len_edges
-            if len_edges > 0:
-                out += "\n\t-> "+str(edge._target.position)+" "+str(filtered_edges)
-
-        
-        if a > 0:
-            out += "\n\t-> soft/hard clips: "+str(self.clips)
-            
-            return out+"\n"
-        else:
-            return ""
-
-def bam_parse_alignment_offset(cigartuple):
-    pos = 0
-    for chunk in cigartuple:
-        """ M	BAM_CMATCH	0
-            I	BAM_CINS	1
-            D	BAM_CDEL	2
-            N	BAM_CREF_SKIP	3
-            S	BAM_CSOFT_CLIP	4
-            H	BAM_CHARD_CLIP	5
-            P	BAM_CPAD	6
-            =	BAM_CEQUAL	7
-            X	BAM_CDIFF	8
-            """
-        
-        if chunk[0] in [0,2,3]:
-            pos += chunk[1]
-    
-    return pos
-
-def bam_parse_alignment_pos_using_cigar(sa_tag):
-    """SA tag looks like this:
-        ['chr21', 42879876, '85S41M', '3', '-', '1']
-    """
-    
-    pos = sa_tag[1]
-    if sa_tag[4] == '+':
-        cigartuple = cigar_to_cigartuple(sa_tag[2])
-        pos += bam_parse_alignment_offset(cigartuple)
-    
-    return pos
-
-
-class BreakPosition:
-    """
-    Unambiguous data type that determines where a break point occurs.
-    
-    chr1:
-    | 0 | 1 | 2 | 3 | ~~~ 
-    
-    chr2:
-     ~~~ | 6 | 7 | 8 |
-     
-     string function of break points:
-     chr1:3/4 and chr2:5/6
-    """
-
-    def __init__(self,_chr,position_0_based,strand):
-        self._chr = _chr
-        self.pos = position_0_based
-        self.strand = strand
-
-    def __str__(self):
-        if self.strand == STRAND_FORWARD:
-            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(+)"
-        elif self.strand == STRAND_REVERSE:
-            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
-        else:# pragma: no cover
-            raise Exception("Unstranded break detected - this should not happen")
-    
-    def get_dist(self, other_bp, strand_specific):
-        if not isinstance(other_bp, BreakPosition):# pragma: no cover
-            raise Exception("Wrong data type used")
-        
-        if (not strand_specific or self.strand == other_bp.strand) and self._chr == other_bp._chr:
-            return other_bp.pos - self.pos
-        else:
-            # chr1 has 249 000 000 bp - by replacing all digits by 9 is
-            # must be larger than any Hs chr reflecting natural distances
-            # in a way that interchromosomal breaks are 'larger' than
-            # intrachromosomal ones
-            return MAX_GENOME_DISTANCE
-
-
 class Graph:
-    def __init__(self,pysam_fh , index_tree):
-        self.idxtree = index_tree
+    def __init__(self,pysam_fh):
+        self.idxtree = GenomeIntervalTree()
         self.pysam_fh = pysam_fh
     
     def __iter__(self):
@@ -466,136 +465,6 @@ class Graph:
             return list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand]
         except:
             return None
-    
-    def insert_alignment(self):
-        logging.debug("starting inserting alignment data")
-        for read in self.pysam_fh.fetch():
-            sa = BAMExtract.BAMExtract.parse_SA(read.get_tag('SA'))
-            _chr = self.pysam_fh.get_reference_name(read.reference_id)
-            rg = read.get_tag('RG')
-            
-            pos1, pos2 = None, None
-            
-            if rg in [
-                'discordant_mates',
-                'spanning_paired_1',
-                'spanning_paired_1_r',
-                'spanning_paired_1_s',
-                'spanning_paired_1_t',
-                'spanning_paired_2',
-                'spanning_paired_2_r',
-                'spanning_paired_2_s',
-                'spanning_paired_2_t',
-                'spanning_singleton_1',
-                'spanning_singleton_1_r',
-                'spanning_singleton_2',
-                'spanning_singleton_2_r']:
-                pos1, pos2 = self.insert(read,sa[0])
-            
-            elif rg == 'silent_mate':
-                # usually in a exon?
-                if read.is_read1:
-                    # The complete mate is the secondary, meaning:
-                    # HI:i:1       HI:i:2
-                    # [====]---$---[====>-----<========]
-                    # The 'break' between the mates is from spanning_paired.2 <-> read
-                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
-                    
-                    broken_mate = sa[1]
-                    #broken_mate[1] += bam_parse_alignment_offset_using_cigar(broken_mate)
-
-                else:# is_read2
-                    # The complete mate is the primary, meaning:
-                    #                HI:i:1       HI:i:2
-                    # [========>-----<====]---$---[====]
-                    # The 'break' between the mates is from read <-> spanning_paired.1
-                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
-                    
-                    broken_mate = sa[0]
-                
-                #@todo silent mates do not make pairs but are one directional
-                # in their input - has to be fixed in order to allow edge_merging
-                #self.graph.insert(r,broken_mate)
-
-            else:# pragma: no cover
-                raise Exception("Unknown type read: '"+str(rg)+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
-            
-            """Find introns etc:
-            
-            Example 1: 
-            
-            5S10M15N10M2S
-            
-            S S S S S | | | | | | | | |---------------| | | | | | | | | S S
-            
- soft-clip: <========]
-                                                                       [==>
-            Softclip are usually one-directional, from the sequenced base until
-            the end. If it is before the first M/= flag, it's direction should
-            be '-', otherwise '+' as it clips from the end. In principle the
-            soft/hard clips are not edges but properties of nodes. One particular
-            base may have several soft/hard clips (from different locations but
-            adding weigt to the same node).
-            
-            Splice juncs are bi-directional, and real edges.
- 
-splice-junc:                           <=============>
-            """
-            
-            for internal_edge in BAMExtract.BAMExtract.find_cigar_edges(read):
-                i_pos1 = None
-                i_pos2 = None
-                if internal_edge[2] in ['cigar_splice_junction','cigar_deletion']:#, 'cigar_deletion'
-                    i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
-                    i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
-                
-                    if internal_edge[2] in ['cigar_deletion'] and i_pos1.get_dist(i_pos2,False) < MAX_ACCEPTABLE_INSERT_SIZE:
-                        i_pos1 = None
-                        i_pos2 = None
-                
-                elif internal_edge[2] in ['cigar_soft_clip']:
-                    if pos1 == None or rg in ['spanning_paired_1_s', 'spanning_paired_2_s']:
-                        pass
-                    elif rg in ['discordant_mates',
-                              'spanning_paired_1',
-                              'spanning_paired_1_r',
-                              'spanning_paired_1_t',
-                              'spanning_paired_2',
-                              'spanning_paired_2_r',
-                              'spanning_paired_2_t',
-                              'spanning_singleton_1',
-                              'spanning_singleton_1_r',
-                              'spanning_singleton_2',
-                              'spanning_singleton_2_r']:
-                            #@todo _chr?
-                            i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                                 internal_edge[0],
-                                                 pos2.strand)
-                            #@todo _chr?
-                            i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                                 internal_edge[1],
-                                                 pos1.strand)
-                    else:# pragma: no cover
-                        raise Exception("what todo here - "+rg)
-                else:# pragma: no cover
-                    raise Exception("Edge type not implemented: %s\n\n%s", internal_edge,str(read))
-                
-                if internal_edge[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
-                    try:
-                        if i_pos1 != None:
-                            self.get_node_reference(i_pos2).add_clip()
-                    except:
-                        # This happens with some weird reads
-                        #if rg in ['spanning_paired_2','spanning_singleton_2_r']:
-                        #self.graph.create_node(i_pos2)
-                        #self.graph.get_node_reference(i_pos2).add_clip()
-                        #logging.warn("softclip of "+read.qname+" ("+rg+") of dist="+str(i_pos2.pos - i_pos1.pos)+" is not at the side of the break point.")
-                        pass
-                else:
-                    if i_pos1 != None:
-                        self.insert_entry(i_pos1,i_pos2,internal_edge[2],None,True)
-        
-        logging.debug("alignment data loaded")
     
     def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """ - Checks if Node exists at pos1, otherwise creates one
@@ -957,7 +826,7 @@ splice-junc:                           <=============>
                     if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
                         yield edge
     
-    def rejoin_splice_juncs(self, thicker_edges):
+    def rejoin_splice_juncs(self, thicker_edges, splice_junctions):
         """thicker edges go across the break point:
 
 thick edges:
@@ -1006,7 +875,7 @@ thick edges:
                         if node1.position.strand == node2.position.strand:
                             left_junc = (MAX_GENOME_DISTANCE, None)
                             
-                            for splice_junc in self.search_splice_edges_between(node1.position, node2.position):
+                            for splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
                                 if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
                                     dist_origin1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
                                     dist_origin2 = abs(splice_junc._target.position.get_dist(node2.position, False))
@@ -1034,14 +903,14 @@ thick edges:
                         if node1.position.strand == node2.position.strand:
                             right_junc = (MAX_GENOME_DISTANCE, None)
                             
-                            for splice_junc in self.search_splice_edges_between(node1.position, node2.position):
-                                if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
-                                    dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
-                                    dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
-                                    sq_dist_target = pow(dist_target1, 2) + pow(dist_target2, 2)
-                                    
-                                    if dist_target1 < MAX_ACCEPTABLE_INSERT_SIZE and dist_target2 < MAX_ACCEPTABLE_INSERT_SIZE and sq_dist_target < right_junc[0]:
-                                        right_junc = (sq_dist_target, splice_junc)
+                            for splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
+                                #if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
+                                dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
+                                dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
+                                sq_dist_target = pow(dist_target1, 2) + pow(dist_target2, 2)
+                                
+                                if dist_target1 < MAX_ACCEPTABLE_INSERT_SIZE and dist_target2 < MAX_ACCEPTABLE_INSERT_SIZE and sq_dist_target < right_junc[0]:
+                                    right_junc = (sq_dist_target, splice_junc)
                             
                             if right_junc[1] != None:
                                 node1.splice_edges[node2] = right_junc
@@ -1353,20 +1222,276 @@ class Subnet():
         self.reorder_edges()
 
 
+class BAMExtract(object):
+    def __init__(self, bam_file):
+        self.pysam_fh = self.test_idx(bam_file)
+    
+    def test_idx(self, bam_file):
+        pysam_fh = pysam.AlignmentFile(bam_file, "rb")
+        
+        try:
+            pysam_fh.fetch()
+        except:
+            logging.info('Indexing BAM file with pysam: '+pysam_fh.filename)
+            pysam.index(pysam_fh.filename)
+            pysam_fh = pysam.AlignmentFile(pysam_fh.filename)
+        
+        try:
+            pysam_fh.fetch()
+        except:
+            raise Exception('Could not indexing BAM file: '+pysam_fh.filename)
+        
+        return pysam_fh
+    
+    def extract_junctions(self, fusion_junctions, splice_junctions):
+        logging.debug("Parsing reads to obtain fusion gene and splice junctions")
+        for read in self.pysam_fh.fetch():
+            sa = self.parse_SA(read.get_tag('SA'))
+            _chr = self.pysam_fh.get_reference_name(read.reference_id)
+            rg = read.get_tag('RG')
+            
+            pos1, pos2 = None, None
+            
+            if rg in ['discordant_mates',
+                'spanning_paired_1',    'spanning_paired_2',
+                'spanning_paired_1_r',  'spanning_paired_2_r',
+                'spanning_paired_1_s',  'spanning_paired_2_s',
+                'spanning_paired_1_t',  'spanning_paired_2_t',
+                'spanning_singleton_1', 'spanning_singleton_1_r',
+                'spanning_singleton_2', 'spanning_singleton_2_r']:
+                pos1, pos2 = fusion_junctions.insert(read, sa[0])
+            
+            elif rg == 'silent_mate':
+                # usually in a exon?
+                if read.is_read1:
+                    # The complete mate is the secondary, meaning:
+                    # HI:i:1       HI:i:2
+                    # [====]---$---[====>-----<========]
+                    # The 'break' between the mates is from spanning_paired.2 <-> read
+                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
+                    
+                    broken_mate = sa[1]
+                    #broken_mate[1] += bam_parse_alignment_offset_using_cigar(broken_mate)
+
+                else:# is_read2
+                    # The complete mate is the primary, meaning:
+                    #                HI:i:1       HI:i:2
+                    # [========>-----<====]---$---[====]
+                    # The 'break' between the mates is from read <-> spanning_paired.1
+                    # -- requires spanning_paired.1 and spanning_paired.2 to be set in the correct order --
+                    
+                    broken_mate = sa[0]
+                
+                #@todo silent mates do not make pairs but are one directional
+                # in their input - has to be fixed in order to allow edge_merging
+                #self.graph.insert(r,broken_mate)
+
+            else:# pragma: no cover
+                raise Exception("Unknown type read: '"+str(rg)+"'. Was the alignment fixed with a more up to date version of Dr.Disco?")
+            
+            """Find introns etc:
+            
+            Example 1: 
+            
+            5S10M15N10M2S
+            
+            S S S S S | | | | | | | | |---------------| | | | | | | | | S S
+            
+ soft-clip: <========]
+                                                                       [==>
+            Softclip are usually one-directional, from the sequenced base until
+            the end. If it is before the first M/= flag, it's direction should
+            be '-', otherwise '+' as it clips from the end. In principle the
+            soft/hard clips are not edges but properties of nodes. One particular
+            base may have several soft/hard clips (from different locations but
+            adding weigt to the same node).
+            
+            Splice juncs are bi-directional, and real edges.
+ 
+splice-junc:                           <=============>
+            """
+            
+            for internal_edge in self.find_cigar_edges(read):
+                i_pos1 = None
+                i_pos2 = None
+                if internal_edge[2] in ['cigar_splice_junction','cigar_deletion']:#, 'cigar_deletion'
+                    i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
+                    i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
+                
+                    if internal_edge[2] in ['cigar_deletion'] and i_pos1.get_dist(i_pos2,False) < MAX_ACCEPTABLE_INSERT_SIZE:
+                        i_pos1 = None
+                        i_pos2 = None
+                
+                elif internal_edge[2] in ['cigar_soft_clip']:
+                    if pos1 == None or rg in ['spanning_paired_1_s', 'spanning_paired_2_s']:
+                        pass
+                    elif rg in ['discordant_mates',
+                              'spanning_paired_1',      'spanning_paired_2',
+                              'spanning_paired_1_r',    'spanning_paired_2_r',
+                              'spanning_paired_1_t',    'spanning_paired_2_t',
+                              'spanning_singleton_1',   'spanning_singleton_2',
+                              'spanning_singleton_1_r', 'spanning_singleton_2_r']:
+                            #@todo _chr?
+                            i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                                 internal_edge[0],
+                                                 pos2.strand)
+                            #@todo _chr?
+                            i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                                 internal_edge[1],
+                                                 pos1.strand)
+                    else:# pragma: no cover
+                        raise Exception("what todo here - "+rg)
+                else:# pragma: no cover
+                    raise Exception("Edge type not implemented: %s\n\n%s", internal_edge,str(read))
+                
+                if internal_edge[2] in ['cigar_soft_clip', 'cigar_hard_clip']:
+                    if i_pos1 != None:
+                        node = fusion_junctions.get_node_reference(i_pos2)
+                        if node != None:
+                            node.add_clip()
+                        # else condition happens when clips are found on positions that are not junctions
+                else:
+                    if i_pos1 != None:
+                        if internal_edge[2] == 'cigar_splice_junction':
+                            splice_junctions.insert_entry(i_pos1,i_pos2,internal_edge[2],None,True)
+                        else:
+                            fusion_junctions.insert_entry(i_pos1,i_pos2,internal_edge[2],None,True)
+        
+        logging.debug("alignment data loaded")
+    
+    def parse_pos(self, str_pos):
+        _chr,_poss = str_pos.split(":",2)
+        _poss = _poss.replace(",","").split("-",2)
+        
+        return str(_chr), int(_poss[0]), int(_poss[1])
+    
+    def extract(self, pos1, pos2, bamfile_out):
+        pos1 = self.parse_pos(pos1)
+        pos2 = self.parse_pos(pos2)
+        
+        ids = set()
+        
+        fh = pysam.AlignmentFile(bamfile_out, "wb", header=self.pysam_fh.header)
+        
+        for r in self.pysam_fh.fetch(pos1[0],pos1[1],pos1[2]):#pysam.view(b,"chr21:1-500")
+            ids.add(r.query_name)
+        
+        for r in self.pysam_fh.fetch(pos2[0],pos2[1],pos2[2]):#pysam.view(b,"chr21:1-500")
+            ids.add(r.query_name)
+        
+        for r in self.pysam_fh.fetch():
+            if r.query_name in ids:
+                fh.write(r)
+        
+        
+        fh.close()
+        
+        pysam.index(str(bamfile_out))
+    
+    # static is elegant for functions that do not use class properties
+    # http://stackoverflow.com/questions/18679803/python-calling-method-without-self
+    @staticmethod
+    def parse_SA(SA_tag):
+        sa_tags = SA_tag.split(";")
+        for i in range(len(sa_tags)):
+            sa_tags[i] = sa_tags[i].split(",")
+            sa_tags[i][1] = int(sa_tags[i][1])
+        
+        return sa_tags
+    
+    @staticmethod
+    def find_cigar_edges(read):
+        """Tries to find Edges introduced by:
+         - Hard clipping
+         - Soft clipping
+         - Splicing
+         - Deletion
+
+            M	BAM_CMATCH	0
+            I	BAM_CINS	1
+            D	BAM_CDEL	2
+            N	BAM_CREF_SKIP	3
+            S	BAM_CSOFT_CLIP	4
+            H	BAM_CHARD_CLIP	5
+            P	BAM_CPAD	6
+            =	BAM_CEQUAL	7
+            X	BAM_CDIFF	8"""
+        
+        tt = {
+            2:'cigar_deletion',
+            3:'cigar_splice_junction',
+            4:'cigar_soft_clip',
+            5:'cigar_hard_clip'
+        }
+        
+        offset = read.reference_start
+        solid = False
+        
+        for chunk in read.cigar:
+            if chunk[0] in tt.keys():# D N S H
+                """Small softclips occur all the time - introns and 
+                deletions of that size shouldn't add weight anyway
+                
+                1S 5M means:
+                startpoint-1 , startpoint => Softclip 
+                
+                5M 2S means:
+                startpoint +5, startpoint +5+2 => softclip
+                
+                In the first case, which I call left_clipping, the junction
+                occurs before the start position and it needs to be corrected
+                for
+                
+                @todo it's still a buggy implementation because the following
+                is theoretically possible too:
+                
+                5H 10S 5M
+                
+                in that case, the first edge should be -15,-10 and the
+                second -10,0. Maybe soft- and hard clipping should
+                be merged together?
+                """
+                
+                if chunk[0] in [4,5] and not solid:
+                    offset -= chunk[1]
+
+                if chunk[1] > MAX_ACCEPTABLE_ALIGNMENT_ERROR:
+                    if solid:
+                        """Clips to the first node:
+                        M M M M M M M M M M S S S S S
+                                           <========]
+                        """
+                        #yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+                        yield ((offset + chunk[1]), offset , tt[chunk[0]])
+                    else:
+                        """Clips to the second node:
+                        S S S S S M M M M M M M M M M
+                        [========>
+                        """
+                        yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+
+            
+            if chunk[0] not in [4,5]:
+                solid = True
+            
+            offset += chunk[1]
+
+
 class IntronDecomposition:
     def __init__(self,alignment_file):
+        self.alignment_file = alignment_file
         self.pysam_fh = self.test_disco_alignment(alignment_file)
     
     def decompose(self):
-        fusion_junctions_idx = GenomeIntervalTree()
-        splice_junctions_idx = GenomeIntervalTree()# unstranded
+        fusion_junctions = Graph(self.pysam_fh)
+        splice_junctions = Graph(self.pysam_fh)
         
-        fusion_junctions = Graph(self.pysam_fh, fusion_junctions_idx)
-        fusion_junctions.insert_alignment()
-        
+        alignment = BAMExtract(self.alignment_file)
+        alignment.extract_junctions(fusion_junctions, splice_junctions)
         
         thicker_edges = fusion_junctions.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
-        thicker_edges = fusion_junctions.rejoin_splice_juncs(thicker_edges) # Merges edges by splice junctions and other junctions
+        thicker_edges = fusion_junctions.rejoin_splice_juncs(thicker_edges, splice_junctions) # Merges edges by splice junctions and other junctions
+        del(splice_junctions)
         fusion_junctions.reinsert_edges(thicker_edges)
         
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges)
