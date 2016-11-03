@@ -441,7 +441,7 @@ class Edge:
 class Graph:
     def __init__(self,pysam_fh):
         self.idxtree = GenomeIntervalTree()
-        self.pysam_fh = pysam_fh
+        self.pysam_fh = pysam_fh# This is needed to convert chromosome id's to actual names
     
     def __iter__(self):
         for key in self.idxtree:
@@ -1224,24 +1224,33 @@ class Subnet():
 
 class BAMExtract(object):
     def __init__(self, bam_file):
-        self.pysam_fh = self.test_idx(bam_file)
+        self.pysam_fh = self.test_disco_alignment(bam_file)
     
-    def test_idx(self, bam_file):
-        pysam_fh = pysam.AlignmentFile(bam_file, "rb")
+    @staticmethod
+    def test_disco_alignment(alignment_file):
+        """Ensures by reading the BAM header whether the BAM file was
+        indeed fixed using Dr. Disco
+        """
+        bam_fh = pysam.AlignmentFile(alignment_file, "rb")
+        if bam_fh.header.has_key('PG'):
+            for pg in bam_fh.header['PG']:
+                if pg['ID'] == 'drdisco_fix_chimeric':
+                    try:# pragma: no cover
+                        bam_fh.fetch()
+                    except:# pragma: no cover
+                        logging.info('Indexing BAM file with pysam: '+bam_fh.filename)# create index if it does not exist
+                        pysam.index(bam_fh.filename)
+                        bam_fh = pysam.AlignmentFile(bam_fh.filename)
+                    
+                    try:
+                        bam_fh.fetch()
+                    except:
+                        raise Exception('Could not indexing BAM file: '+bam_fh.filename)
+                    
+                    return bam_fh
         
-        try:
-            pysam_fh.fetch()
-        except:
-            logging.info('Indexing BAM file with pysam: '+pysam_fh.filename)
-            pysam.index(pysam_fh.filename)
-            pysam_fh = pysam.AlignmentFile(pysam_fh.filename)
-        
-        try:
-            pysam_fh.fetch()
-        except:
-            raise Exception('Could not indexing BAM file: '+pysam_fh.filename)
-        
-        return pysam_fh
+        #@todo write simple test
+        raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
     
     def extract_junctions(self, fusion_junctions, splice_junctions):
         logging.debug("Parsing reads to obtain fusion gene and splice junctions")
@@ -1480,13 +1489,13 @@ splice-junc:                           <=============>
 class IntronDecomposition:
     def __init__(self,alignment_file):
         self.alignment_file = alignment_file
-        self.pysam_fh = self.test_disco_alignment(alignment_file)
     
     def decompose(self):
-        fusion_junctions = Graph(self.pysam_fh)
-        splice_junctions = Graph(self.pysam_fh)
-        
         alignment = BAMExtract(self.alignment_file)
+        
+        fusion_junctions = Graph(alignment.pysam_fh)
+        splice_junctions = Graph(alignment.pysam_fh)
+        
         alignment.extract_junctions(fusion_junctions, splice_junctions)
         
         thicker_edges = fusion_junctions.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
@@ -1506,32 +1515,6 @@ class IntronDecomposition:
         #    s += 1
         
         return len(self.results)
-    
-    # @todo drop this into the BAMExtract class
-    def test_disco_alignment(self,alignment_file):
-        """Ensures by reading the BAM header whether the BAM file was
-        indeed fixed using Dr. Disco
-        """
-        bam_fh = pysam.AlignmentFile(alignment_file, "rb")
-        if bam_fh.header.has_key('PG'):
-            for pg in bam_fh.header['PG']:
-                if pg['ID'] == 'drdisco_fix_chimeric':
-                    try:# pragma: no cover
-                        bam_fh.fetch()
-                    except:# pragma: no cover
-                        logging.info('Indexing BAM file with pysam: '+bam_fh.filename)# create index if it does not exist
-                        pysam.index(bam_fh.filename)
-                        bam_fh = pysam.AlignmentFile(bam_fh.filename)
-                    
-                    try:
-                        bam_fh.fetch()
-                    except:
-                        raise Exception('Could not indexing BAM file: '+bam_fh.filename)
-                    
-                    return bam_fh
-        
-        #@todo write simple test
-        raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
     
     def export(self, fh):
         fh.write(str(self))
