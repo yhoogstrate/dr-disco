@@ -203,19 +203,11 @@ class Node:
         else:
             self.edges[str(edge._target.position)] = edge
     
-    def remove_edge(self,edge,idx):
-        if idx == "by-target":
-            skey = str(edge._target.position)
-        elif idx == "by-origin":
-            skey = str(edge._origin.position)
-        else:# pragma: no cover
-            raise Exception("Invalid usage of function")
-        
-        if not self.edges.has_key(skey):# pragma: no cover
-            raise Exception("Unknown key: %s", skey)
-        
-        self.edges[skey] = None
-        del(self.edges[skey])
+    def remove_edge(self,edge):
+        try:
+            del(self.edges[str(edge._origin.position)])
+        except:
+            del(self.edges[str(edge._target.position)])
     
     def __iter__(self):
         for k in sorted(self.edges.keys()):
@@ -476,9 +468,7 @@ class Graph:
         """Only works for Edges of which the _origin and _target Node
         still exists
         """
-        for edge_t in edges:
-            edge  = edge_t[0]
-            
+        for edge in edges:
             node1 = edge._origin
             node2 = edge._target
             
@@ -489,8 +479,8 @@ class Graph:
         node1 = edge._origin
         node2 = edge._target
         
-        node1.remove_edge(edge,"by-target")
-        node2.remove_edge(edge,"by-origin")
+        node1.remove_edge(edge)
+        node2.remove_edge(edge)
 
         # Not necessary
         #del(edge)
@@ -577,7 +567,7 @@ class Graph:
             candidate = self.edge_idx.pop()
             
             self.prune_edge(candidate)
-            candidates.append((candidate,candidate))
+            candidates.append(candidate)
             
             self.remove_edge(candidate)# do not remove if splice junc exists?
         
@@ -645,14 +635,13 @@ thick edges:
         right_nodes = {}
         
         for edge in thicker_edges:
-            edge = [edge[0]]
-            if not left_nodes.has_key(edge[0]._origin.position._chr):#lnodes
-                left_nodes[edge[0]._origin.position._chr] = set()
-            left_nodes[edge[0]._origin.position._chr].add(edge[0]._origin)
+            if not left_nodes.has_key(edge._origin.position._chr):#lnodes
+                left_nodes[edge._origin.position._chr] = set()
+            left_nodes[edge._origin.position._chr].add(edge._origin)
             
-            if not right_nodes.has_key(edge[0]._target.position._chr):#rnodes
-                right_nodes[edge[0]._target.position._chr] = set()
-            right_nodes[edge[0]._target.position._chr].add(edge[0]._target)
+            if not right_nodes.has_key(edge._target.position._chr):#rnodes
+                right_nodes[edge._target.position._chr] = set()
+            right_nodes[edge._target.position._chr].add(edge._target)
         
         ## 02 look for all left nodes if there is any set (i < j) where
         ## i and j span a splice junction
@@ -772,7 +761,7 @@ have edges to the same nodes of the already existing network,
         q = 0
         subnetworks = []
         while len(thicker_edges) > 0:
-            start_point = thicker_edges[0][0]
+            start_point = thicker_edges[0]
             
             ## The original nodes have been emptied, so the most important
             ## edge's are now separated.
@@ -803,7 +792,7 @@ have edges to the same nodes of the already existing network,
             popme = set()
             for edge in subedges:
                 for edge2 in thicker_edges:
-                    if edge[0] == edge2[0] or edge[1] == edge2[0]:#@todo use `if edge2[2] in edge:` instead?
+                    if edge[0] == edge2 or edge[1] == edge2:#@todo use `if edge2[2] in edge:` instead?
                         popme.add(edge2)
             
             for pop in popme:
