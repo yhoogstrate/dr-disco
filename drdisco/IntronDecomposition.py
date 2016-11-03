@@ -354,33 +354,19 @@ class Edge:
             self.add_alignment_key(alignment_key)
         
         for _type in edge._types:
-            if _type in [
-                    "discordant_mates",
-                    "spanning_paired_1",
-                    "spanning_paired_1_r",
-                    "spanning_paired_1_s",
-                    "spanning_paired_1_t",
-                    "spanning_paired_2",
-                    "spanning_paired_2_r",
-                    "spanning_paired_2_s",
-                    "spanning_paired_2_t",
-                    "spanning_singleton_1",
-                    "spanning_singleton_2",
-                    "spanning_singleton_1_r",
-                    "spanning_singleton_2_r",
-                    "cigar_splice_junction"
-                    ]:
+            if _type in ["discordant_mates",
+                    "spanning_paired_1",     "spanning_paired_2",
+                    "spanning_paired_1_r",   "spanning_paired_2_r",
+                    "spanning_paired_1_s",   "spanning_paired_2_s",
+                    "spanning_paired_1_t",   "spanning_paired_2_t",
+                    "spanning_singleton_1",  "spanning_singleton_2",
+                    "spanning_singleton_1_r","spanning_singleton_2_r"]:
                 self.add_type(_type)
                 return True
             elif _type not in ['silent_mate']:# pragma: no cover
                 raise Exception("Not sure what to do here with type: %s", _type)
         return False
     
-    def keep_splice_js_only(self):
-        for key in self._types.keys():
-            if key != "cigar_splice_junction":
-                del(self._types[key])
-        
     def add_type(self,_type):
         if _type in ["cigar_soft_clip", 'cigar_hard_clip']:# pragma: no cover
             raise Exception("Clips shouldn't be added as edges, but as properties of Nodes")
