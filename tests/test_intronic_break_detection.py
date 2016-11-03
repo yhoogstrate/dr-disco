@@ -55,183 +55,183 @@ class TestIntronicBreakDetection(unittest.TestCase):
         
         self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
     
-    #def test_02(self):
-        #input_file_a =   TEST_DIR+"test_terg_01.sub_02.filtered.fixed.bam"
-        ##input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file  =     TEST_DIR+"test_02.out.dbed"
-        #output_file  = T_TEST_DIR+"test_02.out.dbed"
+    def test_02(self):
+        input_file_a =   TEST_DIR+"test_terg_01.sub_02.filtered.fixed.bam"
+        #input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file  =     TEST_DIR+"test_02.out.dbed"
+        output_file  = T_TEST_DIR+"test_02.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
     
-    #def test_03(self):
-        #input_file_a =   TEST_DIR+"test_terg_01.sub_03.filtered.fixed.bam"
-        ##input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file  =     TEST_DIR+"test_03.out.dbed"
-        #output_file  = T_TEST_DIR+"test_03.out.dbed"
+    def test_03(self):
+        input_file_a =   TEST_DIR+"test_terg_01.sub_03.filtered.fixed.bam"
+        #input_file_f =   TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file  =     TEST_DIR+"test_03.out.dbed"
+        output_file  = T_TEST_DIR+"test_03.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_04(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.sub_04.filtered.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file  =      TEST_DIR+"test_04.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_04.out.dbed"
+    def test_04(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_04.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file  =      TEST_DIR+"test_04.out.dbed"
+        output_file  =  T_TEST_DIR+"test_04.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
     
-    #def test_05(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.sub_05.filtered.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file    =    TEST_DIR+"test_05.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_05.out.dbed"
+    def test_05(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_05.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file    =    TEST_DIR+"test_05.out.dbed"
+        output_file  =  T_TEST_DIR+"test_05.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_06(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.sub_06.filtered.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #output_file  =  T_TEST_DIR+"test_06.out.dbed"
+    def test_06(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_06.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        output_file  =  T_TEST_DIR+"test_06.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        ##Not sure what 'true' here is exactly - probably reporting err
-        ## by STAR? at least, throw a warning and don't terminate
+        #Not sure what 'true' here is exactly - probably reporting err
+        # by STAR? at least, throw a warning and don't terminate
 
-    #def test_07(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.sub_07.filtered.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #output_file  =  T_TEST_DIR+"test_07.out.dbed"
+    def test_07(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_07.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        output_file  =  T_TEST_DIR+"test_07.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        ##Not sure what 'true' here is exactly, as long as it does
-        ##not throw an exception
+        #Not sure what 'true' here is exactly, as long as it does
+        #not throw an exception
 
-    #def test_08_test_inclusion_of_disco_reads(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.sub_08.filtered.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file    =    TEST_DIR+"test_08.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_08.out.dbed"
+    def test_08_test_inclusion_of_disco_reads(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_08.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file    =    TEST_DIR+"test_08.out.dbed"
+        output_file  =  T_TEST_DIR+"test_08.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_09(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.sub_09.filtered.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file    =    TEST_DIR+"test_09.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_09.out.dbed"
+    def test_09(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_09.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file    =    TEST_DIR+"test_09.out.dbed"
+        output_file  =  T_TEST_DIR+"test_09.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_10(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.sub_10.filtered.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file    =    TEST_DIR+"test_10.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_10.out.dbed"
+    def test_10(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_10.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file    =    TEST_DIR+"test_10.out.dbed"
+        output_file  =  T_TEST_DIR+"test_10.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_final(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.filtered.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file    =    TEST_DIR+"test_final.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_final.out.dbed"
+    def test_final(self):
+        input_file_a =    TEST_DIR+"test_terg_01.filtered.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file    =    TEST_DIR+"test_final.out.dbed"
+        output_file  =  T_TEST_DIR+"test_final.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_11(self):
-        #input_file_a =    TEST_DIR+"test_terg_02.fixed.bam"
-        ##input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        #test_file    =    TEST_DIR+"test_11.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_11.out.dbed"
+    def test_11(self):
+        input_file_a =    TEST_DIR+"test_terg_02.fixed.bam"
+        #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+        test_file    =    TEST_DIR+"test_11.out.dbed"
+        output_file  =  T_TEST_DIR+"test_11.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        ##ic.annotate_genes(gobj)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        #ic.annotate_genes(gobj)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_12_extract_subnetworks(self):
-        #input_file_a =    TEST_DIR+"test_terg_01.sub_12.filtered.fixed.bam"
-        #test_file    =    TEST_DIR+"test_12.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_12.out.dbed"
+    def test_12_extract_subnetworks(self):
+        input_file_a =    TEST_DIR+"test_terg_01.sub_12.filtered.fixed.bam"
+        test_file    =    TEST_DIR+"test_12.out.dbed"
+        output_file  =  T_TEST_DIR+"test_12.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
     
     #def test_13_merge_overlapping_subnetworks(self):
         #input_file_a =    TEST_DIR+"test_terg_03.sub_01.filtered.fixed.bam"
@@ -246,31 +246,31 @@ class TestIntronicBreakDetection(unittest.TestCase):
         
         #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_14_test_inserting_spanning_paired_12_s(self):
-        #input_file_a =    TEST_DIR+"test_terg_03.sub_02.filtered.fixed.bam"
-        #test_file    =    TEST_DIR+"test_14.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_14.out.dbed"
+    def test_14_test_inserting_spanning_paired_12_s(self):
+        input_file_a =    TEST_DIR+"test_terg_03.sub_02.filtered.fixed.bam"
+        test_file    =    TEST_DIR+"test_14.out.dbed"
+        output_file  =  T_TEST_DIR+"test_14.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_15_pruning_offset(self):
-        #input_file_a =    TEST_DIR+"test_terg_03.sub_03m.filtered.fixed.bam"
-        #test_file    =    TEST_DIR+"test_15.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_15.out.dbed"
+    def test_15_pruning_offset(self):
+        input_file_a =    TEST_DIR+"test_terg_03.sub_03m.filtered.fixed.bam"
+        test_file    =    TEST_DIR+"test_15.out.dbed"
+        output_file  =  T_TEST_DIR+"test_15.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
 
 def main():

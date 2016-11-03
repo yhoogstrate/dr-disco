@@ -190,29 +190,18 @@ class Node:
     def add_clip(self):
         self.clips += 1
     
-    def insert_edge(self,edge,edge_type,alignment_key):
-        skey = str(edge._target.position)
-        
-        if not self.edges.has_key(skey):
-            self.set_edge(edge)
-        
-        self.edges[skey].add_type(edge_type)
-        
-        if alignment_key != None:# Splice junctions should be skipped for entropy
-            self.edges[skey].add_alignment_key(alignment_key)
+    def get_edge_to_node(self, target_node):
+        key = str(target_node.position)
+        if self.edges.has_key(key):
+            return self.edges[key]
+        else:
+            return None
     
-    def set_edge(self, edge):
-        self.edges[str(edge._target.position)] = edge
-    
-    def new_edge(self,node2,edge_type,alignment_key,do_vice_versa):
-        if do_vice_versa:
-            node2.new_edge(self,edge_type,alignment_key,False)
-
-        edge = Edge(self,node2)
-        self.insert_edge(edge,edge_type,alignment_key)
-        
-#        if do_vice_versa:
-#            node2.insert_edge(self,edge_type,alignment_key)
+    def insert_edge(self, edge):
+        if edge._target == self:
+            self.edges[str(edge._origin.position)] = edge
+        else:
+            self.edges[str(edge._target.position)] = edge
     
     def remove_edge(self,edge,idx):
         if idx == "by-target":
@@ -238,12 +227,11 @@ class Node:
         a = 0
         for sedge in self.edges:
             edge = self.edges[sedge]
-            filtered_edges = {x:edge._types[x] for x in sorted(edge._types.keys()) if x not in ['cigar_soft_clip','cigar_hard_clip']}
+            filtered_edges = {x:edge._types[x] for x in sorted(edge._types.keys())}# if x not in ['cigar_soft_clip','cigar_hard_clip']
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t["+str(id(edge))+"] ->  "+str(edge._target.position)+" "+str(filtered_edges)
-
+                out += "\n\t["+str(id(edge))+"] "+sedge+" "+str(filtered_edges)
         
         if a > 0:
             out += "\n\t-> soft/hard clips: "+str(self.clips)
@@ -349,8 +337,7 @@ class Edge:
             raise KeyError("Could not find complement for edge:   "+str(self))
     
     def merge_edge(self,edge):
-        """Merges discordant_mates edges
-        """
+        """Merges (non splice) edges"""
         
         for alignment_key in edge.unique_alignments_idx:
             self.add_alignment_key(alignment_key)
@@ -363,20 +350,18 @@ class Edge:
                     "spanning_paired_1_t",   "spanning_paired_2_t",
                     "spanning_singleton_1",  "spanning_singleton_2",
                     "spanning_singleton_1_r","spanning_singleton_2_r"]:
-                self.add_type(_type)
-                return True
+                self.add_type(_type,edge._types[_type])
             elif _type not in ['silent_mate']:# pragma: no cover
                 raise Exception("Not sure what to do here with type: %s", _type)
-        return False
     
-    def add_type(self,_type):
+    def add_type(self, _type, weight):
         if _type in ["cigar_soft_clip", 'cigar_hard_clip']:# pragma: no cover
             raise Exception("Clips shouldn't be added as edges, but as properties of Nodes")
         
         if not self._types.has_key(_type):
             self._types[_type] = 0
         
-        self._types[_type] += 1
+        self._types[_type] += weight
     
     def add_alignment_key(self,alignment_key):
         if not self.unique_alignments_idx.has_key(alignment_key):
@@ -394,7 +379,11 @@ class Edge:
         if not self.scoring_table.has_key(_type):# pragma: no cover
             raise Exception("Not implemented _type: %s", _type)
         else:
-            return self.get_count(_type)*self.scoring_table[_type]
+            if _type == 'cigar_splice_junction':
+                self.get_count(_type)*self.scoring_table[_type]
+            else:
+                # Reads get inserted twice - for both mates...
+                return self.get_count(_type)*self.scoring_table[_type]
     
     def get_scores(self):
         """Based on this function, the start point is determined
@@ -453,10 +442,10 @@ class Graph:
         except:
             return None
     
-    def insert_entry(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
+    def insert_edge(self,pos1,pos2,_type,cigarstrs,do_vice_versa):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
-            - Checks if Edge exists between them
+            - Checks if Edge exists between them, otherwise inserts it into the Nodes
          
          cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
         """
@@ -471,27 +460,30 @@ class Graph:
             short_pos1 = "%0.2X" % pos1.pos#str(pos1.pos)
             short_pos2 = "%0.2X" % pos2.pos#str(pos2.pos)
         
-            alignment_key  = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"
-            alignment_key += short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
-            
-            node1.new_edge(node2,_type,alignment_key,do_vice_versa)
-        else:
-            node1.new_edge(node2,_type,None,do_vice_versa)
-    
+            cigarstrs = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"+short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
+        
+        edge = node1.get_edge_to_node(node2)
+        if edge == None:
+            edge = Edge(node1, node2)
+            node1.insert_edge(edge)
+            node2.insert_edge(edge)
+        
+        edge.add_type(_type, 1)
+        if node1 == edge._origin:# Avoid double insertion of all keys :) only do it if the positions don't get swapped
+            edge.add_alignment_key(cigarstrs)
     
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
         still exists
         """
         for edge_t in edges:
-            edge   = edge_t[0]
-            edge_c = edge_t[1]
+            edge  = edge_t[0]
             
             node1 = edge._origin
             node2 = edge._target
             
-            node1.set_edge(edge)
-            node2.set_edge(edge_c)
+            node1.insert_edge(edge)
+            node2.insert_edge(edge)
     
     def remove_edge(self, edge):
         node1 = edge._origin
@@ -534,8 +526,15 @@ class Graph:
             for key in interval[2].keys():
                 node1 = interval[2][key]
                 for edge in node1.edges.values():
-                    if edge._target.position.pos >= (pos2.pos - MAX_ACCEPTABLE_INSERT_SIZE) and (pos2.pos + MAX_ACCEPTABLE_INSERT_SIZE):
-                        yield edge
+                    if node1 == edge._origin:
+                        node2 = edge._target
+                    else:
+                        node2 = edge._origin
+                    
+                    d1 = abs(pos1.get_dist(node1.position, False))
+                    d2 = abs(pos2.get_dist(node2.position, False))
+                    if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
+                        yield pow(d1, 2) + pow(d2, 2) , edge
     
     def print_chain(self):# pragma: no cover
         print "**************************************************************"
@@ -557,32 +556,13 @@ class Graph:
                 if edge not in edges:
                     score = edge.get_scores()
                     if score > 0:
-                        #edge_c = edge.get_complement()
                         edges.add(edge)
-                        #edges.add(edge_c)
-                        
                         edges_tuple.append((edge,score,order))
-                        #edges_tuple.append((edge.get_complement(),score,order))
                         order -= 1
         
         del(edges,order)
         
-        self.edge_idx = [edge[0] for edge in sorted(edges_tuple, key=operator.itemgetter(1, 2), reverse=True)]
-    
-    def get_start_point(self):
-        """Returns the top scoring edges in the chain ordered by (1) score and (2) genomic position to get consistent output
-        """
-        if len(self.edge_idx) > 0:
-            top_scoring = self.edge_idx[0]
-            top_scoring_c = top_scoring.get_complement()
-            
-            self.edge_idx.remove(top_scoring)
-            self.edge_idx.remove(top_scoring_c)
-            
-            return top_scoring, top_scoring_c
-        else:
-            del(self.edge_idx)
-            return None, None
+        self.edge_idx = [edge[0] for edge in sorted(edges_tuple, key=operator.itemgetter(1, 2), reverse=False)]
     
     def prune(self):
         """Does some 'clever' tricks to merge edges together and reduce data points
@@ -591,25 +571,22 @@ class Graph:
         logging.info("Finding and merging other edges in close proximity (insert size)")
         
         candidates = []
-        self.print_chain()
+        #self.print_chain()
         
-        candidate, candidate_c = self.get_start_point()
-        
-        while candidate != None:
+        while self.edge_idx:
+            candidate = self.edge_idx.pop()
+            
             self.prune_edge(candidate)
-            candidates.append((candidate,candidate_c))
+            candidates.append((candidate,candidate))
             
             self.remove_edge(candidate)# do not remove if splice junc exists?
-            
-            candidate, candidate_c = self.get_start_point()
         
-        self.print_chain()
+        #self.print_chain()
         logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
         return candidates
     
     def prune_edge(self, edge):
         ## @ todo double check if this is strand specific
-        edge_complement = edge.get_complement()
         
         for edge_m in self.search_edges_between(edge):
             d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
@@ -617,18 +594,10 @@ class Graph:
             d = abs(d1) + abs(d2)
             
             if d <= MAX_ACCEPTABLE_INSERT_SIZE:
-                edge_mc = edge_m.get_complement()
-                
-                s1 = str(edge)
-                s2 = str(edge_m)
-                 
                 edge.merge_edge(edge_m)
-                edge_complement.merge_edge(edge_mc)
                 
-                self.remove_edge(edge_m) # complement is automatically removed after removing the fwd
-                
+                self.remove_edge(edge_m)
                 self.edge_idx.remove(edge_m)
-                self.edge_idx.remove(edge_mc)
     
     def search_edges_between(self,edge_to_prune):
         """searches for other junctions in-between edge+insert size:"""
@@ -676,6 +645,7 @@ thick edges:
         right_nodes = {}
         
         for edge in thicker_edges:
+            edge = [edge[0]]
             if not left_nodes.has_key(edge[0]._origin.position._chr):#lnodes
                 left_nodes[edge[0]._origin.position._chr] = set()
             left_nodes[edge[0]._origin.position._chr].add(edge[0]._origin)
@@ -699,14 +669,9 @@ thick edges:
                         if node1.position.strand == node2.position.strand:
                             left_junc = (MAX_GENOME_DISTANCE, None)
                             
-                            for splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
-                                if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
-                                    dist_origin1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
-                                    dist_origin2 = abs(splice_junc._target.position.get_dist(node2.position, False))
-                                    sq_dist_origin = pow(dist_origin1, 2) + pow(dist_origin2, 2)
-                                    
-                                    if dist_origin1 < MAX_ACCEPTABLE_INSERT_SIZE and dist_origin2 < MAX_ACCEPTABLE_INSERT_SIZE and sq_dist_origin < left_junc[0]:
-                                        left_junc = (sq_dist_origin, splice_junc)
+                            for sq_dist_origin, splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
+                                if sq_dist_origin < left_junc[0]:
+                                    left_junc = (sq_dist_origin, splice_junc)
                                 
                             if left_junc[1] != None:
                                 node1.splice_edges[node2] = left_junc
@@ -727,13 +692,8 @@ thick edges:
                         if node1.position.strand == node2.position.strand:
                             right_junc = (MAX_GENOME_DISTANCE, None)
                             
-                            for splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
-                                #if splice_junc.get_count('cigar_splice_junction') > 0:#@todo and dist splice junction > ?insert_size?
-                                dist_target1 = abs(splice_junc._origin.position.get_dist(node1.position, False))
-                                dist_target2 = abs(splice_junc._target.position.get_dist(node2.position, False))
-                                sq_dist_target = pow(dist_target1, 2) + pow(dist_target2, 2)
-                                
-                                if dist_target1 < MAX_ACCEPTABLE_INSERT_SIZE and dist_target2 < MAX_ACCEPTABLE_INSERT_SIZE and sq_dist_target < right_junc[0]:
+                            for sq_dist_target, splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
+                                if sq_dist_target < right_junc[0]:
                                     right_junc = (sq_dist_target, splice_junc)
                             
                             if right_junc[1] != None:
@@ -928,7 +888,7 @@ class Subnet():
                     node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0][0]._origin.position.strand], # Pos-A
                     node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0][0]._target.position.strand], # Pos-B
                     ("valid" if self.discarded == [] else ','.join(self.discarded)), # Classification status
-                    self.total_score, self.total_clips, self.get_n_split_reads(), self.get_n_discordant_reads(), # Evidence stats
+                    self.total_score/2, self.total_clips, self.get_n_split_reads()/2, self.get_n_discordant_reads()/2, # Evidence stats
                     len(self.edges), nodes_a, nodes_b, # Edges and nodes stats
                     len(self.left_splice_junctions), len(self.right_splice_junctions),
                     self.edges[0][0].get_entropy(), self.get_overall_entropy(), # Entropy stats
@@ -1212,7 +1172,7 @@ class BAMExtract(object):
                 'spanning_singleton_2', 'spanning_singleton_2_r']:
                 pos1, pos2, rg, junction, reinsert = read_to_junction(read, sa[0])
                 if pos1 != None:
-                    fusion_junctions.insert_entry(pos1, pos2, rg, junction, reinsert)
+                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, reinsert)
             
             elif rg == 'silent_mate':# Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
@@ -1256,9 +1216,9 @@ class BAMExtract(object):
                 else:
                     if i_pos1 != None:
                         if internal_edge[2] == 'cigar_splice_junction':
-                            splice_junctions.insert_entry(i_pos1,i_pos2,internal_edge[2],None,True)
+                            splice_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None,True)
                         else:
-                            fusion_junctions.insert_entry(i_pos1,i_pos2,internal_edge[2],None,True)
+                            fusion_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None,True)
         
         logging.debug("alignment data loaded")
     
@@ -1565,12 +1525,12 @@ class IntronDecomposition:
             if entropy < MIN_SUBNET_ENTROPY:
                 subnet.discarded.append("entropy="+str(entropy))
             
-            n_disco = subnet.get_n_discordant_reads()
+            n_disco = subnet.get_n_discordant_reads() / 2
             n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes())
             if n_disco < n_disco_min:
                 subnet.discarded.append("n_discordant_reads="+str(n_disco)+"/"+str(n_disco_min))
             
-            n_support = subnet.get_n_discordant_reads() + subnet.get_n_split_reads()
+            n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads() ) / 2
             n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
             if n_support < n_support_min:
                 subnet.discarded.append("n_support="+str(n_support)+"/"+str(n_support_min))
