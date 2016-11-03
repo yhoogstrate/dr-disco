@@ -778,7 +778,7 @@ have edges to the same nodes of the already existing network,
             for left_node in left_nodes:
                 for right_node in right_nodes:
                     if left_node.edges.has_key(str(right_node.position)):
-                        subedges.append( (left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) )
+                        subedges.append(left_node.edges[str(right_node.position)])#(left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) 
                         
                         if left_node != start_point._origin:# must be merged by a splice junction
                             left_splice_junctions = left_splice_junctions.union(left_splice_junctions_ds[left_node])
@@ -791,9 +791,8 @@ have edges to the same nodes of the already existing network,
             # pop subedges from thicker edges and redo until thicker edges is empty
             popme = set()
             for edge in subedges:
-                for edge2 in thicker_edges:
-                    if edge[0] == edge2 or edge[1] == edge2:#@todo use `if edge2[2] in edge:` instead?
-                        popme.add(edge2)
+                if edge in thicker_edges:
+                    popme.add(edge)
             
             for pop in popme:
                 thicker_edges.remove(pop)
@@ -822,8 +821,8 @@ class Subnet():
     def reorder_edges(self):
         idx = {}
         for edge in self.edges:
-            key1 = edge[0].get_scores()
-            key2 = str(edge[0]._origin.position)+"-"+str(edge[0]._target.position)
+            key1 = edge.get_scores()
+            key2 = str(edge._origin.position)+"-"+str(edge._target.position)
             
             if not idx.has_key(key1):
                 idx[key1] = {}
@@ -842,8 +841,8 @@ class Subnet():
         
         nodes = set()
         for edge in self.edges:
-            nodes.add(edge[0]._origin)
-            nodes.add(edge[0]._target)
+            nodes.add(edge._origin)
+            nodes.add(edge._target)
         
         for node in nodes:
             clips += node.clips
@@ -854,15 +853,15 @@ class Subnet():
     def calc_scores(self):
         score = 0
         for edge in self.edges:
-            score += edge[0].get_scores()
+            score += edge.get_scores()
         
         self.total_score = score
         return self.total_score
     
     def __str__(self):
         """Makes tabular output"""
-        node_a = self.edges[0][0]._origin
-        node_b = self.edges[0][0]._target
+        node_a = self.edges[0]._origin
+        node_b = self.edges[0]._target
         nodes_a, nodes_b = self.get_n_nodes()
         
         return (
@@ -874,18 +873,18 @@ class Subnet():
             "%i\t%i\t"
             "%s\t%s\t"#%.2f\t%.2f\t
             "%s\n" % (
-                    node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0][0]._origin.position.strand], # Pos-A
-                    node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0][0]._target.position.strand], # Pos-B
+                    node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand], # Pos-A
+                    node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand], # Pos-B
                     ("valid" if self.discarded == [] else ','.join(self.discarded)), # Classification status
                     self.total_score/2, self.total_clips, self.get_n_split_reads()/2, self.get_n_discordant_reads()/2, # Evidence stats
                     len(self.edges), nodes_a, nodes_b, # Edges and nodes stats
                     len(self.left_splice_junctions), len(self.right_splice_junctions),
-                    self.edges[0][0].get_entropy(), self.get_overall_entropy(), # Entropy stats
-                    "&".join([str(edge[0]) for edge in self.edges]) # Data structure
+                    self.edges[0].get_entropy(), self.get_overall_entropy(), # Entropy stats
+                    "&".join([str(edge) for edge in self.edges]) # Data structure
             ))
     
     def get_overall_entropy(self):
-        frequency_table = merge_frequency_tables([edge[0].unique_alignments_idx for edge in self.edges])
+        frequency_table = merge_frequency_tables([edge.unique_alignments_idx for edge in self.edges])
         return entropy(frequency_table)
     
     def get_n_nodes(self):
@@ -893,8 +892,8 @@ class Subnet():
         nodes_b = set()
         
         for edge in self.edges:
-            nodes_a.add(edge[0]._origin)
-            nodes_b.add(edge[0]._target)
+            nodes_a.add(edge._origin)
+            nodes_b.add(edge._target)
         
         return len(nodes_a), len(nodes_b)
     
@@ -914,12 +913,12 @@ class Subnet():
                       "spanning_singleton_2",
                       "spanning_singleton_2_r"]:
             for edge in self.edges:
-                n += edge[0].get_count(_type)
+                n += edge.get_count(_type)
         
         return n
     
     def get_n_discordant_reads(self):
-        return sum([edge[0].get_count("discordant_mates") for edge in self.edges])
+        return sum([edge.get_count("discordant_mates") for edge in self.edges])
     
     def find_distances(self, subnet_t):
         """ - Must be symmetrical i.e. (sn1.find_distances(s2) == s2.find_distances(s1)
@@ -969,7 +968,7 @@ class Subnet():
         lnodes = set()
         
         for edge in self.edges:
-            lnodes.add(edge[0]._origin)
+            lnodes.add(edge._origin)
         
         for lnode in lnodes:
             yield lnode
@@ -978,7 +977,7 @@ class Subnet():
         rnodes = set()
         
         for edge in self.edges:
-            rnodes.add(edge[0]._target)
+            rnodes.add(edge._target)
         
         for rnode in rnodes:
             yield rnode
