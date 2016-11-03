@@ -207,9 +207,12 @@ class Node:
     def new_edge(self,node2,edge_type,alignment_key,do_vice_versa):
         if do_vice_versa:
             node2.new_edge(self,edge_type,alignment_key,False)
-        
+
         edge = Edge(self,node2)
         self.insert_edge(edge,edge_type,alignment_key)
+        
+#        if do_vice_versa:
+#            node2.insert_edge(self,edge_type,alignment_key)
     
     def remove_edge(self,edge,idx):
         if idx == "by-target":
@@ -239,7 +242,7 @@ class Node:
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t-> "+str(edge._target.position)+" "+str(filtered_edges)
+                out += "\n\t["+str(id(edge))+"] ->  "+str(edge._target.position)+" "+str(filtered_edges)
 
         
         if a > 0:
@@ -588,7 +591,7 @@ class Graph:
         logging.info("Finding and merging other edges in close proximity (insert size)")
         
         candidates = []
-        #self.print_chain()
+        self.print_chain()
         
         candidate, candidate_c = self.get_start_point()
         
@@ -600,7 +603,7 @@ class Graph:
             
             candidate, candidate_c = self.get_start_point()
         
-        #self.print_chain()
+        self.print_chain()
         logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
         return candidates
     
@@ -1219,15 +1222,14 @@ class BAMExtract(object):
             
             # Detect introns, clipping and insertions/deletions by SAM flags
             for internal_edge in self.find_cigar_edges(read):
-                i_pos1 = None
-                i_pos2 = None
+                i_pos1, i_pos2 = None, None
+                
                 if internal_edge[2] in ['cigar_splice_junction','cigar_deletion']:#, 'cigar_deletion'
                     i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
                     i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
                 
                     if internal_edge[2] in ['cigar_deletion'] and i_pos1.get_dist(i_pos2,False) < MAX_ACCEPTABLE_INSERT_SIZE:
-                        i_pos1 = None
-                        i_pos2 = None
+                        i_pos1, i_pos2 = None, None
                 
                 elif internal_edge[2] in ['cigar_soft_clip']:
                     if pos1 == None or rg in ['spanning_paired_1_s', 'spanning_paired_2_s']:
@@ -1238,14 +1240,8 @@ class BAMExtract(object):
                               'spanning_paired_1_t',    'spanning_paired_2_t',
                               'spanning_singleton_1',   'spanning_singleton_2',
                               'spanning_singleton_1_r', 'spanning_singleton_2_r']:
-                            #@todo _chr?
-                            i_pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                                 internal_edge[0],
-                                                 pos2.strand)
-                            #@todo _chr?
-                            i_pos2 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                                 internal_edge[1],
-                                                 pos1.strand)
+                            i_pos1 = BreakPosition(_chr, internal_edge[0], pos2.strand)
+                            i_pos2 = BreakPosition(_chr, internal_edge[1], pos1.strand)
                     else:# pragma: no cover
                         raise Exception("what todo here - "+rg)
                 else:# pragma: no cover
