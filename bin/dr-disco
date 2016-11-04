@@ -30,7 +30,6 @@ import drdisco
 from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
-from drdisco.BAMExtract import *
 
 logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
 
