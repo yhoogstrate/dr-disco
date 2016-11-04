@@ -11,7 +11,7 @@ RNA-Seq read alignment.
 #http://www.samformat.info/sam-format-flag
 import logging,re,math,copy,sys,operator
 import pysam
-from intervaltree_bio import GenomeIntervalTree, Interval
+import HTSeq
 from .CigarAlignment import *
 from .CircosController import *
 
@@ -402,30 +402,32 @@ class Edge:
 
 class Graph:
     def __init__(self):
-        self.idxtree = GenomeIntervalTree()
+        self.idxtree = HTSeq.GenomicArrayOfSets("auto", stranded=False)
     
     def __iter__(self):
-        for key in self.idxtree:
-            for element in sorted(self.idxtree[key]):
-                for strand in sorted(element[2].keys()):
-                    yield element[2][strand]
+        #for _chr in self.idxtree.chrom_vectors.values():
+        #    for ustrand in _chr.values():
+        #        for step in ustrand.steps():
+        for step in self.idxtree.steps():
+            position = step[1]
+            if position:
+                for strand in sorted(position.keys()):
+                    node = position[strand]
+                    yield node
     
     def create_node(self,pos):
-        """Creates the Node but does not overwrite it
-        """
-        # see if position exists in idx
-        if len(self.idxtree[pos._chr][pos.pos]) == 0:
-            self.idxtree[pos._chr].addi(pos.pos,pos.pos+1,{})
-        
-        # make sure the strand is added
-        if not list(self.idxtree[pos._chr][pos.pos])[0][2].has_key(pos.strand):
-            list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand] = Node(pos)
+        position = self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)]
+        if not position:
+            self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)] = {pos.strand: Node(pos)}
+        else:
+            if not position.has_key(pos.strand):
+                self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)][pos.strand] = Node(pos)
     
     def get_node_reference(self,pos):
-        try:
-            return list(self.idxtree[pos._chr][pos.pos])[0][2][pos.strand]
-        except:
-            return None
+        position = self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)]
+        if position and position.has_key(pos.strand):
+            return position[pos.strand]
+        return None
     
     def insert_edge(self,pos1,pos2,_type,cigarstrs):
         """ - Checks if Node exists at pos1, otherwise creates one
@@ -505,9 +507,6 @@ class Graph:
         node1.remove_edge(edge)
         node2.remove_edge(edge)
 
-        # Not necessary
-        #del(edge)
-        
         if len(node1.edges) == 0:
             self.remove_node(node1)
         
@@ -515,36 +514,24 @@ class Graph:
             self.remove_node(node2)
     
     def remove_node(self,node):
-        pos = node.position
-        element = self.idxtree[pos._chr][pos.pos]
-        
-        root_element = list(element)[0]
-        new_element = Interval(root_element[0],root_element[1],{x:root_element[2][x] for x in root_element[2].keys() if x != pos.strand})
-        
-        # First remove the root element
-        self.idxtree[pos._chr].remove(root_element)
-        
-        # Delete node
-        del(root_element[2][pos.strand])
-        
-        # Weird error
-        #del(root_element)
-        
-        ## Re-insert if necessary
-        if len(new_element[2]) > 0:
-            self.idxtree[pos._chr].add(new_element)
+        self.idxtree[HTSeq.GenomicPosition(node.position._chr, node.position.pos)] = set()
+        del(node)
     
     def search_splice_edges_between(self,pos1,pos2):# insert size is two directional
-        for interval in self.idxtree[pos1._chr].search(pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1):
-            for node1 in interval[2].values():
-                for edge in node1.edges.values():
-                    node2 = edge._target
-                    
-                    d1 = abs(pos1.pos - node1.position.pos)
-                    if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
-                        d2 = abs(pos2.pos - node2.position.pos)
-                        if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
-                            yield pow(d1, 2) + pow(d2, 2) , edge
+        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
+            if step[1]:
+                position = step[1]
+                if position:
+                    for strand in position.keys():
+                        node1 = position[strand]
+                        for edge in node1.edges.values():
+                            node2 = edge._target
+                            
+                            d1 = abs(pos1.pos - node1.position.pos)
+                            if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
+                                d2 = abs(pos2.pos - node2.position.pos)
+                                if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
+                                    yield pow(d1, 2) + pow(d2, 2) , edge
     
     def print_chain(self):# pragma: no cover
         print "**************************************************************"
@@ -622,12 +609,14 @@ class Graph:
         pos1_min, pos1_max = pos_to_range(pos1)
         pos2_min, pos2_max = pos_to_range(pos2)
         
-        for interval in self.idxtree[pos1._chr].search(pos1_min - 1, pos1_max + 1):
-            if interval[2].has_key(pos1.strand):
-                node_i = interval[2][pos1.strand]
-                for edge in node_i.edges.values():
-                    if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
-                        yield edge
+        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,pos1_min,pos1_max + 1)].steps():
+            if step[1]:
+                position = step[1]
+                if position and position.has_key(pos1.strand):
+                    node_i = position[pos1.strand]
+                    for edge in node_i.edges.values():
+                        if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
+                            yield edge
     
     def rejoin_splice_juncs(self, thicker_edges, splice_junctions):
         """thicker edges go across the break point:
