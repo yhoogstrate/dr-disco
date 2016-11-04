@@ -105,6 +105,7 @@ class BreakPosition:
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
+        self._hash = self._chr.replace("chr","") + "%0.2X" % self.pos + strand_tt[self.strand]
     
     def __str__(self):
         if self.strand == STRAND_FORWARD:
@@ -118,7 +119,7 @@ class BreakPosition:
         #http://stackoverflow.com/questions/38430277/python-class-hash-method-and-set
         # Returns a compact string that is unique per break position
         if include_chr:
-            return self._chr.replace("chr","") + "%0.2X" % self.pos + strand_tt[self.strand]
+            return self._hash
         else:
             return "%0.2X" % self.pos + strand_tt[self.strand]
     
@@ -198,7 +199,7 @@ class Node:
         self.clips += 1
     
     def get_edge_to_node(self, target_node):
-        key = str(target_node.position)
+        key = target_node.position.hash(True)
         if self.edges.has_key(key):
             return self.edges[key]
         else:
@@ -206,15 +207,15 @@ class Node:
     
     def insert_edge(self, edge):
         if edge._target == self:
-            self.edges[str(edge._origin.position)] = edge
+            self.edges[edge._origin.position.hash(True)] = edge
         else:
-            self.edges[str(edge._target.position)] = edge
+            self.edges[edge._target.position.hash(True)] = edge
     
     def remove_edge(self,edge):
         try:
-            del(self.edges[str(edge._origin.position)])
+            del(self.edges[edge._origin.position.hash(True)])
         except:
-            del(self.edges[str(edge._target.position)])
+            del(self.edges[edge._target.position.hash(True)])
     
     def __iter__(self):
         for k in sorted(self.edges.keys()):
@@ -331,7 +332,7 @@ class Edge:
     
     def get_complement(self):
         try:
-            return self._target.edges[str(self._origin.position)]
+            return self._target.edges[self._origin.position.hash(True)]
         except KeyError as err:#todo write test for this
             raise KeyError("Could not find complement for edge:   "+str(self))
     
@@ -342,31 +343,23 @@ class Edge:
             self.add_alignment_key(alignment_key)
         
         for _type in edge._types:
-            if _type in ["discordant_mates",
-                    "spanning_paired_1",     "spanning_paired_2",
-                    "spanning_paired_1_r",   "spanning_paired_2_r",
-                    "spanning_paired_1_s",   "spanning_paired_2_s",
-                    "spanning_paired_1_t",   "spanning_paired_2_t",
-                    "spanning_singleton_1",  "spanning_singleton_2",
-                    "spanning_singleton_1_r","spanning_singleton_2_r"]:
+            if _type != 'silent_mate':
                 self.add_type(_type,edge._types[_type])
-            elif _type not in ['silent_mate']:# pragma: no cover
-                raise Exception("Not sure what to do here with type: %s", _type)
     
     def add_type(self, _type, weight):
-        if _type in ["cigar_soft_clip", 'cigar_hard_clip']:# pragma: no cover
-            raise Exception("Clips shouldn't be added as edges, but as properties of Nodes")
+        #if _type in ["cigar_soft_clip", 'cigar_hard_clip']:# pragma: no cover
+        #    raise Exception("Clips shouldn't be added as edges, but as properties of Nodes")
         
         if not self._types.has_key(_type):
-            self._types[_type] = 0
-        
-        self._types[_type] += weight
+            self._types[_type] = weight
+        else:
+            self._types[_type] += weight
     
     def add_alignment_key(self,alignment_key):
         if not self.unique_alignments_idx.has_key(alignment_key):
-            self.unique_alignments_idx[alignment_key] = 0
-        
-        self.unique_alignments_idx[alignment_key] += 1
+            self.unique_alignments_idx[alignment_key] = 1
+        else:
+            self.unique_alignments_idx[alignment_key] += 1
     
     def get_count(self, _type):
         if not self._types.has_key(_type):
@@ -375,14 +368,7 @@ class Edge:
             return self._types[_type]
         
     def get_score(self,_type):  
-        if not self.scoring_table.has_key(_type):# pragma: no cover
-            raise Exception("Not implemented _type: %s", _type)
-        else:
-            if _type == 'cigar_splice_junction':
-                self.get_count(_type)*self.scoring_table[_type]
-            else:
-                # Reads get inserted twice - for both mates...
-                return self.get_count(_type)*self.scoring_table[_type]
+        return self.get_count(_type)*self.scoring_table[_type]
     
     def get_scores(self):
         """Based on this function, the start point is determined
@@ -812,8 +798,8 @@ have edges to the same nodes of the already existing network,
             # Find all direct edges joined by splice junctions
             for left_node in left_nodes:
                 for right_node in right_nodes:
-                    if left_node.edges.has_key(str(right_node.position)):
-                        subedges.append(left_node.edges[str(right_node.position)])#(left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) 
+                    if left_node.edges.has_key(right_node.position.hash(True)):
+                        subedges.append(left_node.edges[right_node.position.hash(True)])#(left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) 
                         
                         if left_node != start_point._origin:# must be merged by a splice junction
                             left_splice_junctions = left_splice_junctions.union(left_splice_junctions_ds[left_node])
@@ -853,7 +839,7 @@ class Subnet():
         idx = {}
         for edge in self.edges:
             key1 = edge.get_scores()
-            key2 = str(edge._origin.position)+"-"+str(edge._target.position)
+            key2 = edge._origin.position.hash(True)+"-"+edge._target.position.hash(True)
             
             if not idx.has_key(key1):
                 idx[key1] = {}
