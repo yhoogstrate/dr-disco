@@ -536,13 +536,9 @@ class Graph:
     
     def search_splice_edges_between(self,pos1,pos2):# insert size is two directional
         for interval in self.idxtree[pos1._chr].search(pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1):
-            for key in interval[2].keys():
-                node1 = interval[2][key]
+            for node1 in interval[2].values():
                 for edge in node1.edges.values():
-                    #if node1 == edge._origin:
                     node2 = edge._target
-                    #else:
-                    #    node2 = edge._origin
                     
                     d1 = abs(pos1.pos - node1.position.pos)
                     if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
