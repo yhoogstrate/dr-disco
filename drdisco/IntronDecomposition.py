@@ -105,14 +105,22 @@ class BreakPosition:
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
-
+    
     def __str__(self):
         if self.strand == STRAND_FORWARD:
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(+)"
         elif self.strand == STRAND_REVERSE:
-            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
+           return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
         else:# pragma: no cover
             raise Exception("Unstranded break detected - this should not happen")
+    
+    def hash(self,include_chr):
+        #http://stackoverflow.com/questions/38430277/python-class-hash-method-and-set
+        # Returns a compact string that is unique per break position
+        if include_chr:
+            return self._chr.replace("chr","") + "%0.2X" % self.pos + strand_tt[self.strand]
+        else:
+            return "%0.2X" % self.pos + strand_tt[self.strand]
     
     def get_dist(self, other_bp, strand_specific):
         if not isinstance(other_bp, BreakPosition):# pragma: no cover
@@ -175,15 +183,14 @@ class Node:
         
         # only recusively add to the new ones
         for depth in results_new2.keys():
-            if depth > 0:
-                for node in results_new2[depth]:
-                    additional_nodes, additional_edges = node.get_connected_splice_junctions(all_nodes, depth, edges)
-                    for additional_node in additional_nodes:
-                        all_nodes.add(additional_node)
-                    for key,value in additional_edges.items():
-                        if not edges.has_key(key):
-                            edges[key] = set()
-                        edges[key].union(value)
+            for node in results_new2[depth]:
+                additional_nodes, additional_edges = node.get_connected_splice_junctions(all_nodes, depth, edges)
+                for additional_node in additional_nodes:
+                    all_nodes.add(additional_node)
+                for key,value in additional_edges.items():
+                    if not edges.has_key(key):
+                        edges[key] = set()
+                    edges[key].union(value)
         
         return list(all_nodes), edges
     
@@ -448,11 +455,7 @@ class Graph:
         node2 = self.get_node_reference(pos2)
         
         if cigarstrs != None:
-            # Hexadec saves more mem
-            short_pos1 = "%0.2X" % pos1.pos#str(pos1.pos)
-            short_pos2 = "%0.2X" % pos2.pos#str(pos2.pos)
-        
-            cigarstrs = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"+short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
+            cigarstrs = pos1.hash(False)+cigarstrs[0]+"|"+pos2.hash(False)+cigarstrs[1]
         
         edge = node1.get_edge_to_node(node2)
         if edge == None:
@@ -821,13 +824,9 @@ have edges to the same nodes of the already existing network,
             del(left_splice_junctions_ds,right_splice_junctions_ds)
             
             # pop subedges from thicker edges and redo until thicker edges is empty
-            popme = set()
             for edge in subedges:
                 if edge in thicker_edges:
-                    popme.add(edge)
-            
-            for pop in popme:
-                thicker_edges.remove(pop)
+                    thicker_edges.remove(edge)
             
             subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
         
