@@ -153,6 +153,10 @@ class Node:
         self.splice_edges:
          -  [     ] splice edge: splice p1, splice p2
         """
+        rnodes = list(nodes)
+        root = rnodes[0]
+        print root
+        
         results_new2 = {}
         for edge_n, edge in self.splice_edges.items():
             if edge_n not in nodes:
@@ -166,6 +170,11 @@ class Node:
                 d1 = ds1 + dt2
                 d2 = ds2 + dt1
                 d = min(d1,d2)
+                
+                if d == d1 and self.position.strand != edge[1]._target.position.strand:
+                    d = 999999
+                if d == d2 and self.position.strand != edge[1]._origin.position.strand:
+                    d = 999999
                 
                 if d <= insert_size_to_travel:
                     dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
@@ -193,7 +202,7 @@ class Node:
                         edges[key] = set()
                     edges[key].union(value)
         
-        return list(all_nodes), edges
+        return all_nodes, edges
     
     def add_clip(self):
         self.clips += 1
@@ -504,11 +513,11 @@ class Graph:
         node1.remove_edge(edge)
         node2.remove_edge(edge)
 
-        if len(node1.edges) == 0:
-            self.remove_node(node1)
+        #if len(node1.edges) == 0:
+        #    self.remove_node(node1)
         
-        if len(node2.edges) == 0:
-            self.remove_node(node2)
+        #if len(node2.edges) == 0:
+        #    self.remove_node(node2)
     
     def remove_node(self,node):
         self.idxtree[HTSeq.GenomicPosition(node.position._chr, node.position.pos)] = set()
@@ -573,7 +582,7 @@ class Graph:
             self.prune_edge(candidate)
             candidates.append(candidate)
             
-            #self.remove_edge(candidate)# do not remove if splice junc exists?
+            self.remove_edge(candidate)# do not remove if splice junc exists?
         
         #self.print_chain()
         logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
@@ -653,42 +662,42 @@ thick edges:
         for node in splice_junctions:
             for splice_junction in node.edges.values():
                 if splice_junction not in splice_edges_had:
-                    print str(splice_junction._origin)
-                    print str(splice_junction._target)
-                    print "SJ: "
-                    print splice_junction
+                    #print str(splice_junction._origin)
+                    #print str(splice_junction._target)
+                    #print "SJ: "
+                    #print splice_junction
                     
                     lnodes = search(splice_junction._origin.position)
                     rnodes = search(splice_junction._target.position)
                     
-                    print "l-nodes:",[lnodes],str(lnodes)
-                    print "r-nodes:",[rnodes],str(rnodes)
+                    #print "l-nodes:",[lnodes],str(lnodes)
+                    #print "r-nodes:",[rnodes],str(rnodes)
                     
                     for lnode in lnodes:
                         for rnode in rnodes:
-                            d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
-                            d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
-                            if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE: 
-                                sq_dist = pow(d1,2) + pow(d2,2)
-                                print lnode.position,'<-->',splice_junction,'<-->',rnode.position
-                                print d1,'+',d2,'=',sq_dist
-                                
-                                if lnode.splice_edges.has_key(rnode):
-                                    print "YES..."
-                                    old_dist = lnode.splice_edges[rnode][0]
-                                    if sq_dist < old_dist:
-                                        insert = True
+                            if lnode.position.strand == rnode.position.strand:
+                                d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
+                                d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
+                                if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE: 
+                                    sq_dist = pow(d1,2) + pow(d2,2)
+                                    print lnode.position,'<-->',splice_junction,'<-->',rnode.position
+                                    print d1,'+',d2,'=',(d1+d2),"::",sq_dist
+                                    
+                                    if lnode.splice_edges.has_key(rnode):
+                                        print " - (overwriting)..."
+                                        old_dist = lnode.splice_edges[rnode][0]
+                                        if sq_dist < old_dist:
+                                            insert = True
+                                        else:
+                                            insert = False
                                     else:
-                                        insert = False
-                                else:
-                                    insert = True
-                                
-                                if insert:
-                                    print "NO: INSert!"
-                                    print lnode
-                                    lnode.splice_edges[rnode] = [sq_dist,splice_junction]
-                                    rnode.splice_edges[lnode] = [sq_dist,splice_junction]
-                                    print lnode
+                                        insert = True
+                                    
+                                    if insert:
+                                        print "INSert!"
+                                        lnode.splice_edges[rnode] = [sq_dist,splice_junction]
+                                        rnode.splice_edges[lnode] = [sq_dist,splice_junction]
+                                        print 
                     
                         #if 
                         #print overlapping_edge._origin
