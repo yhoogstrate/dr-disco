@@ -573,7 +573,7 @@ class Graph:
             self.prune_edge(candidate)
             candidates.append(candidate)
             
-            self.remove_edge(candidate)# do not remove if splice junc exists?
+            #self.remove_edge(candidate)# do not remove if splice junc exists?
         
         #self.print_chain()
         logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
@@ -632,21 +632,21 @@ thick edges:
         the goal is to add the splice juncs between the nodes
         """
         logging.debug("Initiated")
-        """
+        k = 0
+        
+        # Desired result: chr21:42880007/42880008(+) <--> chr21:42880007/42880008(+)->chr21:42870116/42870117(-):(cigar_splice_junction:2) <--> chr21:42870045/42870046(+)
         #@todo use a separate genometree for this?
         
-        def search(tree,pos1):
-            edges = set()
-            for step in tree.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
+        def search(pos1):
+            #@todo make this member of Graph and use splice_junctions.search_..._..(pos)
+            nodes = []
+            for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
                 if step[1]:
                     position = step[1]
                     if position:
                         for strand in position.keys():
-                            node1 = position[strand]
-                            for edge in node1.edges.values():
-                                edges.add(edge)
-            print ">>",edges
-            return edges
+                            nodes.append(position[strand])
+            return nodes
         
         splice_edges_had = set()
         
@@ -655,14 +655,41 @@ thick edges:
                 if splice_junction not in splice_edges_had:
                     print str(splice_junction._origin)
                     print str(splice_junction._target)
-                    print "SJ: ",[splice_junction]
+                    print "SJ: "
+                    print splice_junction
                     
-                    overlapping_edges = search(splice_junctions, splice_junction._origin.position).intersection(search(splice_junctions,splice_junction._target.position))
-                    print "OE:", overlapping_edges
-                    for overlapping_edge in overlapping_edges:
-                        print overlapping_edge._origin.position , '-->', splice_junction._origin.position , '<--'
-                        
-                        
+                    lnodes = search(splice_junction._origin.position)
+                    rnodes = search(splice_junction._target.position)
+                    
+                    print "l-nodes:",[lnodes],str(lnodes)
+                    print "r-nodes:",[rnodes],str(rnodes)
+                    
+                    for lnode in lnodes:
+                        for rnode in rnodes:
+                            d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
+                            d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
+                            if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE: 
+                                sq_dist = pow(d1,2) + pow(d2,2)
+                                print lnode.position,'<-->',splice_junction,'<-->',rnode.position
+                                print d1,'+',d2,'=',sq_dist
+                                
+                                if lnode.splice_edges.has_key(rnode):
+                                    print "YES..."
+                                    old_dist = lnode.splice_edges[rnode][0]
+                                    if sq_dist < old_dist:
+                                        insert = True
+                                    else:
+                                        insert = False
+                                else:
+                                    insert = True
+                                
+                                if insert:
+                                    print "NO: INSert!"
+                                    print lnode
+                                    lnode.splice_edges[rnode] = [sq_dist,splice_junction]
+                                    rnode.splice_edges[lnode] = [sq_dist,splice_junction]
+                                    print lnode
+                    
                         #if 
                         #print overlapping_edge._origin
                     # look in self for all edges going from [<origin - S_DIST, origin + D_DIST>] to [<target - S_DIST, target + D_DIST>]
@@ -676,7 +703,6 @@ thick edges:
             
         """
         ## 01 collect all left and right nodes, indexed per chromosome
-        k = 0
         left_nodes = {}
         right_nodes = {}
         
@@ -729,15 +755,15 @@ thick edges:
                                     right_junc = (sq_dist_target, splice_junc)
                             
                             if right_junc[1] != None:
+                                print str(node1.position),'<-->',str(splice_junc),'<-->',str(node2.position)
                                 node1.splice_edges[node2] = right_junc
                                 node2.splice_edges[node1] = right_junc
                                 
                                 k += 1
-        
+        """
         logging.info("Linked "+str(k)+" splice junction(s)")
-        """
+        
         return thicker_edges
-        """
     
     def extract_subnetworks_by_splice_junctions(self,thicker_edges):
         """ Here we add additional nodes an edge's current `left_node` 
