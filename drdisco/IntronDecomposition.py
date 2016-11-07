@@ -155,26 +155,35 @@ class Node:
         """
         rnodes = list(nodes)
         root = rnodes[0]
-        print root
+        #print root
         
         results_new2 = {}
         for edge_n, edge in self.splice_edges.items():
+            #if root.position.strand == edge_n.position.strand:
             if edge_n not in nodes:
                 # distance between the node self and the nodes of the exon junction
                 ds1 = abs(self.position.get_dist(edge[1]._target.position,False))
                 ds2 = abs(self.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
+                
                 # distance between the target node and the nodes of the exon junction
                 dt1 = abs(edge_n.position.get_dist(edge[1]._target.position,False))
                 dt2 = abs(edge_n.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
+                
                 # this has to be crossed i.e. if the one node is close to the left part of the SJ the other node must be close to the right part
                 d1 = ds1 + dt2
                 d2 = ds2 + dt1
-                d = min(d1,d2)
                 
-                if d == d1 and self.position.strand != edge[1]._target.position.strand:
-                    d = 999999
-                if d == d2 and self.position.strand != edge[1]._origin.position.strand:
-                    d = 999999
+                if self.position.strand != edge[1]._target.position.strand:
+                    d1 = 999999
+                else:
+                    d1 = ds1 + dt2
+                
+                if self.position.strand != edge[1]._origin.position.strand:
+                    d2 = 999999
+                else:
+                    d2 = ds2 + dt1
+                
+                d = min(d1,d2)
                 
                 if d <= insert_size_to_travel:
                     dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
@@ -185,7 +194,7 @@ class Node:
                     if not edges.has_key(edge_n):
                         edges[edge_n] = set()
                     edges[edge_n].add(min(edge[1],edge[1].get_complement()))#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
-        
+                
         # old results, + recursive results
         all_nodes = set(nodes)
         for depth in results_new2.keys():
@@ -662,10 +671,8 @@ thick edges:
         for node in splice_junctions:
             for splice_junction in node.edges.values():
                 if splice_junction not in splice_edges_had:
-                    #print str(splice_junction._origin)
-                    #print str(splice_junction._target)
-                    #print "SJ: "
-                    #print splice_junction
+                    #if splice_junction._target > splice_junction._origin:
+                    #    break
                     
                     lnodes = search(splice_junction._origin.position)
                     rnodes = search(splice_junction._target.position)
@@ -675,16 +682,19 @@ thick edges:
                     
                     for lnode in lnodes:
                         for rnode in rnodes:
+                            if lnode == rnode:
+                                raise Exception("WEIRD? should not happen and remove me")
+                            
                             if lnode.position.strand == rnode.position.strand:
                                 d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
                                 d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
                                 if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE: 
                                     sq_dist = pow(d1,2) + pow(d2,2)
-                                    print lnode.position,'<-->',splice_junction,'<-->',rnode.position
-                                    print d1,'+',d2,'=',(d1+d2),"::",sq_dist
+                                    #print lnode.position,'<-->',splice_junction,'<-->',rnode.position
+                                    #print d1,'+',d2,'=',(d1+d2),"::",sq_dist
                                     
                                     if lnode.splice_edges.has_key(rnode):
-                                        print " - (overwriting)..."
+                                        #print " - (overwriting)..."
                                         old_dist = lnode.splice_edges[rnode][0]
                                         if sq_dist < old_dist:
                                             insert = True
@@ -694,20 +704,11 @@ thick edges:
                                         insert = True
                                     
                                     if insert:
-                                        print "INSert!"
                                         lnode.splice_edges[rnode] = [sq_dist,splice_junction]
                                         rnode.splice_edges[lnode] = [sq_dist,splice_junction]
-                                        print 
                     
-                        #if 
-                        #print overlapping_edge._origin
-                    # look in self for all edges going from [<origin - S_DIST, origin + D_DIST>] to [<target - S_DIST, target + D_DIST>]
-                    # 01. pick origin
-                    # 02. pick target
-                    
-                    # 03. if the SJ makes the s-link smaller (if it already exists) over write, or insert if it does not exist
-                    #for 
-                    
+                   
+                    splice_edges_had.add(splice_junction)
                     splice_edges_had.add(splice_junction.get_complement())
             
         """
@@ -928,9 +929,13 @@ class Subnet():
     def calc_scores(self):
         score = 0
         for edge in self.edges:
-            score += edge.get_scores()
+            sscore = edge.get_scores()
+            print [edge],sscore
+            score += sscore
         
         self.total_score = score
+        print "->",score,"/2 = ",score/2
+        print
         return self.total_score
     
     def __str__(self):
