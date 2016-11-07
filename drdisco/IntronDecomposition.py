@@ -153,9 +153,7 @@ class Node:
         self.splice_edges:
          -  [     ] splice edge: splice p1, splice p2
         """
-        rnodes = list(nodes)
-        root = rnodes[0]
-        #print root
+        print self
         
         results_new2 = {}
         for edge_n, edge in self.splice_edges.items():
@@ -190,6 +188,7 @@ class Node:
                     if not results_new2.has_key(dkey):
                         results_new2[dkey] = set()
                     results_new2[dkey].add(edge_n)
+                    print " xxx>",edge_n
                     
                     if not edges.has_key(edge_n):
                         edges[edge_n] = set()
@@ -650,6 +649,7 @@ thick edges:
         the goal is to add the splice juncs between the nodes
         """
         logging.debug("Initiated")
+        print
         k = 0
         
         # Desired result: chr21:42880007/42880008(+) <--> chr21:42880007/42880008(+)->chr21:42870116/42870117(-):(cigar_splice_junction:2) <--> chr21:42870045/42870046(+)
@@ -704,73 +704,16 @@ thick edges:
                                         insert = True
                                     
                                     if insert:
+                                        print "re-joining ",lnode.position,"to",rnode.position,splice_junction,d1,d2,'=',[d1+d2]
                                         lnode.splice_edges[rnode] = [sq_dist,splice_junction]
                                         rnode.splice_edges[lnode] = [sq_dist,splice_junction]
                     
                    
                     splice_edges_had.add(splice_junction)
                     splice_edges_had.add(splice_junction.get_complement())
-            
-        """
-        ## 01 collect all left and right nodes, indexed per chromosome
-        left_nodes = {}
-        right_nodes = {}
         
-        for edge in thicker_edges:
-            if not left_nodes.has_key(edge._origin.position._chr):#lnodes
-                left_nodes[edge._origin.position._chr] = {STRAND_FORWARD:set(), STRAND_REVERSE:set()}
-            left_nodes[edge._origin.position._chr][edge._origin.position.strand].add(edge._origin)
-            
-            if not right_nodes.has_key(edge._target.position._chr):#rnodes
-                right_nodes[edge._target.position._chr] = {STRAND_FORWARD:set(), STRAND_REVERSE:set()}
-            right_nodes[edge._target.position._chr][edge._target.position.strand].add(edge._target)
-        
-        ## 02 look for all left nodes if there is any set (i < j) where
-        ## i and j span a splice junction
-        for _chr in left_nodes.keys():
-            for strand in [STRAND_FORWARD, STRAND_REVERSE]:
-                left_nodes[_chr][strand] = list(left_nodes[_chr][strand])
-                
-                while left_nodes[_chr][strand]:
-                    node1 = left_nodes[_chr][strand].pop()
-                    
-                    for node2 in left_nodes[_chr][strand]:
-                        left_junc = (MAX_GENOME_DISTANCE, None)
-                        
-                        for sq_dist_origin, splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
-                            if sq_dist_origin < left_junc[0]:
-                                left_junc = (sq_dist_origin, splice_junc)
-                            
-                        if left_junc[1] != None:
-                            node1.splice_edges[node2] = left_junc
-                            node2.splice_edges[node1] = left_junc
-                            
-                            k += 1
+        print
 
-        del(left_nodes)
-
-        for _chr in right_nodes.keys():
-            for strand in [STRAND_FORWARD, STRAND_REVERSE]:
-                right_nodes[_chr][strand] = list(right_nodes[_chr][strand])
-                
-                while right_nodes[_chr][strand]:
-                    node1 = right_nodes[_chr][strand].pop()
-                    
-                    for node2 in right_nodes[_chr][strand]:
-                        if node1.position.strand == node2.position.strand:
-                            right_junc = (MAX_GENOME_DISTANCE, None)
-                            
-                            for sq_dist_target, splice_junc in splice_junctions.search_splice_edges_between(node1.position, node2.position):
-                                if sq_dist_target < right_junc[0]:
-                                    right_junc = (sq_dist_target, splice_junc)
-                            
-                            if right_junc[1] != None:
-                                print str(node1.position),'<-->',str(splice_junc),'<-->',str(node2.position)
-                                node1.splice_edges[node2] = right_junc
-                                node2.splice_edges[node1] = right_junc
-                                
-                                k += 1
-        """
         logging.info("Linked "+str(k)+" splice junction(s)")
         
         return thicker_edges
@@ -930,7 +873,7 @@ class Subnet():
         score = 0
         for edge in self.edges:
             sscore = edge.get_scores()
-            print [edge],sscore
+            print [edge],edge,"\t",sscore
             score += sscore
         
         self.total_score = score
@@ -1284,7 +1227,8 @@ class BAMExtract(object):
                 else:
                     if i_pos1 != None:
                         if internal_edge[2] == 'cigar_splice_junction':
-                            splice_junctions.insert_splice_edge(i_pos1,i_pos2,internal_edge[2],None)
+                            #splice_junctions.insert_splice_edge(i_pos1,i_pos2,internal_edge[2],None)
+                            splice_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None)
                         else:
                             fusion_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None)
         
