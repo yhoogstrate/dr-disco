@@ -231,7 +231,7 @@ class Node:
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t["+str(id(edge))+"] "+sedge+" "+str(filtered_edges)
+                out += "\n\t["+str(id(edge))+":"+sedge+"] "+str(edge._origin.position)+"->"+str(edge._target.position)+" "+str(filtered_edges)
         
         if a > 0:
             out += "\n\t-> soft/hard clips: "+str(self.clips)
@@ -405,9 +405,6 @@ class Graph:
         self.idxtree = HTSeq.GenomicArrayOfSets("auto", stranded=False)
     
     def __iter__(self):
-        #for _chr in self.idxtree.chrom_vectors.values():
-        #    for ustrand in _chr.values():
-        #        for step in ustrand.steps():
         for step in self.idxtree.steps():
             position = step[1]
             if position:
@@ -634,12 +631,52 @@ thick edges:
         
         the goal is to add the splice juncs between the nodes
         """
+        logging.debug("Initiated")
+        """
         #@todo use a separate genometree for this?
         
-        k = 0
-        logging.debug("Initiated")
+        def search(tree,pos1):
+            edges = set()
+            for step in tree.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
+                if step[1]:
+                    position = step[1]
+                    if position:
+                        for strand in position.keys():
+                            node1 = position[strand]
+                            for edge in node1.edges.values():
+                                edges.add(edge)
+            print ">>",edges
+            return edges
         
+        splice_edges_had = set()
+        
+        for node in splice_junctions:
+            for splice_junction in node.edges.values():
+                if splice_junction not in splice_edges_had:
+                    print str(splice_junction._origin)
+                    print str(splice_junction._target)
+                    print "SJ: ",[splice_junction]
+                    
+                    overlapping_edges = search(splice_junctions, splice_junction._origin.position).intersection(search(splice_junctions,splice_junction._target.position))
+                    print "OE:", overlapping_edges
+                    for overlapping_edge in overlapping_edges:
+                        print overlapping_edge._origin.position , '-->', splice_junction._origin.position , '<--'
+                        
+                        
+                        #if 
+                        #print overlapping_edge._origin
+                    # look in self for all edges going from [<origin - S_DIST, origin + D_DIST>] to [<target - S_DIST, target + D_DIST>]
+                    # 01. pick origin
+                    # 02. pick target
+                    
+                    # 03. if the SJ makes the s-link smaller (if it already exists) over write, or insert if it does not exist
+                    #for 
+                    
+                    splice_edges_had.add(splice_junction.get_complement())
+            
+        """
         ## 01 collect all left and right nodes, indexed per chromosome
+        k = 0
         left_nodes = {}
         right_nodes = {}
         
@@ -698,8 +735,9 @@ thick edges:
                                 k += 1
         
         logging.info("Linked "+str(k)+" splice junction(s)")
-        
+        """
         return thicker_edges
+        """
     
     def extract_subnetworks_by_splice_junctions(self,thicker_edges):
         """ Here we add additional nodes an edge's current `left_node` 
