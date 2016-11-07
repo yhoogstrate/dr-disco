@@ -153,47 +153,34 @@ class Node:
         self.splice_edges:
          -  [     ] splice edge: splice p1, splice p2
         """
-        print self
-        
         results_new2 = {}
         for edge_n, edge in self.splice_edges.items():
-            #if root.position.strand == edge_n.position.strand:
-            if edge_n not in nodes:
-                # distance between the node self and the nodes of the exon junction
-                ds1 = abs(self.position.get_dist(edge[1]._target.position,False))
-                ds2 = abs(self.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
-                
-                # distance between the target node and the nodes of the exon junction
-                dt1 = abs(edge_n.position.get_dist(edge[1]._target.position,False))
-                dt2 = abs(edge_n.position.get_dist(edge[1]._origin.position,False))# Consider strand specificness... possible with current graph model?
-                
-                # this has to be crossed i.e. if the one node is close to the left part of the SJ the other node must be close to the right part
-                d1 = ds1 + dt2
-                d2 = ds2 + dt1
-                
-                if self.position.strand != edge[1]._target.position.strand:
-                    d1 = 999999
-                else:
-                    d1 = ds1 + dt2
-                
-                if self.position.strand != edge[1]._origin.position.strand:
-                    d2 = 999999
-                else:
-                    d2 = ds2 + dt1
-                
-                d = min(d1,d2)
-                
-                if d <= insert_size_to_travel:
-                    dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-                    if not results_new2.has_key(dkey):
-                        results_new2[dkey] = set()
-                    results_new2[dkey].add(edge_n)
-                    print " xxx>",edge_n
+            if self.position.strand == edge_n.position.strand:
+                if edge_n not in nodes:
+                    d = edge[0]
                     
-                    if not edges.has_key(edge_n):
-                        edges[edge_n] = set()
-                    edges[edge_n].add(min(edge[1],edge[1].get_complement()))#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
-                
+                    #if self.position.strand != edge[1]._target.position.strand:
+                    #    d1 = 999999
+                    #else:
+                    #    d1 = distance
+                    #
+                    #if self.position.strand != edge[1]._origin.position.strand:
+                    #    d2 = 999999
+                    #else:
+                    #    d2 = distance
+                    
+                    #d = min(d1,d2)
+                    
+                    if d <= insert_size_to_travel:
+                        dkey = insert_size_to_travel - d# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
+                        if not results_new2.has_key(dkey):
+                            results_new2[dkey] = set()
+                        results_new2[dkey].add(edge_n)
+                        
+                        if not edges.has_key(edge_n):
+                            edges[edge_n] = set()
+                        edges[edge_n].add(min(edge[1],edge[1].get_complement()))#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+                    
         # old results, + recursive results
         all_nodes = set(nodes)
         for depth in results_new2.keys():
@@ -210,7 +197,7 @@ class Node:
                         edges[key] = set()
                     edges[key].union(value)
         
-        return all_nodes, edges
+        return list(all_nodes), edges
     
     def add_clip(self):
         self.clips += 1
@@ -649,7 +636,6 @@ thick edges:
         the goal is to add the splice juncs between the nodes
         """
         logging.debug("Initiated")
-        print
         k = 0
         
         # Desired result: chr21:42880007/42880008(+) <--> chr21:42880007/42880008(+)->chr21:42870116/42870117(-):(cigar_splice_junction:2) <--> chr21:42870045/42870046(+)
@@ -671,14 +657,8 @@ thick edges:
         for node in splice_junctions:
             for splice_junction in node.edges.values():
                 if splice_junction not in splice_edges_had:
-                    #if splice_junction._target > splice_junction._origin:
-                    #    break
-                    
                     lnodes = search(splice_junction._origin.position)
                     rnodes = search(splice_junction._target.position)
-                    
-                    #print "l-nodes:",[lnodes],str(lnodes)
-                    #print "r-nodes:",[rnodes],str(rnodes)
                     
                     for lnode in lnodes:
                         for rnode in rnodes:
@@ -688,15 +668,16 @@ thick edges:
                             if lnode.position.strand == rnode.position.strand:
                                 d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
                                 d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
-                                if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE: 
-                                    sq_dist = pow(d1,2) + pow(d2,2)
+                                dist = d1+d2
+                                if dist <= MAX_ACCEPTABLE_INSERT_SIZE: 
+                                    #sq_dist = pow(d1,2) + pow(d2,2)
                                     #print lnode.position,'<-->',splice_junction,'<-->',rnode.position
                                     #print d1,'+',d2,'=',(d1+d2),"::",sq_dist
                                     
                                     if lnode.splice_edges.has_key(rnode):
                                         #print " - (overwriting)..."
                                         old_dist = lnode.splice_edges[rnode][0]
-                                        if sq_dist < old_dist:
+                                        if dist < old_dist:
                                             insert = True
                                         else:
                                             insert = False
@@ -704,16 +685,16 @@ thick edges:
                                         insert = True
                                     
                                     if insert:
-                                        print "re-joining ",lnode.position,"to",rnode.position,splice_junction,d1,d2,'=',[d1+d2]
-                                        lnode.splice_edges[rnode] = [sq_dist,splice_junction]
-                                        rnode.splice_edges[lnode] = [sq_dist,splice_junction]
+                                        print "re-joining ",lnode.position,"to",rnode.position," using [",splice_junction,d1,d2,'=',[d1+d2],"]"
+                                        lnode.splice_edges[rnode] = [dist,splice_junction]
+                                        rnode.splice_edges[lnode] = [dist,splice_junction]
+                                        
+                                        k += 1
                     
                    
                     splice_edges_had.add(splice_junction)
                     splice_edges_had.add(splice_junction.get_complement())
         
-        print
-
         logging.info("Linked "+str(k)+" splice junction(s)")
         
         return thicker_edges
@@ -784,12 +765,27 @@ have edges to the same nodes of the already existing network,
         q = 0
         subnetworks = []
         while len(thicker_edges) > 0:
+            print
+            print "   1. len(thicker_edges)=", len(thicker_edges)
             start_point = thicker_edges[0]
+            print "   2. start_point:", start_point._origin.position,"->",start_point._target.position
             
             ## The original nodes have been emptied, so the most important
             ## edge's are now separated.
+            print "-",start_point._origin
+            #for key in start_point._origin.splice_edges.keys():
+            #    print " >>",key
+            #print "- done"
+
             left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions([start_point._origin], MAX_ACCEPTABLE_INSERT_SIZE, {})
             right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions([start_point._target], MAX_ACCEPTABLE_INSERT_SIZE, {})
+            
+            print "   3.  left_nodes=",[str(x.position) for x in left_nodes]
+            print "   3. right_nodes=",[str(x.position) for x in right_nodes]
+            
+            #if len(thicker_edges) < 44:
+            #    import sys
+            #    sys.exit()
             
             left_splice_junctions = set()
             right_splice_junctions = set()
@@ -801,13 +797,23 @@ have edges to the same nodes of the already existing network,
             for left_node in left_nodes:
                 for right_node in right_nodes:
                     if left_node.edges.has_key(right_node.position.hash(True)):
-                        subedges.append(left_node.edges[right_node.position.hash(True)])#(left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) 
-                        
-                        if left_node != start_point._origin:# must be merged by a splice junction
-                            left_splice_junctions = left_splice_junctions.union(left_splice_junctions_ds[left_node])
-                        
-                        if right_node != start_point._target:
-                            right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
+                        subedge = left_node.edges[right_node.position.hash(True)]
+                        if subedge._target.position.hash(True) != right_node.position.hash(True):
+                            print "???"
+                            print subedge
+                            print left_node
+                            print right_node
+                        else:
+                            subedges.append(subedge)#(left_node.edges[str(right_node.position)], right_node.edges[str(left_node.position)]) 
+                            
+                            if left_node != start_point._origin:# must be merged by a splice junction
+                                left_splice_junctions = left_splice_junctions.union(left_splice_junctions_ds[left_node])
+                            
+                            if right_node != start_point._target:
+                                right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
+            
+            for subedge in subedges:
+                print subedge
             
             del(left_splice_junctions_ds,right_splice_junctions_ds)
             
@@ -873,12 +879,9 @@ class Subnet():
         score = 0
         for edge in self.edges:
             sscore = edge.get_scores()
-            print [edge],edge,"\t",sscore
             score += sscore
         
         self.total_score = score
-        print "->",score,"/2 = ",score/2
-        print
         return self.total_score
     
     def __str__(self):
