@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
@@ -31,7 +31,7 @@ setup(name = "dr-disco",
         test_suite="tests",
         tests_require=['nose2', 'pytest', 'pytest-cov'],
         setup_requires=['numpy'],
-        install_requires=['numpy', 'HTSeq >= 0.6.1','pysam >= 0.9.0','click','nose','fuma==3.0.5','sortedcontainers','intervaltree-bio'],
+        install_requires=['numpy', 'HTSeq >= 0.6.1','pysam >= 0.9.0','click','nose','fuma==3.0.5'],
         version = drdisco.__version__,
         description = "Makes discordant RNA-Seq alignments healthy, and tries to interpret intronic break points",
         author = drdisco.__author__,

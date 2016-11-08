@@ -24,7 +24,7 @@ import unittest,logging,sys,subprocess,filecmp,pysam,os
 import drdisco
 logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
 
-from drdisco.BAMExtract import BAMExtract
+from drdisco.IntronDecomposition import BAMExtract
 
 
 TEST_DIR = "tests/bam-extract/"
@@ -38,8 +38,6 @@ if not os.path.exists(T_TEST_DIR):
 
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01a(self):
-        #print("\n")
-        
         input_file    = TEST_DIR+"test_terg_02.bam"
         output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
@@ -59,8 +57,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
     
     def test_01b(self):
-        #print("\n")
-        
         input_file    = TEST_DIR+"test_terg_02.bam"
         output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
@@ -80,8 +76,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
     
     def test_02a(self):
-        #print("\n")
-        
         input_file    = TEST_DIR+"test_terg_02.bam"
         output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
@@ -101,8 +95,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
     
     def test_02b(self):
-        #print("\n")
-        
         input_file    = TEST_DIR+"test_terg_02.bam"
         output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
@@ -123,8 +115,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     
     def test_03(self):
-        #print("\n")
-        
         input_file    = TEST_DIR+"test_terg_02.bam"
         output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"

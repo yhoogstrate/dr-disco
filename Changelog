@@ -1,3 +1,7 @@
+2016-11-08	Youri Hoogstrate	v0.0.10
+	* Uses HTSeq library as genomic index which improves performance.
+      Other speed improvements.
+
 2016-11-02	Youri Hoogstrate	v0.0.9
 	* Fixes critical race condition in extracting subnetworks with Edges that
 	  are also splice junctions.
