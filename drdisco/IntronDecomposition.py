@@ -108,23 +108,10 @@ class BreakPosition:
         self._hash = self._chr.replace("chr","") + "%0.2X" % self.pos + strand_tt[self.strand]
     
     def __lt__(self, other_bp):
-        if self._chr == other_bp._chr:
-            if self.pos == other_bp.pos:
-                return self._strand < other_bp.strand
-            else:
-                return self.pos < other_bp.pos
-        else:
-            return self._chr < other_bp._chr
-        
         return self._hash < other_bp._hash
     
     def __str__(self):
-        if self.strand == STRAND_FORWARD:
-            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(+)"
-        elif self.strand == STRAND_REVERSE:
-            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
-        else:# pragma: no cover
-            raise Exception("Unstranded break detected - this should not happen")
+        return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"("+strand_tt[self.strand]+")"
     
     def hash(self,include_chr):
         #http://stackoverflow.com/questions/38430277/python-class-hash-method-and-set
@@ -177,7 +164,7 @@ class Node:
         return linked_nodes, linked_edges
     
     def get_connected_splice_junctions_recursively(self, nodes, tested_nodes, edges, insert_size_to_travel):
-        # Q is it possible to travel quicker to a node via another node? seems to be possible...
+        # Q is it possible to travel quicker to a node via another node? 
         # -> i.e.: d(A - B - C) < d(A -> C) -> the current implementation expects this NOT to happen by using `tested_nodes` instead of `nodes`
         
         new_nodes = []
