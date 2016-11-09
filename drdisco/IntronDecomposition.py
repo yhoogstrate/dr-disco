@@ -146,13 +146,25 @@ class Node:
         self.edges = {}
         self.splice_edges = {}
     
-    def get_connected_splice_junctions(self,nodes,insert_size_to_travel,edges):
+    def get_connected_splice_junctions(self):
         """Recursively finds all nodes that are connected by splice junctions
         
         self: the node of which it's splice junctions are traversed in order to find more nodes that may not be already in the blak
         self.splice_edges:
          -  [     ] splice edge: splice p1, splice p2
-        """
+        """    
+        
+        linked_nodes = set([self])# set(self) iterates over self.__iter__()
+        tested_nodes = set([self])
+        linked_edges = {}
+        
+        return self.get_connected_splice_junctions_recursively(linked_nodes, tested_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
+    
+    def get_connected_splice_junctions_recursively(self, nodes, tested_nodes, edges, insert_size_to_travel):
+        #@todo consider whether all variables have to be reinitialized or whether recursive passing through is not quicker
+        # Q is it possible to travel quicker to a node via another node?
+        # i.e.: d(A - B - C) < d(A -> C)
+        
         results_new2 = {}
         for edge_n, edge in self.splice_edges.items():
             if edge_n not in nodes:
@@ -165,7 +177,7 @@ class Node:
                     if not edges.has_key(edge_n):
                         edges[edge_n] = set()
                     edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
-                    
+        
         # old results, + recursive results
         all_nodes = set(nodes)
         for depth in results_new2.keys():
@@ -174,7 +186,7 @@ class Node:
         # only recusively add to the new ones
         for depth in results_new2.keys():
             for node in results_new2[depth]:
-                additional_nodes, additional_edges = node.get_connected_splice_junctions(all_nodes, depth, edges)
+                additional_nodes, additional_edges = node.get_connected_splice_junctions_recursively(all_nodes, tested_nodes, edges, depth)
                 for additional_node in additional_nodes:
                     all_nodes.add(additional_node)
                 for key,value in additional_edges.items():
@@ -182,7 +194,7 @@ class Node:
                         edges[key] = set()
                     edges[key].union(value)
         
-        return list(all_nodes), edges
+        return all_nodes, edges
     
     def add_clip(self):
         self.clips += 1
@@ -554,7 +566,7 @@ class Graph:
         del(node)
     
     def search_splice_edges_between(self,pos1,pos2):# insert size is two directional
-        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
+        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
             if step[1]:
                 position = step[1]
                 if position:
@@ -790,8 +802,8 @@ have edges to the same nodes of the already existing network,
         while len(thicker_edges) > 0:
             start_point = thicker_edges[0]
             
-            left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions([start_point._origin], MAX_ACCEPTABLE_INSERT_SIZE, {})
-            right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions([start_point._target], MAX_ACCEPTABLE_INSERT_SIZE, {})
+            left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions()
+            right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions()
             
             left_splice_junctions = set()
             right_splice_junctions = set()
@@ -818,6 +830,7 @@ have edges to the same nodes of the already existing network,
             # pop subedges from thicker edges and redo until thicker edges is empty
             for edge in subedges:
                 if edge in thicker_edges:
+                    #self.remove_edge(edge)
                     thicker_edges.remove(edge)
             
             subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
