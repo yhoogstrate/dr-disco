@@ -1252,7 +1252,7 @@ class BAMExtract(object):
     @staticmethod
     def parse_SA(SA_tag):
         sa_tags = SA_tag.split(";")
-        for i in range(len(sa_tags)):
+        for i in xrange(len(sa_tags)):
             sa_tags[i] = sa_tags[i].split(",")
             sa_tags[i][1] = int(sa_tags[i][1])
         
@@ -1450,10 +1450,10 @@ class IntronDecomposition:
         n = len(subnets)
         
         k = 0
-        for i in range(n):
+        for i in xrange(n):
             if subnets[i] != None:
                 candidates = []
-                for j in range(i+1,n):# for i , j > i
+                for j in xrange(i+1,n):# for i , j > i
                     if subnets[j] != None:
                         new_merged = False
                         
