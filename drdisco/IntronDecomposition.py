@@ -158,42 +158,34 @@ class Node:
         tested_nodes = set([self])
         linked_edges = {}
         
-        return self.get_connected_splice_junctions_recursively(linked_nodes, tested_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
+        self.get_connected_splice_junctions_recursively(linked_nodes, tested_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
+        
+        return linked_nodes, linked_edges
     
     def get_connected_splice_junctions_recursively(self, nodes, tested_nodes, edges, insert_size_to_travel):
-        #@todo consider whether all variables have to be reinitialized or whether recursive passing through is not quicker
-        # Q is it possible to travel quicker to a node via another node?
-        # i.e.: d(A - B - C) < d(A -> C)
+        # Q is it possible to travel quicker to a node via another node? 
+        # -> i.e.: d(A - B - C) < d(A -> C) -> the current implementation expects this NOT to happen by using `tested_nodes` instead of `nodes`
         
-        results_new2 = {}
+        new_nodes = []
         for edge_n, edge in self.splice_edges.items():
-            if edge_n not in nodes:
+            if edge_n not in tested_nodes:
                 dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
                 if dkey >= 0:
-                    if not results_new2.has_key(dkey):
-                        results_new2[dkey] = set()
-                    results_new2[dkey].add(edge_n)
+                    new_nodes.append((edge_n, dkey))
                     
                     if not edges.has_key(edge_n):
                         edges[edge_n] = set()
                     edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+            
+            tested_nodes.add(edge_n)
         
         # old results, + recursive results
-        for depth in results_new2.values():
-            nodes = nodes.union(depth)
+        for edge_n in new_nodes:
+            nodes.add(edge_n[0])
         
         # only recusively add to the new ones
-        for depth in results_new2.keys():
-            for node in results_new2[depth]:
-                additional_nodes, additional_edges = node.get_connected_splice_junctions_recursively(nodes, tested_nodes, edges, depth)
-                for additional_node in additional_nodes:
-                    nodes.add(additional_node)
-                for key,value in additional_edges.items():
-                    if not edges.has_key(key):
-                        edges[key] = set()
-                    edges[key].union(value)
-        
-        return nodes, edges
+        for edge_n in new_nodes:
+            edge_n[0].get_connected_splice_junctions_recursively(nodes, tested_nodes, edges, edge_n[1])
     
     def add_clip(self):
         self.clips += 1
