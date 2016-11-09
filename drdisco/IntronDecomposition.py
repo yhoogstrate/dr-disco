@@ -804,10 +804,7 @@ have edges to the same nodes of the already existing network,
                 for right_node in right_nodes:
                     if left_node.edges.has_key(right_node.position.hash(True)):
                         subedge = left_node.edges[right_node.position.hash(True)]
-                        if subedge._target.position.hash(True) != right_node.position.hash(True):
-                            # this is the inversed insertion that gets returned first
-                            pass
-                        else:
+                        if subedge._target.position.hash(True) == right_node.position.hash(True):
                             subedges.append(subedge)
                             
                             if left_node != start_point._origin:# must be merged by a splice junction
@@ -825,7 +822,7 @@ have edges to the same nodes of the already existing network,
             
             subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
         
-        logging.info("Extracted "+str(len(subnetworks))+" subnetwork(s)")
+        logging.info("Extracted %i subnetwork(s)" % len(subnetworks))
         return subnetworks
 
 
