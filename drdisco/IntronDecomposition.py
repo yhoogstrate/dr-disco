@@ -107,11 +107,22 @@ class BreakPosition:
         self.strand = strand
         self._hash = self._chr.replace("chr","") + "%0.2X" % self.pos + strand_tt[self.strand]
     
+    def __lt__(self, other_bp):
+        if self._chr == other_bp._chr:
+            if self.pos == other_bp.pos:
+                return self._strand < other_bp.strand
+            else:
+                return self.pos < other_bp.pos
+        else:
+            return self._chr < other_bp._chr
+        
+        return self._hash < other_bp._hash
+    
     def __str__(self):
         if self.strand == STRAND_FORWARD:
             return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(+)"
         elif self.strand == STRAND_REVERSE:
-           return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
+            return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"(-)"
         else:# pragma: no cover
             raise Exception("Unstranded break detected - this should not happen")
     
@@ -146,6 +157,9 @@ class Node:
         self.edges = {}
         self.splice_edges = {}
     
+    def __lt__(self, other_node):
+        return self.position < other_node.position
+    
     def get_connected_splice_junctions(self):
         """Recursively finds all nodes that are connected by splice junctions
         
@@ -163,12 +177,13 @@ class Node:
         return linked_nodes, linked_edges
     
     def get_connected_splice_junctions_recursively(self, nodes, tested_nodes, edges, insert_size_to_travel):
-        # Q is it possible to travel quicker to a node via another node? 
+        # Q is it possible to travel quicker to a node via another node? seems to be possible...
         # -> i.e.: d(A - B - C) < d(A -> C) -> the current implementation expects this NOT to happen by using `tested_nodes` instead of `nodes`
         
         new_nodes = []
-        for edge_n, edge in self.splice_edges.items():
-            if edge_n not in tested_nodes:
+        for edge_n in sorted(self.splice_edges):
+            edge = self.splice_edges[edge_n]
+            if edge_n not in nodes:
                 dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
                 if dkey >= 0:
                     new_nodes.append((edge_n, dkey))
@@ -821,7 +836,6 @@ have edges to the same nodes of the already existing network,
             # pop subedges from thicker edges and redo until thicker edges is empty
             for edge in subedges:
                 if edge in thicker_edges:
-                    #self.remove_edge(edge)
                     thicker_edges.remove(edge)
             
             subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
