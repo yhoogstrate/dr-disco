@@ -105,7 +105,7 @@ class BreakPosition:
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
-        self._hash = self._chr.replace("chr","") + "%0.2X" % self.pos + strand_tt[self.strand]
+        self._hash = self._chr.replace("chr","") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]
     
     def __lt__(self, other_bp):
         return self._hash < other_bp._hash
@@ -116,10 +116,7 @@ class BreakPosition:
     def hash(self,include_chr):
         #http://stackoverflow.com/questions/38430277/python-class-hash-method-and-set
         # Returns a compact string that is unique per break position
-        if include_chr:
-            return self._hash
-        else:
-            return "%0.2X" % self.pos + strand_tt[self.strand]
+        return self._hash
     
     def get_dist(self, other_bp, strand_specific):
         if not isinstance(other_bp, BreakPosition):# pragma: no cover
