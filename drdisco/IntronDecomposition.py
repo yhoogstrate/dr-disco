@@ -105,18 +105,13 @@ class BreakPosition:
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
-        self._hash = self._chr.replace("chr","") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]
+        self._hash = self._chr.replace("chr","") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]#http://stackoverflow.com/questions/38430277/python-class-hash-method-and-set
     
     def __lt__(self, other_bp):
         return self._hash < other_bp._hash
     
     def __str__(self):
         return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"("+strand_tt[self.strand]+")"
-    
-    def hash(self,include_chr):
-        #http://stackoverflow.com/questions/38430277/python-class-hash-method-and-set
-        # Returns a compact string that is unique per break position
-        return self._hash
     
     def get_dist(self, other_bp, strand_specific):
         if not isinstance(other_bp, BreakPosition):# pragma: no cover
@@ -190,7 +185,7 @@ class Node:
         self.clips += 1
     
     def get_edge_to_node(self, target_node):
-        key = target_node.position.hash(True)
+        key = target_node.position._hash
         if self.edges.has_key(key):
             return self.edges[key]
         else:
@@ -198,15 +193,15 @@ class Node:
     
     def insert_edge(self, edge):
         if edge._target == self:
-            self.edges[edge._origin.position.hash(True)] = edge
+            self.edges[edge._origin.position._hash] = edge
         else:
-            self.edges[edge._target.position.hash(True)] = edge
+            self.edges[edge._target.position._hash] = edge
     
     def remove_edge(self,edge):
         try:
-            del(self.edges[edge._origin.position.hash(True)])
+            del(self.edges[edge._origin.position._hash])
         except:
-            del(self.edges[edge._target.position.hash(True)])
+            del(self.edges[edge._target.position._hash])
     
     def __iter__(self):
         for k in sorted(self.edges.keys()):
@@ -374,7 +369,7 @@ class Edge:
     
     def get_complement(self):
         try:
-            return self._target.edges[self._origin.position.hash(True)]
+            return self._target.edges[self._origin.position._hash]
         except KeyError as err:#todo write test for this
             raise KeyError("Could not find complement for edge:   "+str(self))
     
@@ -479,7 +474,7 @@ class Graph:
         node2 = self.get_node_reference(pos2)
         
         if cigarstrs != None:
-            cigarstrs = pos1.hash(False)+cigarstrs[0]+"|"+pos2.hash(False)+cigarstrs[1]
+            cigarstrs = pos1._hash+cigarstrs[0]+"|"+pos2._hash+cigarstrs[1]
         
         edge = node1.get_edge_to_node(node2)
         if edge == None:
@@ -544,12 +539,8 @@ class Graph:
         
         node1.remove_edge(edge)
         node2.remove_edge(edge)
-
-        #if len(node1.edges) == 0:
-        #    self.remove_node(node1)
         
-        #if len(node2.edges) == 0:
-        #    self.remove_node(node2)
+        del(edge)
     
     def remove_node(self,node):
         self.idxtree[HTSeq.GenomicPosition(node.position._chr, node.position.pos)] = set()
@@ -656,7 +647,7 @@ class Graph:
                         if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
                             yield edge
     
-    def rejoin_splice_juncs(self, thicker_edges, splice_junctions):
+    def rejoin_splice_juncs(self, splice_junctions):
         """thicker edges go across the break point:
 
 thick edges:
@@ -721,8 +712,6 @@ thick edges:
                     splice_edges_had.add(splice_junction.get_complement())
         
         logging.info("Linked "+str(k)+" splice junction(s)")
-        
-        return thicker_edges
     
     def extract_subnetworks_by_splice_junctions(self,thicker_edges):
         """ Here we add additional nodes an edge's current `left_node` 
@@ -787,10 +776,11 @@ have edges to the same nodes of the already existing network,
             """
         logging.info("Initiated")
         
+        thicker_edges.reverse()
         q = 0
         subnetworks = []
-        while len(thicker_edges) > 0:
-            start_point = thicker_edges[0]
+        while thicker_edges:
+            start_point = thicker_edges.pop()
             
             left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions()
             right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions()
@@ -804,9 +794,9 @@ have edges to the same nodes of the already existing network,
             # Find all direct edges joined by splice junctions
             for left_node in left_nodes:
                 for right_node in right_nodes:
-                    if left_node.edges.has_key(right_node.position.hash(True)):
-                        subedge = left_node.edges[right_node.position.hash(True)]
-                        if subedge._target.position.hash(True) == right_node.position.hash(True):
+                    if left_node.edges.has_key(right_node.position._hash):
+                        subedge = left_node.edges[right_node.position._hash]
+                        if subedge._target.position._hash == right_node.position._hash:
                             subedges.append(subedge)
                             
                             if left_node != start_point._origin:# must be merged by a splice junction
@@ -814,13 +804,12 @@ have edges to the same nodes of the already existing network,
                             
                             if right_node != start_point._target:
                                 right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
+                            
+                            if subedge != start_point:
+                                self.remove_edge(subedge)
+                                thicker_edges.remove(subedge)
             
             del(left_splice_junctions_ds,right_splice_junctions_ds)
-            
-            # pop subedges from thicker edges and redo until thicker edges is empty
-            for edge in subedges:
-                if edge in thicker_edges:
-                    thicker_edges.remove(edge)
             
             subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
         
@@ -847,7 +836,7 @@ class Subnet():
         idx = {}
         for edge in self.edges:
             key1 = edge.get_scores()
-            key2 = edge._origin.position.hash(True)+"-"+edge._target.position.hash(True)
+            key2 = edge._origin.position._hash+"-"+edge._target.position._hash
             
             if not idx.has_key(key1):
                 idx[key1] = {}
@@ -1366,9 +1355,9 @@ class IntronDecomposition:
         alignment.extract_junctions(fusion_junctions, splice_junctions)
         
         thicker_edges = fusion_junctions.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
-        thicker_edges = fusion_junctions.rejoin_splice_juncs(thicker_edges, splice_junctions) # Merges edges by splice junctions and other junctions
+        fusion_junctions.rejoin_splice_juncs(splice_junctions) # Merges edges by splice junctions and other junctions
         del(splice_junctions)
-        fusion_junctions.reinsert_edges(thicker_edges)
+        fusion_junctions.reinsert_edges(thicker_edges)#@todo move function into statuc function in this class
         
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges)
         subnets = self.merge_overlapping_subnets(subnets)
