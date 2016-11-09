@@ -179,22 +179,21 @@ class Node:
                     edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
         
         # old results, + recursive results
-        all_nodes = set(nodes)
-        for depth in results_new2.keys():
-            all_nodes = all_nodes.union(results_new2[depth])
+        for depth in results_new2.values():
+            nodes = nodes.union(depth)
         
         # only recusively add to the new ones
         for depth in results_new2.keys():
             for node in results_new2[depth]:
-                additional_nodes, additional_edges = node.get_connected_splice_junctions_recursively(all_nodes, tested_nodes, edges, depth)
+                additional_nodes, additional_edges = node.get_connected_splice_junctions_recursively(nodes, tested_nodes, edges, depth)
                 for additional_node in additional_nodes:
-                    all_nodes.add(additional_node)
+                    nodes.add(additional_node)
                 for key,value in additional_edges.items():
                     if not edges.has_key(key):
                         edges[key] = set()
                     edges[key].union(value)
         
-        return all_nodes, edges
+        return nodes, edges
     
     def add_clip(self):
         self.clips += 1
