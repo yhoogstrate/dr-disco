@@ -260,8 +260,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
     def test_16_final(self):
         input_file_a =    TEST_DIR+"test_16.bam"
         #input_file_f =    TEST_DIR+"test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
-        test_file    =    TEST_DIR+"test_final.out.dbed"
-        output_file  =  T_TEST_DIR+"test_final.out.dbed"
+        test_file    =    TEST_DIR+"test_16.out.dbed"
+        output_file  =  T_TEST_DIR+"test_16.out.dbed"
         
         ic = IntronDecomposition(input_file_a)
         #ic.annotate_genes(gobj)
@@ -270,6 +270,34 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
         
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_17(self):
+        input_file_a =    TEST_DIR+"test_17.bam"
+        test_file    =    TEST_DIR+"test_17.out.dbed"
+        output_file  =  T_TEST_DIR+"test_17.out.dbed"
+        
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
+        
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+        
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_18(self):
+        input_file_a =    TEST_DIR+"test_18.bam"
+        test_file    =    TEST_DIR+"test_18.out.dbed"
+        output_file  =  T_TEST_DIR+"test_18.out.dbed"
+        
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
+        
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+        
+        # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
 
