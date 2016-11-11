@@ -147,16 +147,13 @@ class Node:
          -  [     ] splice edge: splice p1, splice p2
         """    
         
-        linked_nodes_l = set([self])# set(self) iterates over self.__iter__()
+        linked_nodes = set([self])# set(self) iterates over self.__iter__()
         linked_edges = {}
         
-        self.get_connected_splice_junctions_recursively_l(linked_nodes_l, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
+        self.get_connected_splice_junctions_recursively_l(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
+        self.get_connected_splice_junctions_recursively_r(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
         
-        linked_nodes_r = set([self])# set(self) iterates over self.__iter__()
-        
-        self.get_connected_splice_junctions_recursively_r(linked_nodes_r, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
-        
-        return linked_nodes_l.union(linked_nodes_r), linked_edges
+        return linked_nodes, linked_edges
     
     def get_connected_splice_junctions_recursively_l(self, nodes, edges, insert_size_to_travel):
         # Q is it possible to travel quicker to a node via another node? 
