@@ -717,17 +717,9 @@ thick edges:
                                 dist = d1+d2
                                 if dist <= MAX_ACCEPTABLE_INSERT_SIZE:
                                     if lnode.position < rnode.position and lnode.splice_edges[STRAND_FORWARD].has_key(rnode):
-                                        old_dist = lnode.splice_edges[STRAND_FORWARD][rnode][0]
-                                        if dist < old_dist:
-                                            insert = True
-                                        else:
-                                            insert = False
+                                        insert = dist < lnode.splice_edges[STRAND_FORWARD][rnode][0]
                                     elif rnode.position < lnode.position and lnode.splice_edges[STRAND_REVERSE].has_key(rnode):
-                                        old_dist = lnode.splice_edges[STRAND_REVERSE][rnode][0]
-                                        if dist < old_dist:
-                                            insert = True
-                                        else:
-                                            insert = False
+                                        insert = dist < lnode.splice_edges[STRAND_REVERSE][rnode][0]
                                     else:
                                         insert = True
                                     
@@ -735,20 +727,12 @@ thick edges:
                                         if rnode.position < lnode.position:# inversed
                                             rnode.splice_edges[STRAND_FORWARD][lnode] = [dist, splice_junction]
                                             lnode.splice_edges[STRAND_REVERSE][rnode] = [dist, splice_junction]
-                                            
-                                            #lnode.splice_edges[rnode] = [dist, splice_junction]
-                                            #rnode.splice_edges[lnode] = [dist, splice_junction]
-                                            
                                         else:
                                             lnode.splice_edges[STRAND_FORWARD][rnode] = [dist, splice_junction]
                                             rnode.splice_edges[STRAND_REVERSE][lnode] = [dist, splice_junction]
-                                            
-                                            #rnode.splice_edges[lnode] = [dist, splice_junction]
-                                            #lnode.splice_edges[rnode] = [dist, splice_junction]
                                         
                                         k += 1
                     
-                   
                     splice_edges_had.add(splice_junction)
                     splice_edges_had.add(splice_junction.get_complement())
         
