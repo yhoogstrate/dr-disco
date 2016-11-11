@@ -134,7 +134,7 @@ class Node:
         self.position = position
         self.clips = 0
         self.edges = {}
-        self.splice_edges = {}
+        self.splice_edges = {STRAND_FORWARD: {}, STRAND_REVERSE: {}}
     
     def __lt__(self, other_node):
         return self.position < other_node.position
@@ -150,19 +150,19 @@ class Node:
         linked_nodes = set([self])# set(self) iterates over self.__iter__()
         linked_edges = {}
         
-        self.get_connected_splice_junctions_recursively_l(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
-        self.get_connected_splice_junctions_recursively_r(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE)
+        self.get_connected_splice_junctions_recursively_l(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
+        self.get_connected_splice_junctions_recursively_r(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
         
         return linked_nodes, linked_edges
     
-    def get_connected_splice_junctions_recursively_l(self, nodes, edges, insert_size_to_travel):
+    def get_connected_splice_junctions_recursively_l(self, nodes, edges, insert_size_to_travel, direction):
         # Q is it possible to travel quicker to a node via another node? 
         # -> i.e.: d(A - B - C) < d(A -> C) -> the current implementation expects this NOT to happen by using `tested_nodes` instead of `nodes`
         
         new_nodes = []
-        for edge_n in sorted(self.splice_edges):
+        for edge_n in sorted(self.splice_edges[direction]):
             if edge_n.position < self.position:
-                edge = self.splice_edges[edge_n]
+                edge = self.splice_edges[direction][edge_n]
                 if edge_n not in nodes:
                     dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
                     if dkey >= 0:
@@ -178,16 +178,16 @@ class Node:
         
         # only recusively add to the new ones
         for edge_n in new_nodes:
-            edge_n[0].get_connected_splice_junctions_recursively_l(nodes, edges, edge_n[1])
+            edge_n[0].get_connected_splice_junctions_recursively_l(nodes, edges, edge_n[1], direction)
         
-    def get_connected_splice_junctions_recursively_r(self, nodes, edges, insert_size_to_travel):
+    def get_connected_splice_junctions_recursively_r(self, nodes, edges, insert_size_to_travel, direction):
         # Q is it possible to travel quicker to a node via another node? 
         # -> i.e.: d(A - B - C) < d(A -> C) -> the current implementation expects this NOT to happen by using `tested_nodes` instead of `nodes`
         
         new_nodes = []
-        for edge_n in sorted(self.splice_edges):
+        for edge_n in sorted(self.splice_edges[direction]):
             if self.position < edge_n.position:
-                edge = self.splice_edges[edge_n]
+                edge = self.splice_edges[direction][edge_n]
                 if edge_n not in nodes:
                     dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
                     if dkey >= 0:
@@ -203,7 +203,7 @@ class Node:
         
         # only recusively add to the new ones
         for edge_n in new_nodes:
-            edge_n[0].get_connected_splice_junctions_recursively_r(nodes, edges, edge_n[1])
+            edge_n[0].get_connected_splice_junctions_recursively_r(nodes, edges, edge_n[1], direction)
     
     def add_clip(self):
         self.clips += 1
@@ -715,9 +715,15 @@ thick edges:
                                 d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
                                 d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
                                 dist = d1+d2
-                                if dist <= MAX_ACCEPTABLE_INSERT_SIZE: 
-                                    if lnode.splice_edges.has_key(rnode):
-                                        old_dist = lnode.splice_edges[rnode][0]
+                                if dist <= MAX_ACCEPTABLE_INSERT_SIZE:
+                                    if lnode.position < rnode.position and lnode.splice_edges[STRAND_FORWARD].has_key(rnode):
+                                        old_dist = lnode.splice_edges[STRAND_FORWARD][rnode][0]
+                                        if dist < old_dist:
+                                            insert = True
+                                        else:
+                                            insert = False
+                                    elif rnode.position < lnode.position and lnode.splice_edges[STRAND_REVERSE].has_key(rnode):
+                                        old_dist = lnode.splice_edges[STRAND_REVERSE][rnode][0]
                                         if dist < old_dist:
                                             insert = True
                                         else:
@@ -726,8 +732,19 @@ thick edges:
                                         insert = True
                                     
                                     if insert:
-                                        lnode.splice_edges[rnode] = [dist, splice_junction]
-                                        rnode.splice_edges[lnode] = [dist, splice_junction]
+                                        if rnode.position < lnode.position:# inversed
+                                            rnode.splice_edges[STRAND_FORWARD][lnode] = [dist, splice_junction]
+                                            lnode.splice_edges[STRAND_REVERSE][rnode] = [dist, splice_junction]
+                                            
+                                            #lnode.splice_edges[rnode] = [dist, splice_junction]
+                                            #rnode.splice_edges[lnode] = [dist, splice_junction]
+                                            
+                                        else:
+                                            lnode.splice_edges[STRAND_FORWARD][rnode] = [dist, splice_junction]
+                                            rnode.splice_edges[STRAND_REVERSE][lnode] = [dist, splice_junction]
+                                            
+                                            #rnode.splice_edges[lnode] = [dist, splice_junction]
+                                            #lnode.splice_edges[rnode] = [dist, splice_junction]
                                         
                                         k += 1
                     
