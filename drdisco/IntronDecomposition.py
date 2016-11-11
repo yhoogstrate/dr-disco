@@ -151,7 +151,7 @@ class Node:
         linked_edges = {}
         
         self.get_connected_splice_junctions_recursively_l(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
-        self.get_connected_splice_junctions_recursively_r(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
+        self.get_connected_splice_junctions_recursively_l(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
         
         return linked_nodes, linked_edges
     
@@ -186,7 +186,6 @@ class Node:
         
         new_nodes = []
         for edge_n in sorted(self.splice_edges[direction]):
-            #if self.position < edge_n.position:
             edge = self.splice_edges[direction][edge_n]
             if edge_n not in nodes:
                 dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
