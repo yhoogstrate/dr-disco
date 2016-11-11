@@ -150,12 +150,12 @@ class Node:
         linked_nodes = set([self])# set(self) iterates over self.__iter__()
         linked_edges = {}
         
-        self.get_connected_splice_junctions_recursively_l(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
-        self.get_connected_splice_junctions_recursively_l(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
+        self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
+        self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
         
         return linked_nodes, linked_edges
     
-    def get_connected_splice_junctions_recursively_l(self, nodes, edges, insert_size_to_travel, direction):
+    def get_connected_splice_junctions_recursively(self, nodes, edges, insert_size_to_travel, direction):
         # Q is it possible to travel quicker to a node via another node? 
         # -> i.e.: d(A - B - C) < d(A -> C) -> the current implementation expects this NOT to happen by using `tested_nodes` instead of `nodes`
         
@@ -178,31 +178,7 @@ class Node:
         
         # only recusively add to the new ones
         for edge_n in new_nodes:
-            edge_n[0].get_connected_splice_junctions_recursively_l(nodes, edges, edge_n[1], direction)
-        
-    def get_connected_splice_junctions_recursively_r(self, nodes, edges, insert_size_to_travel, direction):
-        # Q is it possible to travel quicker to a node via another node? 
-        # -> i.e.: d(A - B - C) < d(A -> C) -> the current implementation expects this NOT to happen by using `tested_nodes` instead of `nodes`
-        
-        new_nodes = []
-        for edge_n in sorted(self.splice_edges[direction]):
-            edge = self.splice_edges[direction][edge_n]
-            if edge_n not in nodes:
-                dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-                if dkey >= 0:
-                    new_nodes.append((edge_n, dkey))
-                    
-                    if not edges.has_key(edge_n):
-                        edges[edge_n] = set()
-                    edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
-        
-        # old results, + recursive results
-        for edge_n in new_nodes:
-            nodes.add(edge_n[0])
-        
-        # only recusively add to the new ones
-        for edge_n in new_nodes:
-            edge_n[0].get_connected_splice_junctions_recursively_r(nodes, edges, edge_n[1], direction)
+            edge_n[0].get_connected_splice_junctions_recursively(nodes, edges, edge_n[1], direction)
     
     def add_clip(self):
         self.clips += 1
