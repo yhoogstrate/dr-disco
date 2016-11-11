@@ -157,17 +157,16 @@ class Node:
     
     def get_connected_splice_junctions_recursively(self, nodes, edges, insert_size_to_travel, direction):
         new_nodes = []
-        for edge_n in sorted(self.splice_edges[direction]):
-            edge = self.splice_edges[direction][edge_n]
-
-            #if edge_n not in nodes:
-            dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-            if dkey >= 0:
-                new_nodes.append((edge_n, dkey))
-                
-                if not edges.has_key(edge_n):
-                    edges[edge_n] = set()
-                edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+        for edge_n in self.splice_edges[direction]:
+            if edge_n not in nodes:
+                edge = self.splice_edges[direction][edge_n]
+                dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
+                if dkey >= 0:
+                    new_nodes.append((edge_n, dkey))
+                    
+                    if not edges.has_key(edge_n):
+                        edges[edge_n] = set()
+                    edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
     
         # old results, + recursive results
         for edge_n in new_nodes:
