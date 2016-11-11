@@ -162,7 +162,7 @@ class Node:
         new_nodes = []
         for edge_n in sorted(self.splice_edges):
             edge = self.splice_edges[edge_n]
-            if edge_n not in nodes:
+            if edge_n not in tested_nodes:
                 dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
                 if dkey >= 0:
                     new_nodes.append((edge_n, dkey))
@@ -170,8 +170,8 @@ class Node:
                     if not edges.has_key(edge_n):
                         edges[edge_n] = set()
                     edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
-            
-            tested_nodes.add(edge_n)
+                
+                tested_nodes.add(edge_n)
         
         # old results, + recursive results
         for edge_n in new_nodes:
@@ -179,7 +179,7 @@ class Node:
         
         # only recusively add to the new ones
         for edge_n in new_nodes:
-            edge_n[0].get_connected_splice_junctions_recursively(nodes, tested_nodes, edges, edge_n[1])
+            edge_n[0].get_connected_splice_junctions_recursively(nodes, set(tested_nodes), edges, edge_n[1])#@test copy.copy(tested_nodes)
     
     def add_clip(self):
         self.clips += 1
@@ -804,13 +804,12 @@ have edges to the same nodes of the already existing network,
                             
                             if right_node != start_point._target:
                                 right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
-                            
+
                             if subedge != start_point:
                                 self.remove_edge(subedge)
                                 thicker_edges.remove(subedge)
             
             del(left_splice_junctions_ds,right_splice_junctions_ds)
-            
             subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
         
         logging.info("Extracted %i subnetwork(s)" % len(subnetworks))
