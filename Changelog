@@ -1,13 +1,16 @@
 2016-11-13	Youri Hoogstrate	v0.1.0
 	* Rewritten rejoin_splice_junctions resulting in a huge performance
-	  increase. Uses HTSeq for genomic indexing, also resulting in a
-	  huge performance increate. Rewritten and improved
+	  increase. Rewritten and improved
 	  extract_subnetworks_by_splice_junctions. Added test cases that
 	  earlier failed in the development phase because of complex race
 	  conditions. Using enum datatypes for Edge-types to improve memory
 	  consumption. Added __lt__ function to quickly compare based on
 	  genomic positions as hashes. Indexing and sorting is now also
 	  based on this. Use xranges of ranges to improve performance.
+
+2016-11-08	Youri Hoogstrate	v0.0.10
+	* Uses HTSeq library as genomic index which improves performance.
+	  Other speed improvements.
 
 2016-11-02	Youri Hoogstrate	v0.0.9
 	* Fixes critical race condition in extracting subnetworks with Edges that

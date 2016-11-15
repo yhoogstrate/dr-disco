@@ -570,7 +570,6 @@ class Graph:
         
         edges = set()
         edges_tuple = []
-        order = 0
         
         for node in self:
             for edge in node.edges.values():
@@ -579,7 +578,6 @@ class Graph:
                     if score > 0:
                         edges.add(edge)
                         edges_tuple.append((edge,score,order))
-                        order -= 1
         
         del(edges,order)
         
