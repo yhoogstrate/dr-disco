@@ -1496,7 +1496,7 @@ class IntronDecomposition:
                 subnets.remove(candidate_subnet)#[subnets.index(candidate_subnet)] = None# @todo inverse subnets and use .pop() and .remove()
                 del(candidate_subnet)
                 k += 1
-                
+            
             new_subnets.append(subnet)
         
         logging.info("Merged "+str(k)+" of the "+str(n)+" into "+str(len(new_subnets))+" merged subnetwork(s)")
