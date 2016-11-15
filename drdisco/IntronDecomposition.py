@@ -1417,91 +1417,93 @@ class IntronDecomposition:
                 tree_insert(idx_r, edge._target.position, subnet)
         
         k = 0
-        for subnet in subnets:
-            if subnet != None:
-                tree_remove(idx_l, subnet)
-                tree_remove(idx_r, subnet)
+        new_subnets = []
+        subnets.reverse()
+        while subnets:
+            subnet = subnets.pop()
+            tree_remove(idx_l, subnet)
+            tree_remove(idx_r, subnet)
+        
+            to_be_merged_with = set()
             
-                to_be_merged_with = set()
+            for edge in subnet.edges:
                 
-                for edge in subnet.edges:
+                candidates = set()
+                
+                # based on l-node to be close
+                pos = edge._origin.position
+                for step in idx_l[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                    if step[1] and step[1].has_key(pos.strand):
+                        for candidate_subnet in step[1][pos.strand]:
+                            if subnet != candidate_subnet:
+                                candidates.add(candidate_subnet)
+                
+                pos = edge._target.position
+                for step in idx_r[HTSeq.GenomicInterval(pos._chr, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                    if step[1] and step[1].has_key(pos.strand):
+                        for candidate_subnet in step[1][pos.strand]:
+                            if subnet != candidate_subnet:
+                                candidates.add(candidate_subnet)
+                
+                for candidate_subnet in candidates:
+                    new_merged = False
                     
-                    candidates = set()
+                    l_dists, r_dists = subnet.find_distances(candidate_subnet)
                     
-                    # based on l-node to be close
-                    pos = edge._origin.position
-                    for step in idx_l[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
-                        if step[1] and step[1].has_key(pos.strand):
-                            for candidate_subnet in step[1][pos.strand]:
-                                if subnet != candidate_subnet:
-                                    candidates.add(candidate_subnet)
-                    
-                    pos = edge._target.position
-                    for step in idx_r[HTSeq.GenomicInterval(pos._chr, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
-                        if step[1] and step[1].has_key(pos.strand):
-                            for candidate_subnet in step[1][pos.strand]:
-                                if subnet != candidate_subnet:
-                                    candidates.add(candidate_subnet)
-                    
-                    for candidate_subnet in candidates:
-                        new_merged = False
+                    if l_dists != False:
                         
-                        l_dists, r_dists = subnet.find_distances(candidate_subnet)
+                        n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
+                        n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
                         
-                        if l_dists != False:
-                            
-                            n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
-                            n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
-                            
-                            rmsq_l_dist = sq_dist(l_dists)
-                            rmsq_r_dist = sq_dist(r_dists)
-                            
-                            """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
-                                if product > (8*k):
-                                    # Average gene size = 10-15kb
-                                    # rmse <= 125000 - 120000/2^( product / 1200)
-                                    # if rmse < max_rmse: valid data point
-                                    max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
-                                    return (rmse <= max_rmse)
-                            """
-                            
-                            if n_l_dist > 0 and n_r_dist > 0:
-                                new_merged = True
-                            else:#@todo revise if / else / elif logic, and use linear regression or sth like that
-                                if n_l_dist > 0:
-                                    l_dist_ins_ratio = 1.0 * n_l_dist/len(l_dists)
-                                    if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
-                                        new_merged = True
-                                    elif l_dist_ins_ratio > 0.7 and rmsq_r_dist < 10000:
-                                        new_merged = True
-                                    elif l_dist_ins_ratio > 0.3 and rmsq_r_dist < 5000:
-                                        new_merged = True
-                                            
-                                if n_r_dist > 0:
-                                    r_dist_ins_ratio = 1.0 * n_r_dist/len(r_dists)
-                                    if r_dist_ins_ratio == 1.0 and rmsq_l_dist < 15000:
-                                        new_merged = True
-                                    elif r_dist_ins_ratio > 0.7 and rmsq_l_dist < 10000:
-                                        new_merged = True
-                                    elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
-                                        new_merged = True
-                            
-                            if new_merged:
-                                to_be_merged_with.add(candidate_subnet)
+                        rmsq_l_dist = sq_dist(l_dists)
+                        rmsq_r_dist = sq_dist(r_dists)
+                        
+                        """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
+                            if product > (8*k):
+                                # Average gene size = 10-15kb
+                                # rmse <= 125000 - 120000/2^( product / 1200)
+                                # if rmse < max_rmse: valid data point
+                                max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
+                                return (rmse <= max_rmse)
+                        """
+                        
+                        if n_l_dist > 0 and n_r_dist > 0:
+                            new_merged = True
+                        else:#@todo revise if / else / elif logic, and use linear regression or sth like that
+                            if n_l_dist > 0:
+                                l_dist_ins_ratio = 1.0 * n_l_dist/len(l_dists)
+                                if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
+                                    new_merged = True
+                                elif l_dist_ins_ratio > 0.7 and rmsq_r_dist < 10000:
+                                    new_merged = True
+                                elif l_dist_ins_ratio > 0.3 and rmsq_r_dist < 5000:
+                                    new_merged = True
+                                        
+                            if n_r_dist > 0:
+                                r_dist_ins_ratio = 1.0 * n_r_dist/len(r_dists)
+                                if r_dist_ins_ratio == 1.0 and rmsq_l_dist < 15000:
+                                    new_merged = True
+                                elif r_dist_ins_ratio > 0.7 and rmsq_l_dist < 10000:
+                                    new_merged = True
+                                elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
+                                    new_merged = True
+                        
+                        if new_merged:
+                            to_be_merged_with.add(candidate_subnet)
                     
-                for candidate_subnet in to_be_merged_with:
-                    subnet.merge(candidate_subnet)
-                    tree_remove(idx_l, candidate_subnet)
-                    tree_remove(idx_r, candidate_subnet)
-                    subnets[subnets.index(candidate_subnet)] = None# @todo inverse subnets and use .pop() and .remove()
-                    del(candidate_subnet)
-                    k += 1
+            for candidate_subnet in to_be_merged_with:
+                subnet.merge(candidate_subnet)
+                tree_remove(idx_l, candidate_subnet)
+                tree_remove(idx_r, candidate_subnet)
+                subnets.remove(candidate_subnet)#[subnets.index(candidate_subnet)] = None# @todo inverse subnets and use .pop() and .remove()
+                del(candidate_subnet)
+                k += 1
+                
+            new_subnets.append(subnet)
         
-        subnets = [sn for sn in subnets if sn != None]
+        logging.info("Merged "+str(k)+" of the "+str(n)+" into "+str(len(new_subnets))+" merged subnetwork(s)")
         
-        logging.info("Merged "+str(k)+" of the "+str(n)+" into "+str(len(subnets))+" merged subnetwork(s)")
-        
-        return subnets
+        return new_subnets
 
     def filter_subnets(self, subnets):
         logging.debug("init")
