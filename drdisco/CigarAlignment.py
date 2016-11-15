@@ -144,35 +144,35 @@ class CigarAlignment:
     
     def init_matrix(self):
         #self.matrix = [[0] * (self.n+1) ] * (self.m + 1) << copies references of lists >,<
-        self.matrix = [[0 for i in range(self.n+1)] for i in range(self.m+1)]
+        self.matrix = [[0 for i in xrange(self.n+1)] for i in xrange(self.m+1)]
         
-        for i in range(1,self.m+1):
+        for i in xrange(1,self.m+1):
             self.matrix[i][0] = pow(self.cigtup1[i-1][1],2)
         
-        for j in range(1,self.n+1):
+        for j in xrange(1,self.n+1):
             self.matrix[0][j] = pow(self.cigtup2[j-1][1],2)
         
         
         
-        self.tb_matrix = [["?" for i in range(self.n+1)] for i in range(self.m+1)]
+        self.tb_matrix = [["?" for i in xrange(self.n+1)] for i in xrange(self.m+1)]
         self.tb_matrix[0][0] = 't' # Terminate traceback; finished
         
-        for i in range(1,self.m+1):
+        for i in xrange(1,self.m+1):
             self.tb_matrix[i][0] = "|"
         
-        for j in range(1,self.n+1):
+        for j in xrange(1,self.n+1):
             self.tb_matrix[0][j] = "-"
     
     def print_tb_matrix(self):
-        for j in range(self.n+1):
-            for i in range(self.m+1):
+        for j in xrange(self.n+1):
+            for i in xrange(self.m+1):
                 print self.tb_matrix[i][j],
             print
         print
     
     def print_matrix(self):
-        for j in range(self.n+1):
-            for i in range(self.m+1):
+        for j in xrange(self.n+1):
+            for i in xrange(self.m+1):
                 print str(self.matrix[i][j])+"\t",
             print
         print
@@ -186,7 +186,7 @@ class CigarAlignment:
             i = diagonal
             j = 0
 
-            for block in range(diagonal+1):
+            for block in xrange(diagonal+1):
                 if i < self.m and j < self.n:
                     yield (i,j)
                 
@@ -238,7 +238,7 @@ class CigarAlignment:
     
     def fill_matrix(self):
         n_diagonals = (self.n + self.m) - 1
-        for diagonal in range(n_diagonals):
+        for diagonal in xrange(n_diagonals):
             for cell in self.get_diagonal(diagonal):
                
                 diff, _type = self.calc_diff(cell[0],cell[1])
@@ -291,7 +291,7 @@ class CigarAlignment:
         c1 = []
         c2 = []
         
-        for i in range(len(cigtup1_aligned)):
+        for i in xrange(len(cigtup1_aligned)):
             if cigtup1_aligned[i][0] != -1 and cigtup2_aligned[i][0] != -1:
                 c1.append(cigtup1_aligned[i])
                 c2.append(cigtup2_aligned[i])
