@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 # *- coding: utf-8 -*-
-# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
+# -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
 """
@@ -442,12 +442,13 @@ class Graph:
                     yield node
     
     def create_node(self,pos):
-        position = self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)]
+        position_accession = HTSeq.GenomicPosition(pos._chr,pos.pos)
+        position = self.idxtree[position_accession]
         if not position:
-            self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)] = {pos.strand: Node(pos)}
+            self.idxtree[position_accession] = {pos.strand: Node(pos)}
         else:
             if not position.has_key(pos.strand):
-                self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)][pos.strand] = Node(pos)
+                position[pos.strand] = Node(pos)
     
     def get_node_reference(self,pos):
         position = self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)]
@@ -1379,18 +1380,75 @@ class IntronDecomposition:
             
             return math.sqrt(avg_sq_d)
         
+        def tree_insert(genometree, pos, entry):
+            """inserts entry into a set at pos in genometree"""
+            position_accession = HTSeq.GenomicPosition(pos._chr, pos.pos)
+            position_tree = genometree[position_accession]
+            if not position_tree:# position was not found in tree, insert completely
+                genometree[position_accession] = {pos.strand: set([entry])}
+            else:
+                if not position_tree.has_key(pos.strand):
+                    position_tree[pos.strand] = set([entry])
+                else:
+                    position_tree[pos.strand].add(entry)
+        
+        def tree_remove(genometree, subnet):
+            positions = set()
+            for edge in subnet.edges:
+                positions.add(edge._origin.position)
+                positions.add(edge._target.position)
+            
+            for pos in positions:
+                position_accession = HTSeq.GenomicPosition(pos._chr, pos.pos)
+                position_tree = genometree[position_accession]
+                if position_tree and position_tree.has_key(pos.strand):
+                    sset = position_tree[pos.strand]
+                    if subnet in sset:
+                        sset.remove(subnet)
+        
         n = len(subnets)
         
+        idx_l = HTSeq.GenomicArrayOfSets("auto", stranded=False)
+        idx_r = HTSeq.GenomicArrayOfSets("auto", stranded=False)
+
+        for subnet in subnets:
+            for edge in subnet.edges:
+                tree_insert(idx_l, edge._origin.position, subnet)
+                tree_insert(idx_r, edge._target.position, subnet)
+        
         k = 0
-        for i in xrange(n):
-            if subnets[i] != None:
-                candidates = []
-                for j in xrange(i+1,n):# for i , j > i
-                    if subnets[j] != None:
+        for subnet in subnets:
+            if subnet != None:
+                tree_remove(idx_l, subnet)
+                tree_remove(idx_r, subnet)
+            
+                to_be_merged_with = set()
+                
+                for edge in subnet.edges:
+                    
+                    candidates = set()
+                    
+                    # based on l-node to be close
+                    pos = edge._origin.position
+                    for step in idx_l[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                        if step[1] and step[1].has_key(pos.strand):
+                            for candidate_subnet in step[1][pos.strand]:
+                                if subnet != candidate_subnet:
+                                    candidates.add(candidate_subnet)
+                    
+                    pos = edge._target.position
+                    for step in idx_r[HTSeq.GenomicInterval(pos._chr, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                        if step[1] and step[1].has_key(pos.strand):
+                            for candidate_subnet in step[1][pos.strand]:
+                                if subnet != candidate_subnet:
+                                    candidates.add(candidate_subnet)
+                    
+                    for candidate_subnet in candidates:
                         new_merged = False
                         
-                        l_dists, r_dists = subnets[i].find_distances(subnets[j])
-                        if l_dists != False:# and r_dists != False:
+                        l_dists, r_dists = subnet.find_distances(candidate_subnet)
+                        
+                        if l_dists != False:
                             
                             n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
                             n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
@@ -1427,15 +1485,18 @@ class IntronDecomposition:
                                         new_merged = True
                                     elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
                                         new_merged = True
-                        
-                        if new_merged:
-                            candidates.append(subnets[j])
-                            subnets[j] = None
+                            
+                            if new_merged:
+                                to_be_merged_with.add(candidate_subnet)
                     
-                for sn_j in candidates:
-                    subnets[i].merge(sn_j)
-                    del(sn_j)
+                for candidate_subnet in to_be_merged_with:
+                    subnet.merge(candidate_subnet)
+                    tree_remove(idx_l, candidate_subnet)
+                    tree_remove(idx_r, candidate_subnet)
+                    subnets[subnets.index(candidate_subnet)] = None# @todo inverse subnets and use .pop() and .remove()
+                    del(candidate_subnet)
                     k += 1
+        
         subnets = [sn for sn in subnets if sn != None]
         
         logging.info("Merged "+str(k)+" of the "+str(n)+" into "+str(len(subnets))+" merged subnetwork(s)")
