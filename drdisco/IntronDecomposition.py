@@ -710,65 +710,17 @@ thick edges:
         logging.info("Linked "+str(k)+" splice junction(s)")
     
     def extract_subnetworks_by_splice_junctions(self,thicker_edges):
-        """ Here we add additional nodes an edge's current `left_node` 
-or `right_node` using the `guilt-by-association` principle. Sometimes nodes
-have edges to the same nodes of the already existing network,
-            but lack splice junction(s) to those existing network. They're
-            still connected to the network they might be exons that are not
-            taken into account by the aligner (classical example: exon-0 in
-            TMPRSS2). We have to be careful on the other hand, as multimap
-            locations may influence this.
-            
-            Therefore we ideally need a function that adds nodes based on:
-             - Genomic distance to all entries in either `left_nodes` or `right_nodes`
-               * Currently implemented as RMSE on Node::get_dist()
-             - The score of all edges going to the node
-               * It also needs to correct for imbalance; 4 and 36 reads is less
-                 likely than 20 and 20. Solution used multiplication.
-             - Number of edges relative to the number of nodes.
-               *In case of 3 nodes, it is more likely to have 3 edges (3/3) instead of 2
-               (2/3). This weight is not yet implemented (01/08/16).
-
-
-            Detection of possible candidates
-            --------------------------------
-            
-            nodes:
-            A     B         $ ... $          Y    Z
-    edges:   ....................................... (9)
-            ..................................      (2)
-                  ................................. (100)
-                  ............................      (20)
-    splice:  -----
-    
-    
-    start point: thickest edge
-    
-
-    left_nodes:  A, B
-    right_nodes: Y, Z
-
-    edges:
-            A-Z (9)
-            B-Z (100)
-            
-            A-Y (2)
-            B-Y (20)
-            
-            For each left node i, compared to any other left node j,
-            look for nodes they have in common:
-            Y, Z (exclude Z, because it was already in `right_nodes`
-            
-            Then we know for sure that both A and B are also connected to
-            Y, while there is no relation found between Y-Z. However,
-            if the distance between Y-Z is reasonable and there are many
-            reads, it is pretty likely that Y is part of the fusion event
-            as well.
-            
-            Reverse
-            -------
-            Then do this in reverse(d) order, from `right_nodes` to
-            `left_nodes`.
+        """ Deze functie haalt recursief per edge een set van edges op die 
+binnen de splice afstand voldoen. De splice afstanden zijn voorgerekend
+in de rejoin_splice_junctions functie. Het enige dat hier dient te gebeuren
+is het recursief aflopen aan de hand van een bepaalde afstand (insert size,
+~450bp).
+Vooralsnog is deze extractie alleen gebaseerd op afstand en niet op de
+imbalans van de readcount. 
+In de nieuwe implementatie heeft iedere node twee vectoren waarin splice
+junction staan beschreven; 1 naar posities die kleiner zijn dan zichzelf
+en 1 met posities die groter zijn dan zichzelf. Hierdoor is een recursief
+terugloop probleem redelijk opgelost.
             """
         logging.info("Initiated")
         
