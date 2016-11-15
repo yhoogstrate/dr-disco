@@ -57,7 +57,7 @@ class ChimericAlignment:
             raise Exception("Not all reads belong to the same QNAME")
         else:
             qname = qnames[0]
-            for i in range(len(all_reads_updated)):
+            for i in xrange(len(all_reads_updated)):
                 all_reads_updated[i].set_tag('LB',qname.replace(":","."))
         
         return all_reads_updated
@@ -74,7 +74,7 @@ class ChimericAlignment:
             sa_id = [bam_file.get_reference_name(a.reference_id),a.reference_start,a.cigarstring,a.mapping_quality,"-" if a.is_reverse else "+",nm]
             sa_ids.append(",".join([str(x) for x in sa_id]))
         
-        for i in range(len(reads_updated)):
+        for i in xrange(len(reads_updated)):
             sa_id = sa_ids[i]
             sa_tag = ";".join([x for x in sa_ids if x != sa_id])
             reads_updated[i].set_tag('SA',sa_tag)
