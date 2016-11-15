@@ -570,6 +570,7 @@ class Graph:
         
         edges = set()
         edges_tuple = []
+        order = 0
         
         for node in self:
             for edge in node.edges.values():
@@ -578,6 +579,7 @@ class Graph:
                     if score > 0:
                         edges.add(edge)
                         edges_tuple.append((edge,score,order))
+                        order -= 1
         
         del(edges,order)
         
@@ -1373,7 +1375,6 @@ class IntronDecomposition:
         order = 0 # Order of top-edge in subnet
         for subnet in self.results:
             ordered.append((subnet, subnet.total_score, subnet.get_overall_entropy()))
-            #order -= 1
         ordered = [subnet[0] for subnet in sorted(ordered, key=operator.itemgetter(1, 2), reverse=True)]
         
         return (
