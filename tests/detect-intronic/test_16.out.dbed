@@ -25,7 +25,7 @@ chr21	39863020	+	chr21	39863629	-	entropy=0.0,n_discordant_reads=0/2,n_support=1
 chr21	39871034	+	chr21	39877568	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	2	1	0	1	1	1	0	0	0.0	0.0	chr21:39871034/39871035(+)->chr21:39877568/39877569(-):(spanning_paired_1_t:1,spanning_paired_2_t:1)
 chr21	42836581	+	chr21	42839672	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	2	1	0	1	1	1	0	0	0.0	0.0	chr21:42836581/42836582(+)->chr21:42839672/42839673(-):(spanning_paired_1_t:1,spanning_paired_2_t:1)
 chr21	42853701	+	chr21	42860029	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	2	1	0	1	1	1	0	0	0.0	0.0	chr21:42853701/42853702(+)->chr21:42860029/42860030(-):(spanning_paired_1:1,spanning_paired_2:1)
-chr21	42866445	-	chr21	42870116	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	8	1	0	1	1	1	0	0	0.0	0.0	chr21:42866445/42866446(-)->chr21:42870116/42870117(-):(spanning_paired_1:1,spanning_paired_2:1)
+chr21	42866483	-	chr21	42870116	-	entropy=0.0,n_discordant_reads=0/2,n_support=1/8	3	9	1	0	1	1	1	0	0	0.0	0.0	chr21:42866483/42866484(-)->chr21:42870116/42870117(-):(spanning_paired_1:1,spanning_paired_2:1)
 chr21	42847417	-	chr21	42861457	+	n_support=2/8	2	0	0	2	1	1	1	0	0	1.0	1.0	chr21:42847417/42847418(-)->chr21:42861457/42861458(+):(discordant_mates:4)
 chr21	42861448	-	chr21	42860415	+	n_support=2/8	2	0	0	2	1	1	1	0	0	1.0	1.0	chr21:42861448/42861449(-)->chr21:42860415/42860416(+):(discordant_mates:4)
 chr21	42839824	+	chr21	42840323	-	n_support=2/8	2	2	0	2	1	1	1	0	0	1.0	1.0	chr21:42839824/42839825(+)->chr21:42840323/42840324(-):(discordant_mates:4)

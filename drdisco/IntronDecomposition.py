@@ -275,6 +275,21 @@ class JunctionTypeUtils:
         JunctionTypes.spanning_singleton_1_r: 2,
         JunctionTypes.spanning_singleton_2_r: 2 }
     
+    complement_table = {
+        JunctionTypes.discordant_mates:       JunctionTypes.discordant_mates,
+        JunctionTypes.spanning_paired_1:      JunctionTypes.spanning_paired_2,
+        JunctionTypes.spanning_paired_1_r:    JunctionTypes.spanning_paired_2_r,
+        JunctionTypes.spanning_paired_1_s:    JunctionTypes.spanning_paired_2_s,
+        JunctionTypes.spanning_paired_1_t:    JunctionTypes.spanning_paired_2_t,
+        JunctionTypes.spanning_paired_2:      JunctionTypes.spanning_paired_1,
+        JunctionTypes.spanning_paired_2_r:    JunctionTypes.spanning_paired_1_r,
+        JunctionTypes.spanning_paired_2_s:    JunctionTypes.spanning_paired_1_s,
+        JunctionTypes.spanning_paired_2_t:    JunctionTypes.spanning_paired_1_t,
+        JunctionTypes.spanning_singleton_1:   JunctionTypes.spanning_singleton_2,
+        JunctionTypes.spanning_singleton_2:   JunctionTypes.spanning_singleton_1,
+        JunctionTypes.spanning_singleton_1_r: JunctionTypes.spanning_singleton_2_r,
+        JunctionTypes.spanning_singleton_2_r: JunctionTypes.spanning_singleton_1_r }
+    
     @staticmethod
     def enum(enumstring):
         return JunctionTypeUtils.tt[enumstring]
@@ -441,6 +456,15 @@ class Graph:
                     node = position[strand]
                     yield node
     
+    def check_symmetry(self):## debug function
+        for edge in self.edge_idx:
+            for key in edge._types:
+                score = edge.get_score(key)
+                cscore = edge.get_score(JunctionTypeUtils.complement_table[key])
+                
+                if score != cscore:
+                    raise Exception("Read types %s and %s do not have an identical score\n%s" % (JunctionTypeUtils.str(key) , JunctionTypeUtils.str(JunctionTypeUtils.complement_table[key]), str(edge) ))
+    
     def create_node(self,pos):
         position_accession = HTSeq.GenomicPosition(pos._chr,pos.pos)
         position = self.idxtree[position_accession]
@@ -528,6 +552,8 @@ class Graph:
             
             node1.insert_edge(edge)
             node2.insert_edge(edge)
+        
+        #self.print_chain()
     
     def remove_edge(self, edge):
         node1 = edge._origin
@@ -592,6 +618,8 @@ class Graph:
         self.generate_edge_idx()
         logging.info("Finding and merging other edges in close proximity (insert size)")
         
+        self.check_symmetry()
+        
         candidates = []
         #self.print_chain()
         
@@ -603,7 +631,6 @@ class Graph:
             
             self.remove_edge(candidate)# do not remove if splice junc exists?
         
-        #self.print_chain()
         logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
         return candidates
     
@@ -1011,7 +1038,7 @@ class BAMExtract(object):
                                          bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                          STRAND_REVERSE)
             
-            elif rg in [JunctionTypes.spanning_singleton_1, JunctionTypes.spanning_paired_1]:
+            elif rg in [JunctionTypes.spanning_singleton_1]:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      (read.reference_start+bam_parse_alignment_offset(read.cigar)),
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
@@ -1019,6 +1046,45 @@ class BAMExtract(object):
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1],
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+
+            elif rg in [JunctionTypes.spanning_paired_1]:
+                if read.is_reverse:# Tested in TERG s55 double inversion
+                    pos1_offset = bam_parse_alignment_offset(read.cigar)
+                else:
+                    pos1_offset = 0
+                
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start + pos1_offset,
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                
+                if parsed_SA_tag[4] == '+':# Tested in TERG s55 double inversion
+                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                else:
+                    pos2_offset = 0
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + pos2_offset,
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+            
+            elif rg in [JunctionTypes.spanning_paired_2]:#JunctionTypes.spanning_singleton_2, 
+                if read.is_reverse:# Tested in TERG s55 double inversion
+                    pos1_offset = 0
+                else:
+                    pos1_offset = bam_parse_alignment_offset(read.cigar)
+                
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start + pos1_offset,
+                                     read.is_reverse)
+                
+                if parsed_SA_tag[4] == '-':# Tested in TERG s55 double inversion
+                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                else:
+                    pos2_offset = 0
+                
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + pos2_offset,
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+            
 
             elif rg in [JunctionTypes.spanning_singleton_1_r, JunctionTypes.spanning_paired_1_t]:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1038,7 +1104,7 @@ class BAMExtract(object):
                                      parsed_SA_tag[1],
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             
-            elif rg in [JunctionTypes.spanning_singleton_2, JunctionTypes.spanning_paired_2]:
+            elif rg in [JunctionTypes.spanning_singleton_2]:#, JunctionTypes.spanning_paired_2
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start,
                                      read.is_reverse)
