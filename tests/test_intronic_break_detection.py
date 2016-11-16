@@ -272,33 +272,48 @@ class TestIntronicBreakDetection(unittest.TestCase):
         
         self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_17(self):
-        #input_file_a =    TEST_DIR+"test_17.bam"
-        #test_file    =    TEST_DIR+"test_17.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_17.out.dbed"
+    def test_17(self):
+        input_file_a =    TEST_DIR+"test_17.bam"
+        test_file    =    TEST_DIR+"test_17.out.dbed"
+        output_file  =  T_TEST_DIR+"test_17.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        ## Test data not checked, should just not throw an exception
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_18(self):
-        #input_file_a =    TEST_DIR+"test_18.bam"
-        #test_file    =    TEST_DIR+"test_18.out.dbed"
-        #output_file  =  T_TEST_DIR+"test_18.out.dbed"
+    def test_18(self):
+        input_file_a =    TEST_DIR+"test_18.bam"
+        test_file    =    TEST_DIR+"test_18.out.dbed"
+        output_file  =  T_TEST_DIR+"test_18.out.dbed"
         
-        #ic = IntronDecomposition(input_file_a)
-        #n_candidates = ic.decompose()
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
         
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
         
-        ## Test data not checked, should just not throw an exception
-        #self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_19_tests_parsing_of_inversed_TERG_from_s55(self):
+        input_file_a =    TEST_DIR+"test_19.bam"
+        test_file    =    TEST_DIR+"test_19.out.dbed"
+        output_file  =  T_TEST_DIR+"test_19.out.dbed"
+        
+        ic = IntronDecomposition(input_file_a)
+        n_candidates = ic.decompose()
+        
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+        
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file),msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff',test_file,output_file], stdout=subprocess.PIPE).stdout.read())
+
 
 
 def main():
