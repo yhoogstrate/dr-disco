@@ -275,6 +275,21 @@ class JunctionTypeUtils:
         JunctionTypes.spanning_singleton_1_r: 2,
         JunctionTypes.spanning_singleton_2_r: 2 }
     
+    complement_table = {
+        JunctionTypes.discordant_mates:       JunctionTypes.discordant_mates,
+        JunctionTypes.spanning_paired_1:      JunctionTypes.spanning_paired_2,
+        JunctionTypes.spanning_paired_1_r:    JunctionTypes.spanning_paired_2_r,
+        JunctionTypes.spanning_paired_1_s:    JunctionTypes.spanning_paired_2_s,
+        JunctionTypes.spanning_paired_1_t:    JunctionTypes.spanning_paired_2_t,
+        JunctionTypes.spanning_paired_2:      JunctionTypes.spanning_paired_1,
+        JunctionTypes.spanning_paired_2_r:    JunctionTypes.spanning_paired_1_r,
+        JunctionTypes.spanning_paired_2_s:    JunctionTypes.spanning_paired_1_s,
+        JunctionTypes.spanning_paired_2_t:    JunctionTypes.spanning_paired_1_t,
+        JunctionTypes.spanning_singleton_1:   JunctionTypes.spanning_singleton_2,
+        JunctionTypes.spanning_singleton_2:   JunctionTypes.spanning_singleton_1,
+        JunctionTypes.spanning_singleton_1_r: JunctionTypes.spanning_singleton_2_r,
+        JunctionTypes.spanning_singleton_2_r: JunctionTypes.spanning_singleton_1_r }
+    
     @staticmethod
     def enum(enumstring):
         return JunctionTypeUtils.tt[enumstring]
@@ -441,6 +456,15 @@ class Graph:
                     node = position[strand]
                     yield node
     
+    def check_symmetry(self):## debug function
+        for edge in self.edge_idx:
+            for key in edge._types:
+                score = edge.get_score(key)
+                cscore = edge.get_score(JunctionTypeUtils.complement_table[key])
+                
+                if score != cscore:
+                    raise Exception("Read types %s and %s do not have an identical score\n%s" % (JunctionTypeUtils.str(key) , JunctionTypeUtils.str(JunctionTypeUtils.complement_table[key]), str(edge) ))
+    
     def create_node(self,pos):
         position = self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)]
         if not position:
@@ -592,6 +616,8 @@ class Graph:
         """
         self.generate_edge_idx()
         logging.info("Finding and merging other edges in close proximity (insert size)")
+        
+        self.check_symmetry()
         
         candidates = []
         #self.print_chain()
