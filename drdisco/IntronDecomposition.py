@@ -136,6 +136,10 @@ class Node:
         self.edges = {}
         self.splice_edges = {STRAND_FORWARD: {}, STRAND_REVERSE: {}}
     
+    def idx_sj_by_dist(self):
+        for strand in self.splice_edges:
+            self.splice_edges[strand] = sorted([(value[0],key,value[1]) for (key,value) in self.splice_edges[strand].items()], key=operator.itemgetter(1, 2), reverse=False)
+    
     def __lt__(self, other_node):
         return self.position < other_node.position
     
@@ -157,16 +161,23 @@ class Node:
     
     def get_connected_splice_junctions_recursively(self, nodes, edges, insert_size_to_travel, direction):
         new_nodes = []
-        for edge_n in self.splice_edges[direction]:
-            if edge_n not in nodes:
-                edge = self.splice_edges[direction][edge_n]
-                dkey = insert_size_to_travel - edge[0]# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-                if dkey >= 0:
-                    new_nodes.append((edge_n, dkey))
-                    
-                    if not edges.has_key(edge_n):
-                        edges[edge_n] = set()
-                    edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+        
+        dist = -1
+        
+        k = 0
+        n = len(self.splice_edges[direction])
+        while dist < insert_size_to_travel and k < n:
+            dist, edge_n, edge_e = self.splice_edges[direction][k]
+            dkey = insert_size_to_travel - dist# Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
+            
+            if dkey >= 0:
+                new_nodes.append((edge_n, dkey))
+                
+                if not edges.has_key(edge_n):
+                    edges[edge_n] = set()
+                edges[edge_n].add(edge_e)#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+            
+            k += 1
     
         # old results, + recursive results
         for edge_n in new_nodes:
@@ -246,6 +257,7 @@ class JunctionTypes:# Enum definition to avoid string operations
 class JunctionTypeUtils:
     tt = {
         'silent_mate': JunctionTypes.silent_mate,
+        'cigar_splice_junction': JunctionTypes.cigar_splice_junction,
         'discordant_mates': JunctionTypes.discordant_mates,
         'spanning_paired_1': JunctionTypes.spanning_paired_1,
         'spanning_paired_2': JunctionTypes.spanning_paired_2,
@@ -456,6 +468,10 @@ class Graph:
                     node = position[strand]
                     yield node
     
+    def reindex_sj(self):
+        for node in self:
+            node.idx_sj_by_dist()
+    
     def check_symmetry(self):## debug function
         for edge in self.edge_idx:
             for key in edge._types:
@@ -573,7 +589,7 @@ class Graph:
             if step[1]:
                 position = step[1]
                 if position:
-                    for strand in position.keys():
+                    for strand in position:
                         node1 = position[strand]
                         for edge in node1.edges.values():
                             node2 = edge._target
@@ -661,7 +677,7 @@ class Graph:
         pos1_min, pos1_max = pos_to_range(pos1)
         pos2_min, pos2_max = pos_to_range(pos2)
         
-        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,pos1_min,pos1_max + 1)].steps():
+        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1_min),pos1_max + 1)].steps():
             if step[1]:
                 position = step[1]
                 if position and position.has_key(pos1.strand):
@@ -691,25 +707,18 @@ thick edges:
         
         def search(pos1):
             #@todo make this member of Graph and use splice_junctions.search_..._..(pos)
-            nodes = []
-            for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
+            for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0, pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), max(1, pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1))].steps():
                 if step[1]:
-                    position = step[1]
-                    if position:
-                        for strand in position.keys():
-                            nodes.append(position[strand])
-            return nodes
+                    for strand in step[1].keys():
+                        yield step[1][strand]
         
         splice_edges_had = set()
         
         for node in splice_junctions:
             for splice_junction in node.edges.values():
                 if splice_junction not in splice_edges_had:
-                    lnodes = search(splice_junction._origin.position)
-                    rnodes = search(splice_junction._target.position)
-                    
-                    for lnode in lnodes:
-                        for rnode in rnodes:
+                    for lnode in search(splice_junction._origin.position):
+                        for rnode in search(splice_junction._target.position):
                             if lnode != rnode and lnode.position.strand == rnode.position.strand:
                                 d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
                                 d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
@@ -764,12 +773,12 @@ terugloop probleem redelijk opgelost.
             left_splice_junctions = set()
             right_splice_junctions = set()
             
-            subedges = []
+            subedges = []#[start_point] if code below is commented out
             
             # All edges between any of the left and right nodes are valid edges and have to be extracted
             # Find all direct edges joined by splice junctions
-            for left_node in left_nodes:
-                for right_node in right_nodes:
+            for left_node in sorted(list(left_nodes)):
+                for right_node in sorted(list(right_nodes)):
                     if left_node.edges.has_key(right_node.position._hash):
                         subedge = left_node.edges[right_node.position._hash]
                         if subedge._target.position._hash == right_node.position._hash:
@@ -780,13 +789,14 @@ terugloop probleem redelijk opgelost.
                             
                             if right_node != start_point._target:
                                 right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
-
+                            
                             if subedge != start_point:
                                 self.remove_edge(subedge)
-                                thicker_edges.remove(subedge)
+                                thicker_edges.remove(subedge)# goes wrong
             
-            del(left_splice_junctions_ds,right_splice_junctions_ds)
+            #del(left_splice_junctions_ds,right_splice_junctions_ds)
             subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
+            self.remove_edge(start_point)
         
         logging.info("Extracted %i subnetwork(s)" % len(subnetworks))
         return subnetworks
@@ -1373,6 +1383,7 @@ class IntronDecomposition:
         del(splice_junctions)
         fusion_junctions.reinsert_edges(thicker_edges)#@todo move function into statuc function in this class
         
+        fusion_junctions.reindex_sj()
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges)
         subnets = self.merge_overlapping_subnets(subnets)
         self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
