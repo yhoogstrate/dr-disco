@@ -707,7 +707,7 @@ thick edges:
                     splice_edges_had.add(splice_junction)
                     splice_edges_had.add(splice_junction.get_complement())
 
-        logging.info("Linked "+ str(k) +" splice junction(s)")
+        logging.info("Linked " + str(k) + " splice junction(s)")
 
     def extract_subnetworks_by_splice_junctions(self,thicker_edges):
         """ Deze functie haalt recursief per edge een set van edges op die 
@@ -1438,7 +1438,7 @@ class IntronDecomposition:
                     k += 1
         subnets = [sn for sn in subnets if sn != None]
 
-        logging.info("Merged "+ str(k) +" of the " + str(n) + " into " + str(len(subnets)) + " merged subnetwork(s)")
+        logging.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(subnets)) + " merged subnetwork(s)")
 
         return subnets
 
@@ -1466,5 +1466,5 @@ class IntronDecomposition:
             if len(subnet.discarded) > 0:
                 k += 1
 
-        logging.info("Filtered "+ str(k) +" of the " + str(len(subnets)) + " subnetwork(s)")
+        logging.info("Filtered " + str(k) + " of the " + str(len(subnets)) + " subnetwork(s)")
         return subnets
