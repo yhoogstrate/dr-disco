@@ -8,7 +8,7 @@ Tries to find genomic and exon to exon break points within a discordant
 RNA-Seq read alignment.
 """
 
-#http://www.samformat.info /sam-format-flag
+# http://www.samformat.info /sam-format-flag
 import logging,re,math,copy,sys,operator
 import pysam
 import HTSeq
@@ -105,7 +105,7 @@ class BreakPosition:
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
-        self._hash = self._chr.replace("chr","") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]#http://stackoverflow.com /questions /38430277 /python-class-hash-method-and-set
+        self._hash = self._chr.replace("chr","") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]# http://stackoverflow.com /questions /38430277 /python-class-hash-method-and-set
 
     def __lt__(self, other_bp):
         return self._hash < other_bp._hash
@@ -166,7 +166,7 @@ class Node:
 
                     if not edges.has_key(edge_n):
                         edges[edge_n] = set()
-                    edges[edge_n].add(edge[1])#use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+                    edges[edge_n].add(edge[1])# use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
 
         # old results, + recursive results
         for edge_n in new_nodes:
@@ -365,7 +365,7 @@ class Edge:
     def get_complement(self):
         try:
             return self._target.edges[self._origin.position._hash]
-        except KeyError as err:#todo write test for this
+        except KeyError as err:# todo write test for this
             raise KeyError("Could not find complement for edge:   " + str(self))
 
     def merge_edge(self,edge):
@@ -421,9 +421,9 @@ class Edge:
 
         out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring) + ")"
 
-        #spacer = " "*len(str(self._origin.position))
+        # spacer = " "*len(str(self._origin.position))
 
-        #for _k in self._origin.splice_edges.keys():
+        # for _k in self._origin.splice_edges.keys():
         #    out += "\n"+spacer+"=>" + str(_k.position) + ":score=" + str(self._origin.splice_edges[_k][1].get_splice_score())
 
         return out
@@ -496,8 +496,8 @@ class Graph:
 
         if cigarstrs != None:
             # Hexadec saves more mem
-            short_pos1 = "%0.2X" % pos1.pos#str(pos1.pos)
-            short_pos2 = "%0.2X" % pos2.pos#str(pos2.pos)
+            short_pos1 = "%0.2X" % pos1.pos# str(pos1.pos)
+            short_pos2 = "%0.2X" % pos2.pos# str(pos2.pos)
 
             cigarstrs = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"+short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
 
@@ -514,7 +514,7 @@ class Graph:
 
         edge1.add_type(_type, 1)
         edge2.add_type(_type, 1)
-        #if node1 == edge._origin:# Avoid double insertion of all keys :) only do it if the positions don't get swapped
+        # if node1 == edge._origin:# Avoid double insertion of all keys :) only do it if the positions don't get swapped
         #    edge.add_alignment_key(cigarstrs)
 
     def reinsert_edges(self, edges):
@@ -592,7 +592,7 @@ class Graph:
         logging.info("Finding and merging other edges in close proximity (insert size)")
 
         candidates = []
-        #self.print_chain()
+        # self.print_chain()
 
         while self.edge_idx:
             candidate = self.edge_idx.pop()
@@ -602,12 +602,12 @@ class Graph:
 
             self.remove_edge(candidate)# do not remove if splice junc exists?
 
-        #self.print_chain()
+        # self.print_chain()
         logging.info("Pruned into " + str(len(candidates)) + " candidate edge(s)")
         return candidates
 
     def prune_edge(self, edge):
-        ## @ todo double check if this is strand specific
+        # # @ todo double check if this is strand specific
 
         for edge_m in self.search_edges_between(edge):
             d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
@@ -662,7 +662,7 @@ thick edges:
         k = 0
 
         def search(pos1):
-            #@todo make this member of Graph and use splice_junctions.search_..._..(pos)
+            # @todo make this member of Graph and use splice_junctions.search_..._..(pos)
             nodes = []
             for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
                 if step[1]:
@@ -830,7 +830,7 @@ class Subnet():
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
             "%i\t%i\t"
-            "%s\t%s\t"#%.2f\t%.2f\t
+            "%s\t%s\t"# %.2f\t%.2f\t
             "%s\n" % (
                     node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand], # Pos-A
                     node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand], # Pos-B
@@ -973,7 +973,7 @@ class BAMExtract(object):
 
                     return bam_fh
 
-        #@todo write simple test
+        # @todo write simple test
         raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
 
     def extract_junctions(self, fusion_junctions, splice_junctions):
@@ -990,7 +990,7 @@ class BAMExtract(object):
                 # ===2===>|   |<===1===
 
                 # Hypothetical:
-                #|<===1===    |<===2===
+                # |<===1===    |<===2===
 
                 if read.is_reverse:
                     pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1117,7 +1117,7 @@ class BAMExtract(object):
             for internal_edge in self.find_cigar_edges(read):
                 i_pos1, i_pos2 = None, None
 
-                if internal_edge[2] in [JunctionTypes.cigar_splice_junction, JunctionTypes.cigar_deletion]:#, JunctionType.cigar_deletion
+                if internal_edge[2] in [JunctionTypes.cigar_splice_junction, JunctionTypes.cigar_deletion]:# , JunctionType.cigar_deletion
                     i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
                     i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
 
@@ -1144,7 +1144,7 @@ class BAMExtract(object):
                 else:
                     if i_pos1 != None:
                         if internal_edge[2] == JunctionTypes.cigar_splice_junction:
-                            #splice_junctions.insert_splice_edge(i_pos1,i_pos2,internal_edge[2],None)
+                            # splice_junctions.insert_splice_edge(i_pos1,i_pos2,internal_edge[2],None)
                             splice_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None)
                         else:
                             fusion_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None)
@@ -1165,10 +1165,10 @@ class BAMExtract(object):
 
         fh = pysam.AlignmentFile(bamfile_out, "wb", header=self.pysam_fh.header)
 
-        for r in self.pysam_fh.fetch(pos1[0],pos1[1],pos1[2]):#pysam.view(b,"chr21:1-500")
+        for r in self.pysam_fh.fetch(pos1[0],pos1[1],pos1[2]):# pysam.view(b,"chr21:1-500")
             ids.add(r.query_name)
 
-        for r in self.pysam_fh.fetch(pos2[0],pos2[1],pos2[2]):#pysam.view(b,"chr21:1-500")
+        for r in self.pysam_fh.fetch(pos2[0],pos2[1],pos2[2]):# pysam.view(b,"chr21:1-500")
             ids.add(r.query_name)
 
         for r in self.pysam_fh.fetch():
@@ -1273,7 +1273,7 @@ splice-junc:                           <=============>
                         M M M M M M M M M M S S S S S
                                            <========]
                         """
-                        #yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+                        # yield (offset , (offset + chunk[1]) , tt[chunk[0]])
                         yield ((offset + chunk[1]), offset , tt[chunk[0]])
                     else:
                         """Clips to the second node:
@@ -1304,15 +1304,15 @@ class IntronDecomposition:
         thicker_edges = fusion_junctions.prune() # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         fusion_junctions.rejoin_splice_juncs(splice_junctions) # Merges edges by splice junctions and other junctions
         del(splice_junctions)
-        fusion_junctions.reinsert_edges(thicker_edges)#@todo move function into statuc function in this class
+        fusion_junctions.reinsert_edges(thicker_edges)# @todo move function into statuc function in this class
 
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges)
         subnets = self.merge_overlapping_subnets(subnets)
         self.results = self.filter_subnets(subnets)# Filters based on three rules: entropy, score and background
 
         # If circos:
-        #s = 1
-        #for subnet in self.results:
+        # s = 1
+        # for subnet in self.results:
         #    c = CircosController(str(s), subnet, "tmp /circos.conf","tmp /select-coordinates.conf", "tmp /circos-data.txt")
         #    c.draw_network("tmp /test.png","tmp /test.svg")
         #    s += 1
@@ -1409,7 +1409,7 @@ class IntronDecomposition:
 
                             if n_l_dist > 0 and n_r_dist > 0:
                                 new_merged = True
-                            else:#@todo revise if / else / elif logic, and use linear regression or sth like that
+                            else:# @todo revise if / else / elif logic, and use linear regression or sth like that
                                 if n_l_dist > 0:
                                     l_dist_ins_ratio = 1.0 * n_l_dist / len(l_dists)
                                     if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
