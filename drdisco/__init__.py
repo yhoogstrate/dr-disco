@@ -43,4 +43,3 @@ MAX_GENOME_DISTANCE = 999999999
 MIN_SUBNET_ENTROPY = 0.55
 MIN_DISCO_PER_SUBNET_PER_NODE = 1  # minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
 MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4  # minimum supporting reads is 8 per subnet
-MAX_SUBNET_MERGE_DIST = 5000

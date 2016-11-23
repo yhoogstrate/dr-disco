@@ -8,28 +8,33 @@ Tries to find genomic and exon to exon break points within a discordant
 RNA-Seq read alignment.
 """
 
-# http://www.samformat.info /sam-format-flag
-import logging, re, math, copy, sys, operator
+import logging
+import math
+import operator
+
 import pysam
 import HTSeq
-from .CigarAlignment import *
-from .CircosController import *
+
+from .CigarAlignment import cigar_to_cigartuple
+# from .CircosController import CircosController
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
-strand_tt = {STRAND_FORWARD:'+', STRAND_REVERSE:'-', STRAND_UNDETERMINED:'?'}
+strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
 
 # load cfg
-from . import *
+from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE
+
 
 def entropy(frequency_table):
     n = sum(frequency_table.values())
-    prob = [float(x) /n for x in frequency_table.values()]
+    prob = [float(x) / n for x in frequency_table.values()]
 
-    entropy = - sum([ p * math.log(p) / math.log(2.0) for p in prob if p > 0 ])
+    entropy = -sum([p * math.log(p) / math.log(2.0) for p in prob if p > 0])
     if entropy <= 0:
         return 0.0
     else:
         return entropy / (math.log(n) / math.log(2.0))
+
 
 def merge_frequency_tables(frequency_tables):
     """
@@ -55,6 +60,7 @@ def merge_frequency_tables(frequency_tables):
 
     return new_frequency_table
 
+
 def bam_parse_alignment_offset(cigartuple):
     pos = 0
     for chunk in cigartuple:
@@ -73,6 +79,7 @@ def bam_parse_alignment_offset(cigartuple):
             pos += chunk[1]
 
     return pos
+
 
 def bam_parse_alignment_pos_using_cigar(sa_tag):
     """SA tag looks like this:
@@ -111,7 +118,7 @@ class BreakPosition:
         return self._hash < other_bp._hash
 
     def __str__(self):
-        return str(self._chr) + ":" + str(self.pos) + "/" + str(self.pos+ 1) + "(" + strand_tt[self.strand] + ")"
+        return str(self._chr) + ":" + str(self.pos) + "/" + str(self.pos + 1) + "(" + strand_tt[self.strand] + ")"
 
     def get_dist(self, other_bp, strand_specific):
         if not isinstance(other_bp, BreakPosition):  # pragma: no cover
@@ -212,12 +219,10 @@ class Node:
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t[" + str(id(edge)) + ":" + sedge+"] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
+                out += "\n\t[" + str(id(edge)) + ":" + sedge + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
 
         if a > 0:
-            out += "\n\t-> soft /hard clips: " + str(self.clips)
-
-            return out+"\n"
+            return "\n\t-> soft /hard clips: " + str(self.clips) + "\n"
         else:
             return ""
 
@@ -365,7 +370,7 @@ class Edge:
     def get_complement(self):
         try:
             return self._target.edges[self._origin.position._hash]
-        except KeyError as err:  # todo write test for this
+        except KeyError:  # todo write test for this
             raise KeyError("Could not find complement for edge:   " + str(self))
 
     def merge_edge(self, edge):
