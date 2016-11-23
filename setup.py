@@ -24,25 +24,24 @@ Installer of Dr. Disco
 
 import drdisco
 
-from setuptools import setup, find_packages
-setup(name = "dr-disco",
-        scripts=['bin/dr-disco'],
-        packages = ["drdisco"],
-        test_suite="tests",
-        tests_require=['nose2', 'pytest', 'pytest-cov'],
-        setup_requires=['numpy'],
-        install_requires=['numpy', 'HTSeq >= 0.6.1','pysam >= 0.9.0','click','nose','fuma==3.0.5'],
-        version = drdisco.__version__,
-        description = "Makes discordant RNA-Seq alignments healthy, and tries to interpret intronic break points",
-        author = drdisco.__author__,
-        url = drdisco.__homepage__,
-        keywords = ["rna-seq", "intronic", "break point"],
-        classifiers = [
-        'Environment :: Console',
-        'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-        'Operating System :: OS Independent',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Scientific/Engineering :: Bio-Informatics'
-        ]
-     )
+from setuptools import setup
+setup(name="dr-disco",
+      scripts=['bin/dr-disco'],
+      packages=["drdisco"],
+      test_suite="tests",
+      tests_require=['nose2', 'pytest', 'pytest-cov'],
+      setup_requires=['numpy'],
+      install_requires=['numpy', 'HTSeq >= 0.6.1', 'pysam >= 0.9.0', 'click', 'nose', 'fuma==3.0.5'],
+      version=drdisco.__version__,
+      description="Makes discordant RNA-Seq alignments healthy, and tries to interpret intronic break points",
+      author=drdisco.__author__,
+      url=drdisco.__homepage__,
+      keywords=["rna-seq", "intronic", "break point"],
+      classifiers=[
+          'Environment :: Console',
+          'Intended Audience :: Science/Research',
+          'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+          'Operating System :: OS Independent',
+          'Topic :: Scientific/Engineering',
+          'Topic :: Scientific/Engineering :: Bio-Informatics'
+      ])
