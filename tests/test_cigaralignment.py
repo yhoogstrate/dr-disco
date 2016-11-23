@@ -25,13 +25,13 @@ Dr. Disco - testing fix-chimeric
 import drdisco
 from drdisco.CigarAlignment import CigarAlignment, cigar_to_cigartuple
 
+from fuma.Fusion import STRAND_REVERSE
+
 import unittest
 import logging
 import sys
 
 logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
-
-from fuma.Fusion import STRAND_REVERSE
 
 
 class TestIntronicBreakDetection(unittest.TestCase):
