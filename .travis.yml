@@ -13,10 +13,12 @@ python:
 #  - "nightly" # currently points to 3.6-dev
 
 install:
+  - pip install flake8
   - pip install -r requirements.txt
 
 script:
   - nosetests -v tests/*.py
+  - cd "$TRAVIS_BUILD_DIR" && flake8 --exclude=.git --ignore=E501 .
 
 notifications:
   email: false
