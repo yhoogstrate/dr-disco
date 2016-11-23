@@ -831,16 +831,14 @@ class Subnet():
             "%i\t%i\t%i\t"
             "%i\t%i\t"
             "%s\t%s\t"  # %.2f\t%.2f\t
-            "%s\n" % (
-                    node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
-                    node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
-                    ("valid" if self.discarded == [] else ','.join(self.discarded)),  # Classification status
-                    self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
-                    len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
-                    len(self.left_splice_junctions), len(self.right_splice_junctions),
-                    self.edges[0].get_entropy(), self.get_overall_entropy(),  # Entropy stats
-                    "&".join([str(edge) for edge in self.edges])  # Data structure
-            ))
+            "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
+                      node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
+                      ("valid" if self.discarded == [] else ','.join(self.discarded)),  # Classification status
+                      self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
+                      len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
+                      len(self.left_splice_junctions), len(self.right_splice_junctions),
+                      self.edges[0].get_entropy(), self.get_overall_entropy(),  # Entropy stats
+                      "&".join([str(edge) for edge in self.edges])))  # Data structure
 
     def get_overall_entropy(self):
         frequency_table = merge_frequency_tables([edge._unique_alignment_hashes for edge in self.edges])
