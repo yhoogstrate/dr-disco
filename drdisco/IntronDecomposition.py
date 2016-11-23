@@ -1152,7 +1152,7 @@ class BAMExtract(object):
         logging.debug("alignment data loaded")
 
     def parse_pos(self, str_pos):
-        _chr,_poss = str_pos.split(":", 2)
+        _chr, _poss = str_pos.split(":", 2)
         _poss = _poss.replace(",", "").split("-", 2)
 
         return str(_chr), int(_poss[0]), int(_poss[1])
@@ -1175,9 +1175,7 @@ class BAMExtract(object):
             if r.query_name in ids:
                 fh.write(r)
 
-
         fh.close()
-
         pysam.index(str(bamfile_out))
 
     # static is elegant for functions that do not use class properties
