@@ -236,43 +236,43 @@ class ChimericAlignment:
                 start.set_tag('FI', i)
                 new_alignments.append(start)
 
-            ##- Does it based on shortest genomic distance:
-            #if str(mates[0].next_reference_id) + ":" + str(mates[0].next_reference_start) in chains_from:
-                #next_pos = [mates[0].next_reference_id, mates[0].next_reference_start]
-                #last_pos = [mates[0].reference_id, mates[0].reference_start]
+            # - Does it based on shortest genomic distance:
+            # if str(mates[0].next_reference_id) + ":" + str(mates[0].next_reference_start) in chains_from:
+                # next_pos = [mates[0].next_reference_id, mates[0].next_reference_start]
+                # last_pos = [mates[0].reference_id, mates[0].reference_start]
 
-                #start = self.get_closest(next_pos, alignments)
+                # start = self.get_closest(next_pos, alignments)
 
-            #else:
-                #print("Warning - mates do not correspond? - maybe empty (-1) as well?")
+            # else:
+                # print("Warning - mates do not correspond? - maybe empty (-1) as well?")
 
-                #next_pos = [alignments[0].reference_id, alignments[0].reference_start]
-                #last_pos = [mates[0].reference_id, mates[0].reference_start]
+                # next_pos = [alignments[0].reference_id, alignments[0].reference_start]
+                # last_pos = [mates[0].reference_id, mates[0].reference_start]
 
-                #start = self.get_closest(next_pos, alignments)
+                # start = self.get_closest(next_pos, alignments)
 
-            #alignments = [a for a in alignments if a != start]
-            ## If the mate is not exactly matched but close, fix it:
-            #new_mates.append(self.set_next_ref(mates[0],[start.reference_id, start.reference_start]))
+            # alignments = [a for a in alignments if a != start]
+            # # If the mate is not exactly matched but close, fix it:
+            # new_mates.append(self.set_next_ref(mates[0],[start.reference_id, start.reference_start]))
 
-            #i = 0
-            #while len(alignments) >= 1:
-                #closest = self.get_closest(next_pos, alignments)
-                #next_pos = [closest.reference_id, closest.reference_start]
+            # i = 0
+            # while len(alignments) >= 1:
+                # closest = self.get_closest(next_pos, alignments)
+                # next_pos = [closest.reference_id, closest.reference_start]
 
-                #s_fixed = self.set_next_ref(start, next_pos)
-                #s_fixed.set_tag('FI', i)
-                #new_alignments.append(s_fixed)
-                #alignments = [a for a in alignments if a != closest]
+                # s_fixed = self.set_next_ref(start, next_pos)
+                # s_fixed.set_tag('FI', i)
+                # new_alignments.append(s_fixed)
+                # alignments = [a for a in alignments if a != closest]
 
-                #start = closest
-                #i += 1
+                # start = closest
+                # i += 1
 
-            ## Map last one back to the mate again
-            #if len(alignments) == 0:
-                #start = self.set_next_ref(start, last_pos)
-                #start.set_tag('FI', i)
-                #new_alignments.append(start)
+            # # Map last one back to the mate again
+            # if len(alignments) == 0:
+                # start = self.set_next_ref(start, last_pos)
+                # start.set_tag('FI', i)
+                # new_alignments.append(start)
 
             # Now do it based on HI-tag
 

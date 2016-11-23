@@ -1387,7 +1387,7 @@ class IntronDecomposition:
                         new_merged = False
 
                         l_dists, r_dists = subnets[i].find_distances(subnets[j])
-                        if l_dists != False:  # and r_dists != False:
+                        if l_dists:  # and r_dists != False:
 
                             n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
                             n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])

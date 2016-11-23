@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
-# *- coding: utf-8 -*-
-# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
+#  *- coding: utf-8 -*-
+#  vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 """
 Aligns CIGAR strings by STAR to aligned softclipped and matches over
@@ -28,7 +28,7 @@ cig1: - 100S 25M
 cig2: 2S 98M 25S
 """
 
-#http://www.samformat.info/sam-format-flag
+# http://www.samformat.info/sam-format-flag
 
 import logging, re
 import pysam
@@ -38,15 +38,15 @@ from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 
 pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
 def cigar_to_cigartuple(cigar_str):
-    tt = {'M':0,#	BAM_CMATCH	0
-          'I':1,#	BAM_CINS	1
-          'D':2,#	BAM_CDEL	2
-          'N':3,#	BAM_CREF_SKIP	3
-          'S':4,#	BAM_CSOFT_CLIP	4
-          'H':5,#	BAM_CHARD_CLIP	5
-          'P':6,#	BAM_CPAD	6
-          '=':7,#	BAM_CEQUAL	7
-          'X':8#	BAM_CDIFF	8
+    tt = {'M':0,# 	BAM_CMATCH	0
+          'I':1,# 	BAM_CINS	1
+          'D':2,# 	BAM_CDEL	2
+          'N':3,# 	BAM_CREF_SKIP	3
+          'S':4,# 	BAM_CSOFT_CLIP	4
+          'H':5,# 	BAM_CHARD_CLIP	5
+          'P':6,# 	BAM_CPAD	6
+          '=':7,# 	BAM_CEQUAL	7
+          'X':8# 	BAM_CDIFF	8
           }
 
     cigartup = []
@@ -118,15 +118,15 @@ class CigarAlignment:
     def cleanup_cigar(self, cigartup, invalid_chunks):
         clean = []
 
-        ## Removal of wrong chunks
+        # # Removal of wrong chunks
         for chunk in cigartup:
             if chunk[0] not in invalid_chunks:
                 clean.append(chunk)
 
-        ## Merging those that become adjacent to each other
-        ### E.g. removal of 'N' in 6M10N6M -> 6M6M -> 12M
+        # # Merging those that become adjacent to each other
+        # ##  E.g. removal of 'N' in 6M10N6M -> 6M6M -> 12M
 
-        ## or:    [(4, 17), (0, 55), (1, 1), (0, 53)] -> [(4, 17), (0, 108)]
+        # # or:    [(4, 17), (0, 55), (1, 1), (0, 53)] -> [(4, 17), (0, 108)]
 
         last_type = -1
         concat = []
@@ -134,7 +134,7 @@ class CigarAlignment:
         for chunk in clean:
             if chunk[0] == last_type:
 
-                # increase last insert
+                #  increase last insert
                 concat[-1] = (chunk[0], concat[-1][1] + chunk[1])
             else:
                 concat.append(chunk)
@@ -143,7 +143,7 @@ class CigarAlignment:
         return concat
 
     def init_matrix(self):
-        #self.matrix = [[0] * (self.n + 1) ] * (self.m + 1) << copies references of lists >,<
+        # self.matrix = [[0] * (self.n + 1) ] * (self.m + 1) << copies references of lists >,<
         self.matrix = [[0 for i in xrange(self.n + 1)] for i in xrange(self.m + 1)]
 
         for i in xrange(1, self.m + 1):
@@ -155,7 +155,7 @@ class CigarAlignment:
 
 
         self.tb_matrix = [["?" for i in xrange(self.n + 1)] for i in xrange(self.m + 1)]
-        self.tb_matrix[0][0] = 't' # Terminate traceback; finished
+        self.tb_matrix[0][0] = 't' #  Terminate traceback; finished
 
         for i in xrange(1, self.m + 1):
             self.tb_matrix[i][0] = "|"
@@ -179,9 +179,9 @@ class CigarAlignment:
 
 
     def get_diagonal(self, diagonal):
-            # 0, 0
-            # 1, 0   0, 1
-            # 2, 0   1, 1   0, 2
+            #  0, 0
+            #  1, 0   0, 1
+            #  2, 0   1, 1   0, 2
 
             i = diagonal
             j = 0
@@ -197,7 +197,7 @@ class CigarAlignment:
         """Maybe sort on cigar type, to reduce if statements
         """
         if (cig_chunk1[0] == 0 and cig_chunk2[0] == 0) or (cig_chunk1[0] == 4 and cig_chunk2[0] == 4):
-            # M * M or S*S => sqaure
+            #  M * M or S*S => sqaure
             return pow(cig_chunk1[1] + cig_chunk2[1], 2)
 
         elif (cig_chunk1[0] == 0 and cig_chunk2[0] == 4) or (cig_chunk1[0] == 4 and cig_chunk2[0] == 0):
@@ -208,19 +208,19 @@ class CigarAlignment:
 
 
     def calc_diff(self, i, j):
-#                   2S     55M     69S
-#        ||======||=====||======||======||
-#        || 0    || 2^2 || 55^2 || 69^2 ||
-#        ||======||=====||======||======||
-#    57S || 57^2 ||      |       |       |
-#        ||======||------+-------+-------+
-#    69M || 69^2 ||      |       |       |
-#        ||======||------+-------+-------+
+#                    2S     55M     69S
+#         ||======||=====||======||======||
+#         || 0    || 2^2 || 55^2 || 69^2 ||
+#         ||======||=====||======||======||
+#     57S || 57^2 ||      |       |       |
+#         ||======||------+-------+-------+
+#     69M || 69^2 ||      |       |       |
+#         ||======||------+-------+-------+
 
-        #c_ins_1 = pow(self.cigtup1[i][1], 2)
-        #c_ins_2 = pow(self.cigtup2[j][1], 2)
-        c_ins_1 = self.matrix[i-1][j]     + pow(self.cigtup1[i][1], 2)# Insertion vertical, in tup1
-        c_ins_2 = self.matrix[i][j-1]     + pow(self.cigtup2[j][1], 2)# Insertion horizontal, in tup2
+        # c_ins_1 = pow(self.cigtup1[i][1], 2)
+        # c_ins_2 = pow(self.cigtup2[j][1], 2)
+        c_ins_1 = self.matrix[i-1][j]     + pow(self.cigtup1[i][1], 2)#  Insertion vertical, in tup1
+        c_ins_2 = self.matrix[i][j-1]     + pow(self.cigtup2[j][1], 2)#  Insertion horizontal, in tup2
         c_diag = self.matrix[i][j] + self.cigar_diff(self.cigtup1[i], self.cigtup2[j])
 
         if c_ins_1 < c_diag:
@@ -296,8 +296,8 @@ class CigarAlignment:
                 c1.append(cigtup1_aligned[i])
                 c2.append(cigtup2_aligned[i])
 
-        # 'M':0,#	BAM_CMATCH	0
-        # 'S':4,#	BAM_CSOFT_CLIP	4
+        #  'M':0,# 	BAM_CMATCH	0
+        #  'S':4,# 	BAM_CSOFT_CLIP	4
 
         offset = int(len(c1) / 2)
         c1_l = sum([x[1] for x in c1[0: offset] if x[0] == 0])
@@ -307,7 +307,7 @@ class CigarAlignment:
         c2_total = sum([x[1] for x in c2 if x[0] in [0, 4]])
 
         if c1_total == 0 or c2_total == 0:
-            #@todo figure out when this happens?
+            # @todo figure out when this happens?
             return STRAND_FORWARD
         else:
             c1_r = 1.0 * c1_l / c1_total
@@ -318,14 +318,12 @@ class CigarAlignment:
             else:
                 return STRAND_REVERSE
 
-
     def get_order(self):
-        # 1. align
-        #   a. fill
+        #  1. align
+        #    a. fill
         self.fill_matrix()
-        #   b. trace back
+        #    b. trace back
         c1, c2 = self.traceback_matrix()
 
-        # 2. calculate M / S only on those chunks that are aligned (M to S flags and vice versa)
+        #  2. calculate M / S only on those chunks that are aligned (M to S flags and vice versa)
         return self.calculate_order(c1, c2)
-

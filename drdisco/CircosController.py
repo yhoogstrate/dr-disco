@@ -3,18 +3,18 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 from subprocess import Popen, PIPE
-import os, logging
+import os
 
 
 class CircosController:
-    circos_chr_name = 'hs'# make this argumentable
+    circos_chr_name = 'hs'  # make this argumentable
     smoothing_offset = 15000
     smoothing_prec = 3
 
     def __init__(self, sid, data, main_config_file, coordinate_config_file, data_file):
         self.sid = sid
         self.data = data
-        #self.main_config_file = main_config_file
+        # self.main_config_file = main_config_file
         self.coordinate_config_file = coordinate_config_file
         self.data_file = data_file
 
@@ -24,8 +24,7 @@ class CircosController:
     def write_configs(self):
         # Chooses the chromosomes
         coordinates = self.estimate_coordinates()
-        self.write_coordinate_config(coordinates)#"tmp/select-coordinates.conf")
-        #self.write_basic_config()
+        self.write_coordinate_config(coordinates)  # "tmp/select-coordinates.conf")
 
         self.write_data()
 
@@ -46,16 +45,11 @@ chromosomes_radius = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
 
         fh = open(self.coordinate_config_file, "w")
         fh.write("chromosomes_display_default = no\n")
-        fh.write("chromosomes = "+";".join([ c[0] + "[" + c[4] + "]:"+(("%." + str(self.smoothing_prec) + "f") % c[1]) + "-"+(("%." + str(self.smoothing_prec) + "f") %c[2]) for c in coordinates]) + "\n")
-        fh.write("chromosome_scale = "+";".join( [str(c[4]) + ":" + scales[c[3]] for c in coordinates]) + "\n")
-        fh.write("chromosome_radius = "+",".join( [str(c[4]) + "=" + radius[c[3]] for c in coordinates]) + "\n")
+        fh.write("chromosomes = " + ";".join([c[0] + "[" + c[4] + "]:" + (("%." + str(self.smoothing_prec) + "f") % c[1]) + "-" + (("%." + str(self.smoothing_prec) + "f") % c[2]) for c in coordinates]) + "\n")
+        fh.write("chromosome_scale = " + ";".join([str(c[4]) + ":" + scales[c[3]] for c in coordinates]) + "\n")
+        fh.write("chromosome_radius = " + ",".join([str(c[4]) + "=" + radius[c[3]] for c in coordinates]) + "\n")
 
         fh.close()
-
-    #def write_basic_config(self):
-    #    fh = open(self.main_config_file, "w")
-    #    fh.write("")
-    #    fh.close()
 
     def estimate_coordinates(self):
         """Returns chunks with a certain offset (usually 10kb)
@@ -76,9 +70,9 @@ chromosomes_radius = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
             vec_large = []
 
             for pos in sorted(idx[_chr].keys()):
-                chunk = [pos-self.smoothing_offset, pos+self.smoothing_offset]
-                chunk[0] = float(chunk[0]) / float(pow(10, 6))# a million -> Mb
-                chunk[1] = float(chunk[1]) / float(pow(10, 6))# a million -> Mb
+                chunk = [pos - self.smoothing_offset, pos + self.smoothing_offset]
+                chunk[0] = float(chunk[0]) / float(pow(10, 6))  # a million -> Mb
+                chunk[1] = float(chunk[1]) / float(pow(10, 6))  # a million -> Mb
                 chunk = [round(chunk[0], self.smoothing_prec), round(chunk[1], self.smoothing_prec)]
 
                 # Look what to do with previous chunk, if there is any
@@ -87,54 +81,53 @@ chromosomes_radius = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
                     if chunk[0] <= previous[1]:
                         chunk[0] = previous[0]
                     else:
-                        vec_large.append( (_chr, max(0.0, previous[0]), previous[1], 'large') )
+                        vec_large.append((_chr, max(0.0, previous[0]), previous[1], 'large'))
 
                 previous = chunk
 
-            vec_large.append( (_chr, max(0.0, previous[0]), previous[1], 'large') )
+            vec_large.append((_chr, max(0.0, previous[0]), previous[1], 'large'))
 
             i = 0
             if vec_large[0][0] > 0.0:
-                vec.append( (_chr, 0.0, vec_large[0][1], 'small', _chr+"_" + str(i)) )
+                vec.append((_chr, 0.0, vec_large[0][1], 'small', _chr + "_" + str(i)))
                 i += 1
 
-            for k in xrange(len(vec_large)-1):
-                vec.append( (_chr, vec_large[k][1], vec_large[k][2], vec_large[k][3], _chr+"_" + str(i)))
+            for k in xrange(len(vec_large) - 1):
+                vec.append((_chr, vec_large[k][1], vec_large[k][2], vec_large[k][3], _chr + "_" + str(i)))
                 i += 1
-                vec.append( (_chr, vec_large[k][2], vec_large[k + 1][1], 'small', _chr+"_" + str(i)))
+                vec.append((_chr, vec_large[k][2], vec_large[k + 1][1], 'small', _chr + "_" + str(i)))
                 i += 1
 
-            vec.append( (_chr, vec_large[k + 1][1], vec_large[k + 1][2], vec_large[k + 1][3], _chr+"_" + str(i)))
-            vec.append( (_chr, vec_large[k + 1][2], 1000.0, 'small', _chr+"_" + str(i + 1)))
+            vec.append((_chr, vec_large[k + 1][1], vec_large[k + 1][2], vec_large[k + 1][3], _chr + "_" + str(i)))
+            vec.append((_chr, vec_large[k + 1][2], 1000.0, 'small', _chr + "_" + str(i + 1)))
 
         return vec
 
     def write_data(self):
-        k= 1
+        k = 1
         fh = open(self.data_file, "w")
         for dp in self.data:
-            fh.write("fusion_event_" + str(self.sid) + "_dp_" + str(k) + " " + dp[0]._origin.position._chr.replace('chr','hs') + " " + str(dp[0]._origin.position.pos) + " " + str(dp[0]._origin.position.pos + 1) + "\n")
-            fh.write("fusion_event_" + str(self.sid) + "_dp_" + str(k) + " " + dp[0]._target.position._chr.replace('chr','hs') + " " + str(dp[0]._target.position.pos) + " " + str(dp[0]._target.position.pos + 1) + "\n")
+            fh.write("fusion_event_" + str(self.sid) + "_dp_" + str(k) + " " + dp[0]._origin.position._chr.replace('chr', 'hs') + " " + str(dp[0]._origin.position.pos) + " " + str(dp[0]._origin.position.pos + 1) + "\n")
+            fh.write("fusion_event_" + str(self.sid) + "_dp_" + str(k) + " " + dp[0]._target.position._chr.replace('chr', 'hs') + " " + str(dp[0]._target.position.pos) + " " + str(dp[0]._target.position.pos + 1) + "\n")
             fh.write("\n")
             k += 1
 
         fh.close()
 
     def run(self):
-        #1. remove existing circos.png and circos.svg
+        #  1. remove existing circos.png and circos.svg
         for _file in ["circos.png", "circos.svg"]:
             if os.path.exists(_file):
                 os.remove(_file)
 
-        #2.
+        #  2.
         p = Popen([os.getenv("CIRCOS_DIR") + "/bin/circos", "-conf", "share/circos/circos.conf", "-debug_group", "summary, timer"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
-        rc = p.returncode
+        #  rc = p.returncode
 
-        #3. move circos.png and circos.svg into tmp/fusion_event_$id/circos.png etc
+        #  3. move circos.png and circos.svg into tmp/fusion_event_$id/circos.png etc
         if not os.path.exists("tmp/circos"):
             os.mkdir("tmp/circos")
 
         for _file in ["circos.png", "circos.svg"]:
-            os.rename(_file,"tmp/circos/fusion_event_" + str(self.sid) + "_"+_file)
-
+            os.rename(_file, "tmp/circos/fusion_event_" + str(self.sid) + "_" + _file)
