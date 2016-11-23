@@ -65,7 +65,7 @@ chromosomes_radius = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
         for dp in self.data:
             for i in [0, 1]:
                 _chr = dp[i]._target.position._chr.replace('chr', self.circos_chr_name)
-                if not _chr in idx:
+                if _chr not in idx:
                     idx[_chr] = {}
 
                 idx[_chr][dp[i]._target.position.pos] = True

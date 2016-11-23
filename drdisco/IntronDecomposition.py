@@ -48,7 +48,7 @@ def merge_frequency_tables(frequency_tables):
     new_frequency_table = {}
     for t in frequency_tables:
         for key in t.keys():
-            if not key in new_frequency_table:
+            if key not in new_frequency_table:
                 new_frequency_table[key] = 0
 
             new_frequency_table[key] += t[key]
@@ -164,7 +164,7 @@ class Node:
                 if dkey >= 0:
                     new_nodes.append((edge_n, dkey))
 
-                    if not edge_n in edges:
+                    if edge_n not in edges:
                         edges[edge_n] = set()
                     edges[edge_n].add(edge[1])  # use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
 
@@ -379,25 +379,25 @@ class Edge:
                 self.add_type(_type, edge._types[_type])
 
     def add_type(self, _type, weight):
-        if not _type in self._types:
+        if _type not in self._types:
             self._types[_type] = weight
         else:
             self._types[_type] += weight
 
     def add_alignment_key(self, alignment_key):
-        if not alignment_key in self._unique_alignment_hashes:
+        if alignment_key not in self._unique_alignment_hashes:
             self._unique_alignment_hashes[alignment_key] = 1
         else:
             self._unique_alignment_hashes[alignment_key] += 1
 
     def get_count(self, _type):
-        if not _type in self._types:
+        if _type not in self._types:
             return 0
         else:
             return self._types[_type]
 
     def get_score(self, _type):
-        return self.get_count(_type)*JunctionTypeUtils.scoring_table[_type]
+        return self.get_count(_type) * JunctionTypeUtils.scoring_table[_type]
 
     def get_scores(self):
         """Based on this function, the start point is determined
@@ -419,7 +419,7 @@ class Edge:
         for _t in sorted(self._types.keys()):
             typestring.append(str(JunctionTypeUtils.str(_t)) + ":" + str(self._types[_t]))
 
-        out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring) + ")"
+        out = str(self._origin.position) + "->" + str(self._target.position) + ":(" + ','.join(typestring) + ")"
 
         # spacer = " "*len(str(self._origin.position))
 
@@ -446,7 +446,7 @@ class Graph:
         if not position:
             self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)] = {pos.strand: Node(pos)}
         else:
-            if not pos.strand in position:
+            if pos.strand not in position:
                 self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)][pos.strand] = Node(pos)
 
     def get_node_reference(self, pos):
@@ -469,7 +469,7 @@ class Graph:
         node2 = self.get_node_reference(pos2)
 
         if cigarstrs is not None:
-            cigarstrs = pos1._hash+cigarstrs[0] + "|" + pos2._hash+cigarstrs[1]
+            cigarstrs = pos1._hash + cigarstrs[0] + "|" + pos2._hash + cigarstrs[1]
 
         edge = node1.get_edge_to_node(node2)
         if edge is None:
