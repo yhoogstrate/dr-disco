@@ -977,7 +977,7 @@ class BAMExtract(object):
         raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
 
     def extract_junctions(self, fusion_junctions, splice_junctions):
-        def read_to_junction(read, rg, parsed_SA_tag, specific_type = None):
+        def read_to_junction(read, rg, parsed_SA_tag, specific_type=None):
             pos1, pos2 = None, None
 
             if rg in [JunctionTypes.discordant_mates]:
@@ -998,7 +998,7 @@ class BAMExtract(object):
                                          STRAND_FORWARD)
                 else:
                     pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                         read.reference_start+bam_parse_alignment_offset(read.cigar),
+                                         read.reference_start + bam_parse_alignment_offset(read.cigar),
                                          STRAND_REVERSE)
 
                 if parsed_SA_tag[4] == "-":
@@ -1012,7 +1012,7 @@ class BAMExtract(object):
 
             elif rg in [JunctionTypes.spanning_singleton_1, JunctionTypes.spanning_paired_1]:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     read.reference_start + bam_parse_alignment_offset(read.cigar),
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
@@ -1030,7 +1030,7 @@ class BAMExtract(object):
 
             elif rg in [JunctionTypes.spanning_paired_1_r]:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     (read.reference_start + bam_parse_alignment_offset(read.cigar)),
                                      not read.is_reverse)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
@@ -1048,7 +1048,7 @@ class BAMExtract(object):
 
             elif rg in [JunctionTypes.spanning_singleton_2_r, JunctionTypes.spanning_paired_2_t]:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                    (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     read.reference_start + bam_parse_alignment_offset(read.cigar),
                                      read.is_reverse)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
@@ -1067,17 +1067,17 @@ class BAMExtract(object):
             elif rg in [JunctionTypes.spanning_paired_1_s]:
                 # Very clear example in S054 @ chr21:40, 064, 610-40, 064, 831  and implemented in test case 14
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     (read.reference_start+bam_parse_alignment_offset(read.cigar)),
+                                     read.reference_start + bam_parse_alignment_offset(read.cigar),
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
-                         parsed_SA_tag[1],
-                         STRAND_REVERSE if parsed_SA_tag[4] == "+" else STRAND_FORWARD)
+                                     parsed_SA_tag[1],
+                                     STRAND_REVERSE if parsed_SA_tag[4] == "+" else STRAND_FORWARD)
 
             elif rg in [JunctionTypes.spanning_paired_2_s]:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                 read.reference_start,
-                                 STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
+                                     read.reference_start,
+                                     STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
@@ -1131,7 +1131,7 @@ class BAMExtract(object):
                         i_pos1 = BreakPosition(_chr, internal_edge[0], pos2.strand)
                         i_pos2 = BreakPosition(_chr, internal_edge[1], pos1.strand)
                     else:  # pragma: no cover
-                        raise Exception("what todo here %s "+JunctionTypeUtils.str(rg))
+                        raise Exception("what todo here %s " + JunctionTypeUtils.str(rg))
                 else:  # pragma: no cover
                     raise Exception("Edge type not implemented: %s\n\n%s", internal_edge, str(read))
 
