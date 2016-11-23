@@ -835,7 +835,7 @@ class Subnet():
                     node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                     node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
                     ("valid" if self.discarded == [] else ','.join(self.discarded)),  # Classification status
-                    self.total_score /2, self.total_clips, self.get_n_split_reads()/2, self.get_n_discordant_reads()/2,  # Evidence stats
+                    self.total_score / 2, self.total_clips, self.get_n_split_reads()/ 2, self.get_n_discordant_reads()/ 2,  # Evidence stats
                     len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                     len(self.left_splice_junctions), len(self.right_splice_junctions),
                     self.edges[0].get_entropy(), self.get_overall_entropy(),  # Entropy stats
@@ -883,10 +883,10 @@ class Subnet():
         r_nodes_min = set(x for x in self.get_rnodes())
         r_nodes_max = set(x for x in subnet_t.get_rnodes())
 
-        if len(l_nodes_min) >  len(l_nodes_max):
+        if len(l_nodes_min) > len(l_nodes_max):
             l_nodes_min, l_nodes_max = l_nodes_max, l_nodes_min
 
-        if len(r_nodes_min) >  len(r_nodes_max):
+        if len(r_nodes_min) > len(r_nodes_max):
             r_nodes_min, r_nodes_max = r_nodes_max, r_nodes_min
 
         l_dists = []
@@ -1395,7 +1395,7 @@ class IntronDecomposition:
                             """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
                                 if product > (8*k):
                                     # Average gene size = 10-15kb
-                                    # rmse <= 125000 - 120000 /2^( product / 1200)
+                                    # rmse <= 125000 - 120000 / 2^( product / 1200)
                                     # if rmse < max_rmse: valid data point
                                     max_rmse = 125000.0 - (120000 /pow(2, float(product) / 1200.0))
                                     return (rmse <= max_rmse)
