@@ -1338,7 +1338,7 @@ class IntronDecomposition:
             "n-splice-junc-A" "\t" "n-splice-junc-B"   "\t"
             "entropy-bp-edge" "\t" "entropy-all-edges" "\t"
             "data-structure"  "\n"
-            "%s" % (''.join([str(subnet) for subnet in ordered]) )
+            "%s" % (''.join([str(subnet) for subnet in ordered]))
             )
 
     def merge_overlapping_subnets(self, subnets):
@@ -1458,7 +1458,7 @@ class IntronDecomposition:
             if n_disco < n_disco_min:
                 subnet.discarded.append("n_discordant_reads=" + str(n_disco) + "/" + str(n_disco_min))
 
-            n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads() ) / 2
+            n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) / 2
             n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
             if n_support < n_support_min:
                 subnet.discarded.append("n_support=" + str(n_support) + "/" + str(n_support_min))
