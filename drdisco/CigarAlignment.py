@@ -147,10 +147,10 @@ class CigarAlignment:
         self.matrix = [[0 for i in xrange(self.n + 1)] for i in xrange(self.m + 1)]
 
         for i in xrange(1, self.m + 1):
-            self.matrix[i][0] = pow(self.cigtup1[i-1][1], 2)
+            self.matrix[i][0] = pow(self.cigtup1[i - 1][1], 2)
 
         for j in xrange(1, self.n + 1):
-            self.matrix[0][j] = pow(self.cigtup2[j-1][1], 2)
+            self.matrix[0][j] = pow(self.cigtup2[j - 1][1], 2)
 
 
 
@@ -219,8 +219,8 @@ class CigarAlignment:
 
         # c_ins_1 = pow(self.cigtup1[i][1], 2)
         # c_ins_2 = pow(self.cigtup2[j][1], 2)
-        c_ins_1 = self.matrix[i-1][j]     + pow(self.cigtup1[i][1], 2)#  Insertion vertical, in tup1
-        c_ins_2 = self.matrix[i][j-1]     + pow(self.cigtup2[j][1], 2)#  Insertion horizontal, in tup2
+        c_ins_1 = self.matrix[i - 1][j]     + pow(self.cigtup1[i][1], 2)#  Insertion vertical, in tup1
+        c_ins_2 = self.matrix[i][j - 1]     + pow(self.cigtup2[j][1], 2)#  Insertion horizontal, in tup2
         c_diag = self.matrix[i][j] + self.cigar_diff(self.cigtup1[i], self.cigtup2[j])
 
         if c_ins_1 < c_diag:
@@ -262,20 +262,20 @@ class CigarAlignment:
                 j -= 1
 
             elif action == "m":
-                tup1_rev.append(self.cigtup1[i-1])
-                tup2_rev.append(self.cigtup2[j-1])
+                tup1_rev.append(self.cigtup1[i - 1])
+                tup2_rev.append(self.cigtup2[j - 1])
 
                 i -= 1
                 j -= 1
 
             elif action == "-":
                 tup1_rev.append((-1, 0))
-                tup2_rev.append(self.cigtup2[j-1])
+                tup2_rev.append(self.cigtup2[j - 1])
 
                 j -= 1
 
             elif action == "|":
-                tup1_rev.append(self.cigtup1[i-1])
+                tup1_rev.append(self.cigtup1[i - 1])
                 tup2_rev.append((-1, 0))
 
                 i -= 1
