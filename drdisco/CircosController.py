@@ -46,7 +46,7 @@ chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
 
         fh = open(self.coordinate_config_file, "w")
         fh.write("chromosomes_display_default = no\n")
-        fh.write("chromosomes = "+";".join([ c[0]+"["+c[4]+"]:"+(("%."+str(self.smoothing_prec)+"f") % c[1])+"-"+(("%."+str(self.smoothing_prec)+"f") %c[2]) for c in coordinates])+"\n")
+        fh.write("chromosomes = "+";".join([ c[0]+"["+c[4]+"]:"+(("%." + str(self.smoothing_prec)+"f") % c[1])+"-"+(("%." + str(self.smoothing_prec)+"f") %c[2]) for c in coordinates])+"\n")
         fh.write("chromosome_scale = "+";".join( [str(c[4])+":"+scales[c[3]] for c in coordinates])+"\n")
         fh.write("chromosome_radius = "+",".join( [str(c[4])+"="+radius[c[3]] for c in coordinates])+"\n")
 
@@ -95,17 +95,17 @@ chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
 
             i = 0
             if vec_large[0][0] > 0.0:
-                vec.append( (_chr, 0.0, vec_large[0][1], 'small', _chr+"_"+str(i)) )
+                vec.append( (_chr, 0.0, vec_large[0][1], 'small', _chr+"_" + str(i)) )
                 i += 1
 
             for k in xrange(len(vec_large)-1):
-                vec.append( (_chr, vec_large[k][1], vec_large[k][2], vec_large[k][3], _chr+"_"+str(i)))
+                vec.append( (_chr, vec_large[k][1], vec_large[k][2], vec_large[k][3], _chr+"_" + str(i)))
                 i += 1
-                vec.append( (_chr, vec_large[k][2], vec_large[k+1][1], 'small', _chr+"_"+str(i)))
+                vec.append( (_chr, vec_large[k][2], vec_large[k+1][1], 'small', _chr+"_" + str(i)))
                 i += 1
 
-            vec.append( (_chr, vec_large[k+1][1], vec_large[k+1][2], vec_large[k+1][3], _chr+"_"+str(i)))
-            vec.append( (_chr, vec_large[k+1][2], 1000.0 , 'small', _chr+"_"+str(i+1)))
+            vec.append( (_chr, vec_large[k+1][1], vec_large[k+1][2], vec_large[k+1][3], _chr+"_" + str(i)))
+            vec.append( (_chr, vec_large[k+1][2], 1000.0 , 'small', _chr+"_" + str(i+1)))
 
         return vec
 
@@ -113,8 +113,8 @@ chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
         k= 1
         fh = open(self.data_file, "w")
         for dp in self.data:
-            fh.write("fusion_event_"+str(self.sid)+"_dp_"+str(k)+" "+dp[0]._origin.position._chr.replace('chr','hs')+" "+str(dp[0]._origin.position.pos)+" "+str(dp[0]._origin.position.pos+1)+"\n")
-            fh.write("fusion_event_"+str(self.sid)+"_dp_"+str(k)+" "+dp[0]._target.position._chr.replace('chr','hs')+" "+str(dp[0]._target.position.pos)+" "+str(dp[0]._target.position.pos+1)+"\n")
+            fh.write("fusion_event_" + str(self.sid)+"_dp_" + str(k)+" "+dp[0]._origin.position._chr.replace('chr','hs')+" " + str(dp[0]._origin.position.pos)+" " + str(dp[0]._origin.position.pos+1)+"\n")
+            fh.write("fusion_event_" + str(self.sid)+"_dp_" + str(k)+" "+dp[0]._target.position._chr.replace('chr','hs')+" " + str(dp[0]._target.position.pos)+" " + str(dp[0]._target.position.pos+1)+"\n")
             fh.write("\n")
             k += 1
 
@@ -136,5 +136,5 @@ chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
             os.mkdir("tmp/circos")
 
         for _file in ["circos.png", "circos.svg"]:
-            os.rename(_file,"tmp/circos/fusion_event_"+str(self.sid)+"_"+_file)
+            os.rename(_file,"tmp/circos/fusion_event_" + str(self.sid)+"_"+_file)
 

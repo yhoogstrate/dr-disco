@@ -164,8 +164,8 @@ class ChimericAlignment:
         k = len(alignments)
 
         for alignment in alignments:
-            chain_from = str(alignment.reference_id)+":"+str(alignment.reference_start)
-            chain_to = str(alignment.next_reference_id)+":"+str(alignment.next_reference_start)
+            chain_from = str(alignment.reference_id)+":" + str(alignment.reference_start)
+            chain_to = str(alignment.next_reference_id)+":" + str(alignment.next_reference_start)
 
             if chain_from not in chains_from.keys():
                 chains_from[chain_from] = []
@@ -237,7 +237,7 @@ class ChimericAlignment:
                 new_alignments.append(start)
 
             ##- Does it based on shortest genomic distance:
-            #if str(mates[0].next_reference_id)+":"+str(mates[0].next_reference_start) in chains_from:
+            #if str(mates[0].next_reference_id)+":" + str(mates[0].next_reference_start) in chains_from:
                 #next_pos = [mates[0].next_reference_id,mates[0].next_reference_start]
                 #last_pos = [mates[0].reference_id,mates[0].reference_start]
 

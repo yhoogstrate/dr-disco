@@ -111,7 +111,7 @@ class BreakPosition:
         return self._hash < other_bp._hash
 
     def __str__(self):
-        return str(self._chr)+":"+str(self.pos)+"/"+str(self.pos+1)+"("+strand_tt[self.strand]+")"
+        return str(self._chr)+":" + str(self.pos)+"/" + str(self.pos+1)+"("+strand_tt[self.strand]+")"
 
     def get_dist(self, other_bp, strand_specific):
         if not isinstance(other_bp, BreakPosition):# pragma: no cover
@@ -212,10 +212,10 @@ class Node:
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t["+str(id(edge))+":"+sedge+"] "+str(edge._origin.position)+"->"+str(edge._target.position)+" "+str(filtered_edges)
+                out += "\n\t[" + str(id(edge))+":"+sedge+"] " + str(edge._origin.position)+"->" + str(edge._target.position)+" " + str(filtered_edges)
 
         if a > 0:
-            out += "\n\t-> soft/hard clips: "+str(self.clips)
+            out += "\n\t-> soft/hard clips: " + str(self.clips)
 
             return out+"\n"
         else:
@@ -366,7 +366,7 @@ class Edge:
         try:
             return self._target.edges[self._origin.position._hash]
         except KeyError as err:#todo write test for this
-            raise KeyError("Could not find complement for edge:   "+str(self))
+            raise KeyError("Could not find complement for edge:   " + str(self))
 
     def merge_edge(self,edge):
         """Merges (non splice) edges"""
@@ -417,14 +417,14 @@ class Edge:
     def __str__(self):
         typestring = []
         for _t in sorted(self._types.keys()):
-            typestring.append(str(JunctionTypeUtils.str(_t))+":"+str(self._types[_t]))
+            typestring.append(str(JunctionTypeUtils.str(_t))+":" + str(self._types[_t]))
 
         out = str(self._origin.position) + "->" + str(self._target.position) + ":("+','.join(typestring)+")"
 
         #spacer = " "*len(str(self._origin.position))
 
         #for _k in self._origin.splice_edges.keys():
-        #    out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_edges[_k][1].get_splice_score())
+        #    out += "\n"+spacer+"=>" + str(_k.position)+":score=" + str(self._origin.splice_edges[_k][1].get_splice_score())
 
         return out
 
@@ -603,7 +603,7 @@ class Graph:
             self.remove_edge(candidate)# do not remove if splice junc exists?
 
         #self.print_chain()
-        logging.info("Pruned into "+str(len(candidates))+" candidate edge(s)")
+        logging.info("Pruned into " + str(len(candidates))+" candidate edge(s)")
         return candidates
 
     def prune_edge(self, edge):
@@ -707,7 +707,7 @@ thick edges:
                     splice_edges_had.add(splice_junction)
                     splice_edges_had.add(splice_junction.get_complement())
 
-        logging.info("Linked "+str(k)+" splice junction(s)")
+        logging.info("Linked "+ str(k) +" splice junction(s)")
 
     def extract_subnetworks_by_splice_junctions(self,thicker_edges):
         """ Deze functie haalt recursief per edge een set van edges op die 
@@ -1438,7 +1438,7 @@ class IntronDecomposition:
                     k += 1
         subnets = [sn for sn in subnets if sn != None]
 
-        logging.info("Merged "+str(k)+" of the "+str(n)+" into "+str(len(subnets))+" merged subnetwork(s)")
+        logging.info("Merged "+ str(k) +" of the " + str(n)+" into " + str(len(subnets))+" merged subnetwork(s)")
 
         return subnets
 
@@ -1451,20 +1451,20 @@ class IntronDecomposition:
 
             entropy = subnet.get_overall_entropy()
             if entropy < MIN_SUBNET_ENTROPY:
-                subnet.discarded.append("entropy="+str(entropy))
+                subnet.discarded.append("entropy=" + str(entropy))
 
             n_disco = subnet.get_n_discordant_reads() / 2
             n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes())
             if n_disco < n_disco_min:
-                subnet.discarded.append("n_discordant_reads="+str(n_disco)+"/"+str(n_disco_min))
+                subnet.discarded.append("n_discordant_reads=" + str(n_disco)+"/" + str(n_disco_min))
 
             n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads() ) / 2
             n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
             if n_support < n_support_min:
-                subnet.discarded.append("n_support="+str(n_support)+"/"+str(n_support_min))
+                subnet.discarded.append("n_support=" + str(n_support)+"/" + str(n_support_min))
 
             if len(subnet.discarded) > 0:
                 k += 1
 
-        logging.info("Filtered "+str(k)+" of the "+str(len(subnets))+" subnetwork(s)")
+        logging.info("Filtered "+ str(k) +" of the " + str(len(subnets))+" subnetwork(s)")
         return subnets
