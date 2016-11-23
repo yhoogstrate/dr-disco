@@ -82,7 +82,7 @@ chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
                 chunk = [round(chunk[0], self.smoothing_prec), round(chunk[1], self.smoothing_prec)]
 
                 # Look what to do with previous chunk, if there is any
-                if previous != None:
+                if previous is not None:
                     # if overlap, extend previous chunk
                     if chunk[0] <= previous[1]:
                         chunk[0] = previous[0]

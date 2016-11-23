@@ -468,7 +468,7 @@ class Graph:
         node1 = self.get_node_reference(pos1)
         node2 = self.get_node_reference(pos2)
 
-        if cigarstrs != None:
+        if cigarstrs is not None:
             cigarstrs = pos1._hash+cigarstrs[0]+"|"+pos2._hash+cigarstrs[1]
 
         edge = node1.get_edge_to_node(node2)
@@ -494,7 +494,7 @@ class Graph:
         node1 = self.get_node_reference(pos1)
         node2 = self.get_node_reference(pos2)
 
-        if cigarstrs != None:
+        if cigarstrs is not None:
             # Hexadec saves more mem
             short_pos1 = "%0.2X" % pos1.pos  # str(pos1.pos)
             short_pos2 = "%0.2X" % pos2.pos  # str(pos2.pos)
@@ -1104,7 +1104,7 @@ class BAMExtract(object):
 
             if JunctionTypeUtils.is_fusion_junction(rg):
                 pos1, pos2, junction = read_to_junction(read, rg, sa[0])
-                if pos1 != None:
+                if pos1 is not None:
                     fusion_junctions.insert_edge(pos1, pos2, rg, junction)
 
             elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
@@ -1136,13 +1136,13 @@ class BAMExtract(object):
                     raise Exception("Edge type not implemented: %s\n\n%s", internal_edge, str(read))
 
                 if internal_edge[2] in [JunctionTypes.cigar_soft_clip, JunctionTypes.cigar_hard_clip]:
-                    if i_pos1 != None:
+                    if i_pos1 is not None:
                         node = fusion_junctions.get_node_reference(i_pos2)
-                        if node != None:
+                        if node is not None:
                             node.add_clip()
                         # else condition happens when clips are found on positions that are not junctions
                 else:
-                    if i_pos1 != None:
+                    if i_pos1 is not None:
                         if internal_edge[2] == JunctionTypes.cigar_splice_junction:
                             # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
                             splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None)
@@ -1377,10 +1377,10 @@ class IntronDecomposition:
 
         k = 0
         for i in xrange(n):
-            if subnets[i] != None:
+            if subnets[i] is not None:
                 candidates = []
                 for j in xrange(i + 1, n):  # for i, j > i
-                    if subnets[j] != None:
+                    if subnets[j] is not None:
                         new_merged = False
 
                         l_dists, r_dists = subnets[i].find_distances(subnets[j])
@@ -1430,7 +1430,7 @@ class IntronDecomposition:
                     subnets[i].merge(sn_j)
                     del(sn_j)
                     k += 1
-        subnets = [sn for sn in subnets if sn != None]
+        subnets = [sn for sn in subnets if sn is not None]
 
         logging.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(subnets)) + " merged subnetwork(s)")
 
