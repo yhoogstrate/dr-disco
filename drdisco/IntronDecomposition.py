@@ -15,7 +15,7 @@ import HTSeq
 from .CigarAlignment import *
 from .CircosController import *
 
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 strand_tt = {STRAND_FORWARD:'+', STRAND_REVERSE:'-', STRAND_UNDETERMINED:'?'}
 
 # load cfg
@@ -92,7 +92,7 @@ class BreakPosition:
     Unambiguous data type that determines where a break point occurs.
 
     chr1:
-    | 0 | 1 | 2 | 3 | ~~~ 
+    | 0 | 1 | 2 | 3 | ~~~
 
     chr2:
      ~~~ | 6 | 7 | 8 |
@@ -145,7 +145,7 @@ class Node:
         self: the node of which it's splice junctions are traversed in order to find more nodes that may not be already in the blak
         self.splice_edges:
          -  [     ] splice edge: splice p1, splice p2
-        """    
+        """
 
         linked_nodes = set([self])  # set(self) iterates over self.__iter__()
         linked_edges = {}
@@ -270,7 +270,7 @@ class JunctionTypeUtils:
         JunctionTypes.spanning_paired_2_r: 3,
         JunctionTypes.spanning_paired_2_s: 1,  # Very odd type of reads
         JunctionTypes.spanning_paired_2_t: 3,
-        JunctionTypes.spanning_singleton_1: 2, 
+        JunctionTypes.spanning_singleton_1: 2,
         JunctionTypes.spanning_singleton_2: 2,
         JunctionTypes.spanning_singleton_1_r: 2,
         JunctionTypes.spanning_singleton_2_r: 2 }
@@ -396,7 +396,7 @@ class Edge:
         else:
             return self._types[_type]
 
-    def get_score(self,_type):  
+    def get_score(self,_type):
         return self.get_count(_type)*JunctionTypeUtils.scoring_table[_type]
 
     def get_scores(self):
@@ -710,13 +710,13 @@ thick edges:
         logging.info("Linked " + str(k) + " splice junction(s)")
 
     def extract_subnetworks_by_splice_junctions(self, thicker_edges):
-        """ Deze functie haalt recursief per edge een set van edges op die 
+        """ Deze functie haalt recursief per edge een set van edges op die
 binnen de splice afstand voldoen. De splice afstanden zijn voorgerekend
 in de rejoin_splice_junctions functie. Het enige dat hier dient te gebeuren
 is het recursief aflopen aan de hand van een bepaalde afstand (insert size,
 ~450bp).
 Vooralsnog is deze extractie alleen gebaseerd op afstand en niet op de
-imbalans van de readcount. 
+imbalans van de readcount.
 In de nieuwe implementatie heeft iedere node twee vectoren waarin splice
 junction staan beschreven; 1 naar posities die kleiner zijn dan zichzelf
 en 1 met posities die groter zijn dan zichzelf. Hierdoor is een recursief
@@ -1209,7 +1209,7 @@ class BAMExtract(object):
             =	BAM_CEQUAL	7
             X	BAM_CDIFF	8
 
-            Example 1: 
+            Example 1:
 
             5S10M15N10M2S
 
@@ -1241,11 +1241,11 @@ splice-junc:                           <=============>
 
         for chunk in read.cigar:
             if chunk[0] in tt.keys():  # D N S H
-                """Small softclips occur all the time - introns and 
+                """Small softclips occur all the time - introns and
                 deletions of that size shouldn't add weight anyway
 
                 1S 5M means:
-                startpoint-1, startpoint => Softclip 
+                startpoint-1, startpoint => Softclip
 
                 5M 2S means:
                 startpoint +5, startpoint +5+2 => softclip

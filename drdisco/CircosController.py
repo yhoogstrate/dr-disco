@@ -126,7 +126,7 @@ chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
             if os.path.exists(_file):
                 os.remove(_file)
 
-        #2. 
+        #2.
         p = Popen([os.getenv("CIRCOS_DIR")+"/bin/circos", "-conf","share/circos/circos.conf","-debug_group","summary, timer"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         rc = p.returncode

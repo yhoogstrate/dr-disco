@@ -7,15 +7,15 @@
 import os, subprocess, logging
 import pysam
 
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 from .CigarAlignment import *
 
 
 #@todo check samtools v >= 1.3.*
 
 ## Sep 01: fix bam files:
-## - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n 
-## - Fix the mate of the other: 
+## - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n
+## - Fix the mate of the other:
 ##  [     A   >                [  B ]   [  C >
 ##  A -> B
 ##  B -> C

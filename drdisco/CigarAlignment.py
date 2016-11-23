@@ -34,7 +34,7 @@ import logging, re
 import pysam
 from intervaltree_bio import GenomeIntervalTree
 
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 
 pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
 def cigar_to_cigartuple(cigar_str):
@@ -197,7 +197,7 @@ class CigarAlignment:
         """Maybe sort on cigar type, to reduce if statements
         """
         if (cig_chunk1[0] == 0 and cig_chunk2[0] == 0) or (cig_chunk1[0] == 4 and cig_chunk2[0] == 4):
-            # M * M or S*S => sqaure 
+            # M * M or S*S => sqaure
             return pow(cig_chunk1[1] + cig_chunk2[1], 2)
 
         elif (cig_chunk1[0] == 0 and cig_chunk2[0] == 4) or (cig_chunk1[0] == 4 and cig_chunk2[0] == 0):
@@ -258,14 +258,14 @@ class CigarAlignment:
                 raise Exception("Unpredicted out of bound")
 
             if action == "s":
-                i -= 1 
+                i -= 1
                 j -= 1
 
             elif action == "m":
                 tup1_rev.append(self.cigtup1[i-1])
                 tup2_rev.append(self.cigtup2[j-1])
 
-                i -= 1 
+                i -= 1
                 j -= 1
 
             elif action == "-":
@@ -307,7 +307,7 @@ class CigarAlignment:
         c2_total = sum([x[1] for x in c2 if x[0] in [0, 4]])
 
         if c1_total == 0 or c2_total == 0:
-            #@todo figure out when this happens? 
+            #@todo figure out when this happens?
             return STRAND_FORWARD
         else:
             c1_r = 1.0 * c1_l / c1_total
