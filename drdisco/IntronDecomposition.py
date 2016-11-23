@@ -472,7 +472,7 @@ class Graph:
             cigarstrs = pos1._hash+cigarstrs[0] + "|" + pos2._hash+cigarstrs[1]
 
         edge = node1.get_edge_to_node(node2)
-        if edge == None:
+        if edge is None:
             edge = Edge(node1, node2)
             node1.insert_edge(edge)
             node2.insert_edge(edge)
@@ -503,7 +503,7 @@ class Graph:
 
         edge1 = node1.get_edge_to_node(node2)
 
-        if edge1 == None:
+        if edge1 is None:
             edge1 = Edge(node1, node2)
             edge2 = Edge(node2, node1)
 
@@ -1123,7 +1123,7 @@ class BAMExtract(object):
                         i_pos1, i_pos2 = None, None
 
                 elif internal_edge[2] in [JunctionTypes.cigar_soft_clip]:
-                    if pos1 == None or rg in [JunctionTypes.spanning_paired_1_s, JunctionTypes.spanning_paired_2_s]:
+                    if pos1 is None or rg in [JunctionTypes.spanning_paired_1_s, JunctionTypes.spanning_paired_2_s]:
                         pass
                     elif JunctionTypeUtils.is_fusion_junction(rg):
                         i_pos1 = BreakPosition(_chr, internal_edge[0], pos2.strand)

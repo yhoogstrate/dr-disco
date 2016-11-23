@@ -110,7 +110,7 @@ class ChimericAlignment:
 
         for alignment in alignments:
             is_closest = False
-            if (d_chr == None and d_pos == None):
+            if (d_chr is None and d_pos is None):
                 is_closest = True
             else:
                 dd_chr = abs(d_chr - location[0])
@@ -141,7 +141,7 @@ class ChimericAlignment:
             cur_hi = alignment.get_tag('HI')
             dd_hi = abs(hi_closest - cur_hi)
 
-            if d_hi == None:
+            if d_hi is None:
                 is_closest = True
             else:
                 if dd_hi < d_hi:
@@ -288,7 +288,7 @@ class ChimericAlignment:
             if len(_linked) > 0:
                 seg_pos = [int(x) for x in list(_linked)[0].split(":")]
 
-            if seg_pos == None or (seg_pos[0] == -1 and seg_pos[1] == -1):
+            if seg_pos is None or (seg_pos[0] == -1 and seg_pos[1] == -1):
                 seg_pos = [alignments[0].reference_id, alignments[0].reference_start]
 
             closest = self.get_closest(seg_pos, alignments)
