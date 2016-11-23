@@ -58,7 +58,7 @@ class ChimericAlignment:
         else:
             qname = qnames[0]
             for i in xrange(len(all_reads_updated)):
-                all_reads_updated[i].set_tag('LB', qname.replace(":","."))
+                all_reads_updated[i].set_tag('LB', qname.replace(":", "."))
 
         return all_reads_updated
 
@@ -451,7 +451,7 @@ class ChimericAlignment:
 
 
         logging.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
-        pysam.sort("-o", basename+".name-sorted.bam","-n", self.input_alignment_file)
+        pysam.sort("-o", basename+".name-sorted.bam", "-n", self.input_alignment_file)
 
 
         logging.info("Fixing sam file")
@@ -492,7 +492,7 @@ class ChimericAlignment:
 
 
         logging.info("Converting fixed file into BAM")
-        fhq = open(basename+".name-sorted.fixed.bam","wb")
+        fhq = open(basename+".name-sorted.fixed.bam", "wb")
         fhq.write(pysam.view('-bS', basename+".name-sorted.fixed.sam"))
         fhq.close()
 

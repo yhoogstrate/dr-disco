@@ -44,7 +44,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file     = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
-        c.extract("chr21:39000000-40000000","chr5:1-2", output_file)
+        c.extract("chr21:39000000-40000000", "chr5:1-2", output_file)
 
         # Bam2Sam
         fhq = open(output_file_s,"w")
@@ -63,7 +63,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file     = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
-        c.extract("chr5:1-2","chr21:39000000-40000000", output_file)
+        c.extract("chr5:1-2", "chr21:39000000-40000000", output_file)
 
         # Bam2Sam
         fhq = open(output_file_s,"w")
@@ -82,7 +82,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file     = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
-        c.extract("chr7:151000000-153000000","chr5:1-2", output_file)
+        c.extract("chr7:151000000-153000000", "chr5:1-2", output_file)
 
         # Bam2Sam
         fhq = open(output_file_s,"w")
@@ -101,7 +101,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file     = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
-        c.extract("chr5:1-2","chr7:151000000-153000000", output_file)
+        c.extract("chr5:1-2", "chr7:151000000-153000000", output_file)
 
         # Bam2Sam
         fhq = open(output_file_s,"w")
@@ -121,7 +121,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file     = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
-        c.extract("chr12:151000000-153000000","chr5:1-2", output_file)
+        c.extract("chr12:151000000-153000000", "chr5:1-2", output_file)
 
         # Bam2Sam
         fhq = open(output_file_s,"w")

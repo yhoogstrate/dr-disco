@@ -105,7 +105,7 @@ class BreakPosition:
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
-        self._hash = self._chr.replace("chr","") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]  # http://stackoverflow.com /questions /38430277 /python-class-hash-method-and-set
+        self._hash = self._chr.replace("chr", "") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]  # http://stackoverflow.com /questions /38430277 /python-class-hash-method-and-set
 
     def __lt__(self, other_bp):
         return self._hash < other_bp._hash
@@ -1153,7 +1153,7 @@ class BAMExtract(object):
 
     def parse_pos(self, str_pos):
         _chr,_poss = str_pos.split(":", 2)
-        _poss = _poss.replace(",","").split("-", 2)
+        _poss = _poss.replace(",", "").split("-", 2)
 
         return str(_chr), int(_poss[0]), int(_poss[1])
 
