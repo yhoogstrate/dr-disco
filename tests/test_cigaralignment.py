@@ -22,15 +22,17 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import unittest, logging, sys, subprocess, filecmp, pysam
+import unittest
+import logging
+import sys
+
 import drdisco
 logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
-from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
-from drdisco.CigarAlignment import *
+from drdisco.CigarAlignment import CigarAlignment, cigar_to_cigartuple
 
 
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
+from fuma.Fusion import STRAND_REVERSE
 
 
 class TestIntronicBreakDetection(unittest.TestCase):
@@ -45,8 +47,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
 
-        #print aligned_cigars[0]
-        #print aligned_cigars[1]
+        # print aligned_cigars[0]
+        # print aligned_cigars[1]
 
         self.assertEqual(aligned_cigars[0], ans1)
         self.assertEqual(aligned_cigars[1], ans2)
@@ -62,8 +64,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
 
-        #print aligned_cigars[0]
-        #print aligned_cigars[1]
+        # print aligned_cigars[0]
+        # print aligned_cigars[1]
 
         self.assertEqual(aligned_cigars[0], ans1)
         self.assertEqual(aligned_cigars[1], ans2)
@@ -79,8 +81,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
 
-        #print aligned_cigars[0]
-        #print aligned_cigars[1]
+        # print aligned_cigars[0]
+        # print aligned_cigars[1]
 
         self.assertEqual(aligned_cigars[0], ans1)
         self.assertEqual(aligned_cigars[1], ans2)
@@ -96,8 +98,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
 
-        #print aligned_cigars[0]
-        #print aligned_cigars[1]
+        # print aligned_cigars[0]
+        # print aligned_cigars[1]
 
         self.assertEqual(aligned_cigars[0], ans1)
         self.assertEqual(aligned_cigars[1], ans2)
