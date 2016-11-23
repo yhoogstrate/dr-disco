@@ -554,7 +554,7 @@ class Graph:
                             d1 = abs(pos1.pos - node1.position.pos)
                             if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
                                 d2 = abs(pos2.pos - node2.position.pos)
-                                if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
+                                if d1 + d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
                                     yield pow(d1, 2) + pow(d2, 2), edge
 
     def print_chain(self):  # pragma: no cover
@@ -685,7 +685,7 @@ thick edges:
                             if lnode != rnode and lnode.position.strand == rnode.position.strand:
                                 d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
                                 d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
-                                dist = d1+d2
+                                dist = d1 + d2
                                 if dist <= MAX_ACCEPTABLE_INSERT_SIZE:
                                     if lnode.position < rnode.position and rnode in lnode.splice_edges[STRAND_FORWARD]:
                                         insert = dist < lnode.splice_edges[STRAND_FORWARD][rnode][0]
