@@ -101,7 +101,7 @@ class BreakPosition:
      chr1:3 /4 and chr2:5 /6
     """
 
-    def __init__(self,_chr, position_0_based, strand):
+    def __init__(self, _chr, position_0_based, strand):
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
@@ -299,7 +299,7 @@ class Edge:
      - the connection can by of different types
     """
 
-    def __init__(self,_origin,_target):
+    def __init__(self, _origin, _target):
         if not isinstance(_target, Node) or not isinstance(_origin, Node):  # pragma: no cover
             raise Exception("_origin and _target must be a Node")
 
@@ -396,7 +396,7 @@ class Edge:
         else:
             return self._types[_type]
 
-    def get_score(self,_type):
+    def get_score(self, _type):
         return self.get_count(_type)*JunctionTypeUtils.scoring_table[_type]
 
     def get_scores(self):
@@ -455,7 +455,7 @@ class Graph:
             return position[pos.strand]
         return None
 
-    def insert_edge(self, pos1, pos2,_type, cigarstrs):
+    def insert_edge(self, pos1, pos2, _type, cigarstrs):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
@@ -481,7 +481,7 @@ class Graph:
         if node1 == edge._origin:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
 
-    def insert_splice_edge(self, pos1, pos2,_type, cigarstrs):
+    def insert_splice_edge(self, pos1, pos2, _type, cigarstrs):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
@@ -765,7 +765,7 @@ terugloop probleem redelijk opgelost.
 
 
 class Subnet():
-    def __init__(self,_id, edges, left_splice_junctions, right_splice_junctions):
+    def __init__(self, _id, edges, left_splice_junctions, right_splice_junctions):
         self._id = _id
         self.edges = edges
         self.left_splice_junctions = left_splice_junctions
@@ -783,9 +783,9 @@ class Subnet():
         idx = {}
         for edge in self.edges:
             key1 = edge.get_scores()
-            key2 = edge._origin.position._hash+"-"+edge._target.position._hash
+            key2 = edge._origin.position._hash + "-" + edge._target.position._hash
 
-            if not idx.has_key(key1):
+            if key1 not in idx:
                 idx[key1] = {}
 
             idx[key1][key2] = edge
