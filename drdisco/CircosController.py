@@ -3,7 +3,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 from subprocess import Popen, PIPE
-import os,logging
+import os, logging
 
 
 class CircosController:
@@ -38,7 +38,7 @@ chromosomes                 = hs21[a]:0-39.7;hs21[b]:39.7-39.9;hs21[c]:39.9-42.7
 #chromosomes_reverse         = /hs[]/
 #chromosomes_scale           = hs1=0.5r,/hs[234]/=1.0rn
 chromosomes_scale           = a:1.0;b:25.0;c:1.0;d:25.0;e:1.0
-chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
+chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
         """
 
         scales = {'small': '1.0', 'large': '35.0'}
@@ -64,7 +64,7 @@ chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
         idx = {}
         for dp in self.data:
             for i in [0,1]:
-                _chr = dp[i]._target.position._chr.replace('chr',self.circos_chr_name)
+                _chr = dp[i]._target.position._chr.replace('chr', self.circos_chr_name)
                 if not idx.has_key(_chr):
                     idx[_chr] = {}
 
@@ -76,10 +76,10 @@ chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
             vec_large = []
 
             for pos in sorted(idx[_chr].keys()):
-                chunk = [pos-self.smoothing_offset,pos+self.smoothing_offset]
+                chunk = [pos-self.smoothing_offset, pos+self.smoothing_offset]
                 chunk[0] = float(chunk[0]) / float(pow(10,6))# a million -> Mb
                 chunk[1] = float(chunk[1]) / float(pow(10,6))# a million -> Mb
-                chunk = [round(chunk[0],self.smoothing_prec), round(chunk[1],self.smoothing_prec)]
+                chunk = [round(chunk[0], self.smoothing_prec), round(chunk[1], self.smoothing_prec)]
 
                 # Look what to do with previous chunk, if there is any
                 if previous != None:
@@ -91,7 +91,7 @@ chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
 
                 previous = chunk
 
-            vec_large.append( (_chr, max(0.0,previous[0]), previous[1], 'large') )
+            vec_large.append( (_chr, max(0.0, previous[0]), previous[1], 'large') )
 
             i = 0
             if vec_large[0][0] > 0.0:
@@ -127,7 +127,7 @@ chromosomes_radius          = a=0.4r,b=0.99r,c=0.4r,d=0.99r,e=0.4r
                 os.remove(_file)
 
         #2. 
-        p = Popen([os.getenv("CIRCOS_DIR")+"/bin/circos", "-conf","share/circos/circos.conf","-debug_group","summary,timer"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        p = Popen([os.getenv("CIRCOS_DIR")+"/bin/circos", "-conf","share/circos/circos.conf","-debug_group","summary, timer"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
         rc = p.returncode
 

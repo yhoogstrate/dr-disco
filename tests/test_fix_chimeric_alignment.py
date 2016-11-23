@@ -22,9 +22,9 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import unittest,logging,sys,subprocess,filecmp,pysam,os
+import unittest, logging, sys, subprocess, filecmp, pysam, os
 import drdisco
-logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
+logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 from drdisco.ChimericAlignment import ChimericAlignment
 
@@ -98,7 +98,7 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
         
-        self.assertTrue(filecmp.cmp(test_file, output_file_s),msg="diff '"+test_file+"' '"+output_file_s+"':\n"+subprocess.Popen(['diff',test_file,output_file_s], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '"+test_file+"' '"+output_file_s+"':\n"+subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
 
 def main():
     unittest.main()

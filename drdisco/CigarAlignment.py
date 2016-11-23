@@ -30,7 +30,7 @@ cig2: 2S 98M 25S
 
 #http://www.samformat.info/sam-format-flag
 
-import logging,re
+import logging, re
 import pysam
 from intervaltree_bio import GenomeIntervalTree
 
@@ -54,7 +54,7 @@ def cigar_to_cigartuple(cigar_str):
     for chunk in pat_bam_parse_alignment_offset_using_cigar.finditer(cigar_str):
         flag = chunk.group(2)
         length = chunk.group(1)
-        cigartup.append((tt[flag],int(length)))
+        cigartup.append((tt[flag], int(length)))
 
     return cigartup
 
@@ -90,8 +90,8 @@ class CigarAlignment:
         ||======||------+-------+-------+
 
     fill function:
-    i,j = min(
-       (tup1[i] - tup2[j])   +   matrix[i-1,j-1]
+    i, j = min(
+       (tup1[i] - tup2[j])   +   matrix[i-1, j-1]
        matrix[i-1]              , i >= 1
        matrix[j-1]              , j >= 1
     )
@@ -106,7 +106,7 @@ class CigarAlignment:
         ||======||------+-------+-------+
 
     """
-    def __init__(self,cigtup1,cigtup2):
+    def __init__(self, cigtup1, cigtup2):
         self.cigtup1 = self.cleanup_cigar(cigtup1,[1,2,3])
         self.cigtup2 = self.cleanup_cigar(cigtup2,[1,2,3])
 
@@ -115,7 +115,7 @@ class CigarAlignment:
 
         self.init_matrix()
 
-    def cleanup_cigar(self,cigartup,invalid_chunks):
+    def cleanup_cigar(self, cigartup, invalid_chunks):
         clean = []
 
         ## Removal of wrong chunks
@@ -135,7 +135,7 @@ class CigarAlignment:
             if chunk[0] == last_type:
 
                 # increase last insert
-                concat[-1] = (chunk[0],concat[-1][1]+chunk[1])
+                concat[-1] = (chunk[0], concat[-1][1]+chunk[1])
             else:
                 concat.append(chunk)
                 last_type = chunk[0]
@@ -146,10 +146,10 @@ class CigarAlignment:
         #self.matrix = [[0] * (self.n+1) ] * (self.m + 1) << copies references of lists >,<
         self.matrix = [[0 for i in xrange(self.n+1)] for i in xrange(self.m+1)]
 
-        for i in xrange(1,self.m+1):
+        for i in xrange(1, self.m+1):
             self.matrix[i][0] = pow(self.cigtup1[i-1][1],2)
 
-        for j in xrange(1,self.n+1):
+        for j in xrange(1, self.n+1):
             self.matrix[0][j] = pow(self.cigtup2[j-1][1],2)
 
 
@@ -157,10 +157,10 @@ class CigarAlignment:
         self.tb_matrix = [["?" for i in xrange(self.n+1)] for i in xrange(self.m+1)]
         self.tb_matrix[0][0] = 't' # Terminate traceback; finished
 
-        for i in xrange(1,self.m+1):
+        for i in xrange(1, self.m+1):
             self.tb_matrix[i][0] = "|"
 
-        for j in xrange(1,self.n+1):
+        for j in xrange(1, self.n+1):
             self.tb_matrix[0][j] = "-"
 
     def print_tb_matrix(self):
@@ -178,7 +178,7 @@ class CigarAlignment:
         print
 
 
-    def get_diagonal(self,diagonal):
+    def get_diagonal(self, diagonal):
             # 0,0
             # 1,0   0,1
             # 2,0   1,1   0,2
@@ -188,12 +188,12 @@ class CigarAlignment:
 
             for block in xrange(diagonal+1):
                 if i < self.m and j < self.n:
-                    yield (i,j)
+                    yield (i, j)
 
                 i -= 1
                 j += 1
 
-    def cigar_diff(self,cig_chunk1,cig_chunk2):
+    def cigar_diff(self, cig_chunk1, cig_chunk2):
         """Maybe sort on cigar type, to reduce if statements
         """
         if (cig_chunk1[0] == 0 and cig_chunk2[0] == 0) or (cig_chunk1[0] == 4 and cig_chunk2[0] == 4):
@@ -204,10 +204,10 @@ class CigarAlignment:
             return pow((cig_chunk1[1] - cig_chunk2[1]),2)
 
         else:
-            raise Exception("Not yet implemented:",self.cigtup1,"\n",self.cigtup2,"\n\n",cig_chunk1[0],"\n",cig_chunk2[0])
+            raise Exception("Not yet implemented:", self.cigtup1,"\n", self.cigtup2,"\n\n", cig_chunk1[0],"\n", cig_chunk2[0])
 
 
-    def calc_diff(self,i,j):
+    def calc_diff(self, i, j):
 #                   2S     55M     69S
 #        ||======||=====||======||======||
 #        || 0    || 2^2 || 55^2 || 69^2 ||
@@ -221,7 +221,7 @@ class CigarAlignment:
         #c_ins_2 = pow(self.cigtup2[j][1],2)
         c_ins_1 = self.matrix[i-1][j]     + pow(self.cigtup1[i][1],2)# Insertion vertical, in tup1
         c_ins_2 = self.matrix[i][j-1]     + pow(self.cigtup2[j][1],2)# Insertion horizontal, in tup2
-        c_diag = self.matrix[i][j] + self.cigar_diff(self.cigtup1[i],self.cigtup2[j])
+        c_diag = self.matrix[i][j] + self.cigar_diff(self.cigtup1[i], self.cigtup2[j])
 
         if c_ins_1 < c_diag:
             _type = "|"
@@ -241,7 +241,7 @@ class CigarAlignment:
         for diagonal in xrange(n_diagonals):
             for cell in self.get_diagonal(diagonal):
 
-                diff, _type = self.calc_diff(cell[0],cell[1])
+                diff, _type = self.calc_diff(cell[0], cell[1])
                 self.tb_matrix[cell[0]+1][cell[1]+1] = _type
                 self.matrix[cell[0]+1][cell[1]+1] = diff
 
@@ -284,9 +284,9 @@ class CigarAlignment:
 
         return tup1_rev[::-1], tup2_rev[::-1]
 
-    def calculate_order(self,cigtup1_aligned,cigtup2_aligned):
+    def calculate_order(self, cigtup1_aligned, cigtup2_aligned):
         if len(cigtup1_aligned) != len(cigtup2_aligned):
-            raise Exception("Lengths of aligned cigarstring tuples are different - error has taken place in the alignment",cigtup1_aligned,cigtup2_aligned)
+            raise Exception("Lengths of aligned cigarstring tuples are different - error has taken place in the alignment", cigtup1_aligned, cigtup2_aligned)
 
         c1 = []
         c2 = []
@@ -324,8 +324,8 @@ class CigarAlignment:
         #   a. fill
         self.fill_matrix()
         #   b. trace back
-        c1,c2 = self.traceback_matrix()
+        c1, c2 = self.traceback_matrix()
 
         # 2. calculate M / S only on those chunks that are aligned (M to S flags and vice versa)
-        return self.calculate_order(c1,c2)
+        return self.calculate_order(c1, c2)
 

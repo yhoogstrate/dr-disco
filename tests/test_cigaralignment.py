@@ -22,9 +22,9 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import unittest,logging,sys,subprocess,filecmp,pysam
+import unittest, logging, sys, subprocess, filecmp, pysam
 import drdisco
-logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
+logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
 from drdisco.CigarAlignment import *
@@ -41,15 +41,15 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ans1 = [(4, 15), (0, 15)]
         ans2 = [(0, 15), (4, 15)]
         
-        ca = CigarAlignment(cigar_to_cigartuple(cig1),cigar_to_cigartuple(cig2))
+        ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
         
         #print aligned_cigars[0]
         #print aligned_cigars[1]
         
-        self.assertEqual(aligned_cigars[0],ans1)
-        self.assertEqual(aligned_cigars[1],ans2)
+        self.assertEqual(aligned_cigars[0], ans1)
+        self.assertEqual(aligned_cigars[1], ans2)
         
     def test_02(self):
         cig1 = "15M15S"
@@ -58,15 +58,15 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ans1 = [(0, 15), (4, 15)]
         ans2 = [(4, 15), (0, 15)]
         
-        ca = CigarAlignment(cigar_to_cigartuple(cig1),cigar_to_cigartuple(cig2))
+        ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
         
         #print aligned_cigars[0]
         #print aligned_cigars[1]
         
-        self.assertEqual(aligned_cigars[0],ans1)
-        self.assertEqual(aligned_cigars[1],ans2)
+        self.assertEqual(aligned_cigars[0], ans1)
+        self.assertEqual(aligned_cigars[1], ans2)
 
     def test_03(self):
         cig1 = "16M28431N69M41S"
@@ -75,15 +75,15 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ans1 = [(0, 85), (4, 41)]
         ans2 = [(4, 85), (0, 41)]
         
-        ca = CigarAlignment(cigar_to_cigartuple(cig1),cigar_to_cigartuple(cig2))
+        ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
         
         #print aligned_cigars[0]
         #print aligned_cigars[1]
         
-        self.assertEqual(aligned_cigars[0],ans1)
-        self.assertEqual(aligned_cigars[1],ans2)
+        self.assertEqual(aligned_cigars[0], ans1)
+        self.assertEqual(aligned_cigars[1], ans2)
     
     def test_04(self):
         cig1 = "85S41M"
@@ -92,15 +92,15 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ans1 = [(4, 85), (0, 41)]
         ans2 = [(0, 85), (4, 41)]
         
-        ca = CigarAlignment(cigar_to_cigartuple(cig1),cigar_to_cigartuple(cig2))
+        ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
         
         #print aligned_cigars[0]
         #print aligned_cigars[1]
         
-        self.assertEqual(aligned_cigars[0],ans1)
-        self.assertEqual(aligned_cigars[1],ans2)
+        self.assertEqual(aligned_cigars[0], ans1)
+        self.assertEqual(aligned_cigars[1], ans2)
         
     def test_05(self):
         cig1 = "40S32M1I52M"
@@ -109,12 +109,12 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ans1 = [(4, 40), (0, 84)]
         ans2 = [(0, 40), (4, 85)]
         
-        ca = CigarAlignment(cigar_to_cigartuple(cig1),cigar_to_cigartuple(cig2))
+        ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
         
-        self.assertEqual(aligned_cigars[0],ans1)
-        self.assertEqual(aligned_cigars[1],ans2)
+        self.assertEqual(aligned_cigars[0], ans1)
+        self.assertEqual(aligned_cigars[1], ans2)
         self.assertEqual(ca.get_order(), STRAND_REVERSE)
 
 
