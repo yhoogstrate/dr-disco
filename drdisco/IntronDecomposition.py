@@ -48,7 +48,7 @@ def merge_frequency_tables(frequency_tables):
     new_frequency_table = {}
     for t in frequency_tables:
         for key in t.keys():
-            if not new_frequency_table.has_key(key):
+            if not key in new_frequency_table:
                 new_frequency_table[key] = 0
 
             new_frequency_table[key] += t[key]
@@ -164,7 +164,7 @@ class Node:
                 if dkey >= 0:
                     new_nodes.append((edge_n, dkey))
 
-                    if not edges.has_key(edge_n):
+                    if not edge_n in edges:
                         edges[edge_n] = set()
                     edges[edge_n].add(edge[1])  # use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
 
@@ -181,7 +181,7 @@ class Node:
 
     def get_edge_to_node(self, target_node):
         key = target_node.position._hash
-        if self.edges.has_key(key):
+        if key in self.edges:
             return self.edges[key]
         else:
             return None
@@ -379,19 +379,19 @@ class Edge:
                 self.add_type(_type, edge._types[_type])
 
     def add_type(self, _type, weight):
-        if not self._types.has_key(_type):
+        if not _type in self._types:
             self._types[_type] = weight
         else:
             self._types[_type] += weight
 
     def add_alignment_key(self, alignment_key):
-        if not self._unique_alignment_hashes.has_key(alignment_key):
+        if not alignment_key in self._unique_alignment_hashes:
             self._unique_alignment_hashes[alignment_key] = 1
         else:
             self._unique_alignment_hashes[alignment_key] += 1
 
     def get_count(self, _type):
-        if not self._types.has_key(_type):
+        if not _type in self._types:
             return 0
         else:
             return self._types[_type]
@@ -446,12 +446,12 @@ class Graph:
         if not position:
             self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)] = {pos.strand: Node(pos)}
         else:
-            if not position.has_key(pos.strand):
+            if not pos.strand in position:
                 self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)][pos.strand] = Node(pos)
 
     def get_node_reference(self, pos):
         position = self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)]
-        if position and position.has_key(pos.strand):
+        if position and pos.strand in position:
             return position[pos.strand]
         return None
 
@@ -636,7 +636,7 @@ class Graph:
         for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, pos1_min, pos1_max + 1)].steps():
             if step[1]:
                 position = step[1]
-                if position and position.has_key(pos1.strand):
+                if pos1.strand in position:
                     node_i = position[pos1.strand]
                     for edge in node_i.edges.values():
                         if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
@@ -687,9 +687,9 @@ thick edges:
                                 d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
                                 dist = d1+d2
                                 if dist <= MAX_ACCEPTABLE_INSERT_SIZE:
-                                    if lnode.position < rnode.position and lnode.splice_edges[STRAND_FORWARD].has_key(rnode):
+                                    if lnode.position < rnode.position and rnode in lnode.splice_edges[STRAND_FORWARD]:
                                         insert = dist < lnode.splice_edges[STRAND_FORWARD][rnode][0]
-                                    elif rnode.position < lnode.position and lnode.splice_edges[STRAND_REVERSE].has_key(rnode):
+                                    elif rnode.position < lnode.position and rnode in lnode.splice_edges[STRAND_REVERSE]:
                                         insert = dist < lnode.splice_edges[STRAND_REVERSE][rnode][0]
                                     else:
                                         insert = True
@@ -742,7 +742,7 @@ terugloop probleem redelijk opgelost.
             # Find all direct edges joined by splice junctions
             for left_node in left_nodes:
                 for right_node in right_nodes:
-                    if left_node.edges.has_key(right_node.position._hash):
+                    if right_node.position._hash in left_node.edges:
                         subedge = left_node.edges[right_node.position._hash]
                         if subedge._target.position._hash == right_node.position._hash:
                             subedges.append(subedge)
