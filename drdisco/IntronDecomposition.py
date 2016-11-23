@@ -9,14 +9,14 @@ RNA-Seq read alignment.
 """
 
 # http://www.samformat.info /sam-format-flag
-import logging,re,math,copy,sys,operator
+import logging, re, math, copy, sys, operator
 import pysam
 import HTSeq
 from .CigarAlignment import *
 from .CircosController import *
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED 
-strand_tt = {STRAND_FORWARD:'+',STRAND_REVERSE:'-',STRAND_UNDETERMINED:'?'}
+strand_tt = {STRAND_FORWARD:'+', STRAND_REVERSE:'-', STRAND_UNDETERMINED:'?'}
 
 # load cfg
 from . import *
@@ -101,7 +101,7 @@ class BreakPosition:
      chr1:3 /4 and chr2:5 /6
     """
 
-    def __init__(self,_chr,position_0_based,strand):
+    def __init__(self,_chr, position_0_based, strand):
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
@@ -130,7 +130,7 @@ class BreakPosition:
 class Node:
     """A Simple node, just a chromomal location( and strand)"""
 
-    def __init__(self,position):
+    def __init__(self, position):
         self.position = position
         self.clips = 0
         self.edges = {}
@@ -192,7 +192,7 @@ class Node:
         else:
             self.edges[edge._target.position._hash] = edge
 
-    def remove_edge(self,edge):
+    def remove_edge(self, edge):
         try:
             del(self.edges[edge._origin.position._hash])
         except:
@@ -368,7 +368,7 @@ class Edge:
         except KeyError as err:  # todo write test for this
             raise KeyError("Could not find complement for edge:   " + str(self))
 
-    def merge_edge(self,edge):
+    def merge_edge(self, edge):
         """Merges (non splice) edges"""
 
         for alignment_key in edge._unique_alignment_hashes:
@@ -376,7 +376,7 @@ class Edge:
 
         for _type in edge._types:
             if _type != JunctionTypes.silent_mate:
-                self.add_type(_type,edge._types[_type])
+                self.add_type(_type, edge._types[_type])
 
     def add_type(self, _type, weight):
         if not self._types.has_key(_type):
@@ -384,7 +384,7 @@ class Edge:
         else:
             self._types[_type] += weight
 
-    def add_alignment_key(self,alignment_key):
+    def add_alignment_key(self, alignment_key):
         if not self._unique_alignment_hashes.has_key(alignment_key):
             self._unique_alignment_hashes[alignment_key] = 1
         else:
@@ -409,7 +409,7 @@ class Edge:
         return sum([self.get_score(_type) for _type in JunctionTypeUtils.scoring_table.keys()])
 
     def get_splice_score(self):  # pragma: no cover
-        return (self.get_count(JunctionTypes.cigar_splice_junction),self.get_clips())
+        return (self.get_count(JunctionTypes.cigar_splice_junction), self.get_clips())
 
     def get_clips(self):  # pragma: no cover
         return self._origin.clips + self._target.clips
@@ -441,21 +441,21 @@ class Graph:
                     node = position[strand]
                     yield node
 
-    def create_node(self,pos):
-        position = self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)]
+    def create_node(self, pos):
+        position = self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)]
         if not position:
-            self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)] = {pos.strand: Node(pos)}
+            self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)] = {pos.strand: Node(pos)}
         else:
             if not position.has_key(pos.strand):
-                self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)][pos.strand] = Node(pos)
+                self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)][pos.strand] = Node(pos)
 
-    def get_node_reference(self,pos):
-        position = self.idxtree[HTSeq.GenomicPosition(pos._chr,pos.pos)]
+    def get_node_reference(self, pos):
+        position = self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)]
         if position and position.has_key(pos.strand):
             return position[pos.strand]
         return None
 
-    def insert_edge(self,pos1,pos2,_type,cigarstrs):
+    def insert_edge(self, pos1, pos2,_type, cigarstrs):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
@@ -481,7 +481,7 @@ class Graph:
         if node1 == edge._origin:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
 
-    def insert_splice_edge(self,pos1,pos2,_type,cigarstrs):
+    def insert_splice_edge(self, pos1, pos2,_type, cigarstrs):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
@@ -537,11 +537,11 @@ class Graph:
 
         del(edge)
 
-    def remove_node(self,node):
+    def remove_node(self, node):
         self.idxtree[HTSeq.GenomicPosition(node.position._chr, node.position.pos)] = set()
         del(node)
 
-    def search_splice_edges_between(self,pos1,pos2):  # insert size is two directional
+    def search_splice_edges_between(self, pos1, pos2):  # insert size is two directional
         for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
             if step[1]:
                 position = step[1]
@@ -578,10 +578,10 @@ class Graph:
                     score = edge.get_scores()
                     if score > 0:
                         edges.add(edge)
-                        edges_tuple.append((edge,score,order))
+                        edges_tuple.append((edge, score, order))
                         order -= 1
 
-        del(edges,order)
+        del(edges, order)
 
         self.edge_idx = [edge[0] for edge in sorted(edges_tuple, key=operator.itemgetter(1, 2), reverse=False)]
 
@@ -620,7 +620,7 @@ class Graph:
                 self.remove_edge(edge_m)
                 self.edge_idx.remove(edge_m)
 
-    def search_edges_between(self,edge_to_prune):
+    def search_edges_between(self, edge_to_prune):
         """searches for other junctions in-between edge+insert size:"""
         def pos_to_range(pos):
             if pos.strand == STRAND_REVERSE:
@@ -633,7 +633,7 @@ class Graph:
         pos1_min, pos1_max = pos_to_range(pos1)
         pos2_min, pos2_max = pos_to_range(pos2)
 
-        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,pos1_min,pos1_max + 1)].steps():
+        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, pos1_min, pos1_max + 1)].steps():
             if step[1]:
                 position = step[1]
                 if position and position.has_key(pos1.strand):
@@ -664,7 +664,7 @@ thick edges:
         def search(pos1):
             # @todo make this member of Graph and use splice_junctions.search_..._..(pos)
             nodes = []
-            for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr,max(0,pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
+            for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
                 if step[1]:
                     position = step[1]
                     if position:
@@ -709,7 +709,7 @@ thick edges:
 
         logging.info("Linked " + str(k) + " splice junction(s)")
 
-    def extract_subnetworks_by_splice_junctions(self,thicker_edges):
+    def extract_subnetworks_by_splice_junctions(self, thicker_edges):
         """ Deze functie haalt recursief per edge een set van edges op die 
 binnen de splice afstand voldoen. De splice afstanden zijn voorgerekend
 in de rejoin_splice_junctions functie. Het enige dat hier dient te gebeuren
@@ -757,15 +757,15 @@ terugloop probleem redelijk opgelost.
                                 self.remove_edge(subedge)
                                 thicker_edges.remove(subedge)
 
-            del(left_splice_junctions_ds,right_splice_junctions_ds)
-            subnetworks.append(Subnet(q,subedges,left_splice_junctions,right_splice_junctions))
+            del(left_splice_junctions_ds, right_splice_junctions_ds)
+            subnetworks.append(Subnet(q, subedges, left_splice_junctions, right_splice_junctions))
 
         logging.info("Extracted %i subnetwork(s)" % len(subnetworks))
         return subnetworks
 
 
 class Subnet():
-    def __init__(self,_id,edges,left_splice_junctions,right_splice_junctions):
+    def __init__(self,_id, edges, left_splice_junctions, right_splice_junctions):
         self._id = _id
         self.edges = edges
         self.left_splice_junctions = left_splice_junctions
@@ -791,7 +791,7 @@ class Subnet():
             idx[key1][key2] = edge
 
         ordered = []
-        for key1 in sorted(idx.keys(),reverse=True):
+        for key1 in sorted(idx.keys(), reverse=True):
             for key2 in sorted(idx[key1].keys()):
                 ordered.append(idx[key1][key2])
 
@@ -896,7 +896,7 @@ class Subnet():
             dist = MAX_GENOME_DISTANCE
 
             for l_node_t in l_nodes_max:
-                dist = min(abs(l_node.position.get_dist(l_node_t.position, True)),dist)
+                dist = min(abs(l_node.position.get_dist(l_node_t.position, True)), dist)
 
             if dist == MAX_GENOME_DISTANCE:
                 return False, False
@@ -907,7 +907,7 @@ class Subnet():
             dist = MAX_GENOME_DISTANCE
 
             for r_node_t in r_nodes_max:
-                dist = min(abs(r_node.position.get_dist(r_node_t.position, True)),dist)
+                dist = min(abs(r_node.position.get_dist(r_node_t.position, True)), dist)
 
             if dist == MAX_GENOME_DISTANCE:
                 return False, False
@@ -1089,10 +1089,10 @@ class BAMExtract(object):
             else:
                 raise Exception("Unnknown read group: %s", rg)
 
-            if abs(pos1.get_dist(pos2,False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
-                return (pos1, pos2, (read.cigarstring,parsed_SA_tag[2]))
+            if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
+                return (pos1, pos2, (read.cigarstring, parsed_SA_tag[2]))
 
-            return (None,None,None)
+            return (None, None, None)
 
         logging.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
@@ -1121,7 +1121,7 @@ class BAMExtract(object):
                     i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
                     i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
 
-                    if internal_edge[2] in [JunctionTypes.cigar_deletion] and i_pos1.get_dist(i_pos2,False) < MAX_ACCEPTABLE_INSERT_SIZE:
+                    if internal_edge[2] in [JunctionTypes.cigar_deletion] and i_pos1.get_dist(i_pos2, False) < MAX_ACCEPTABLE_INSERT_SIZE:
                         i_pos1, i_pos2 = None, None
 
                 elif internal_edge[2] in [JunctionTypes.cigar_soft_clip]:
@@ -1133,7 +1133,7 @@ class BAMExtract(object):
                     else:  # pragma: no cover
                         raise Exception("what todo here %s "+JunctionTypeUtils.str(rg))
                 else:  # pragma: no cover
-                    raise Exception("Edge type not implemented: %s\n\n%s", internal_edge,str(read))
+                    raise Exception("Edge type not implemented: %s\n\n%s", internal_edge, str(read))
 
                 if internal_edge[2] in [JunctionTypes.cigar_soft_clip, JunctionTypes.cigar_hard_clip]:
                     if i_pos1 != None:
@@ -1144,10 +1144,10 @@ class BAMExtract(object):
                 else:
                     if i_pos1 != None:
                         if internal_edge[2] == JunctionTypes.cigar_splice_junction:
-                            # splice_junctions.insert_splice_edge(i_pos1,i_pos2,internal_edge[2],None)
-                            splice_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None)
+                            # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
+                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None)
                         else:
-                            fusion_junctions.insert_edge(i_pos1,i_pos2,internal_edge[2],None)
+                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None)
 
         logging.debug("alignment data loaded")
 
@@ -1165,10 +1165,10 @@ class BAMExtract(object):
 
         fh = pysam.AlignmentFile(bamfile_out, "wb", header=self.pysam_fh.header)
 
-        for r in self.pysam_fh.fetch(pos1[0],pos1[1],pos1[2]):  # pysam.view(b,"chr21:1-500")
+        for r in self.pysam_fh.fetch(pos1[0], pos1[1], pos1[2]):  # pysam.view(b,"chr21:1-500")
             ids.add(r.query_name)
 
-        for r in self.pysam_fh.fetch(pos2[0],pos2[1],pos2[2]):  # pysam.view(b,"chr21:1-500")
+        for r in self.pysam_fh.fetch(pos2[0], pos2[1], pos2[2]):  # pysam.view(b,"chr21:1-500")
             ids.add(r.query_name)
 
         for r in self.pysam_fh.fetch():
@@ -1290,7 +1290,7 @@ splice-junc:                           <=============>
 
 
 class IntronDecomposition:
-    def __init__(self,alignment_file):
+    def __init__(self, alignment_file):
         self.alignment_file = alignment_file
 
     def decompose(self):
@@ -1385,7 +1385,7 @@ class IntronDecomposition:
         for i in xrange(n):
             if subnets[i] != None:
                 candidates = []
-                for j in xrange(i + 1,n):  # for i , j > i
+                for j in xrange(i + 1, n):  # for i , j > i
                     if subnets[j] != None:
                         new_merged = False
 
