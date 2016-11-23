@@ -22,7 +22,14 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import unittest, logging, sys, subprocess, filecmp, pysam, os
+import unittest
+import logging
+import sys
+import subprocess
+import filecmp
+import pysam
+import os
+
 import drdisco
 logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
@@ -34,23 +41,22 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file =    "tests/fix-chimeric/test_terg_01.filtered.bam"
-        output_file =   "tmp/test_terg_01.filtered.fixed.bam"
+        input_file = "tests/fix-chimeric/test_terg_01.filtered.bam"
+        output_file = "tmp/test_terg_01.filtered.fixed.bam"
         output_file_s = "tmp/test_terg_01.filtered.fixed.sam"
 
         test_file = "tests/fix-chimeric/test_terg_01.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
-        alignment_handle.convert(output_file,"tmp")
-
+        alignment_handle.convert(output_file, "tmp")
 
         # Bam2Sam
-        fhq = open(output_file_s,"w")
+        fhq = open(output_file_s, "w")
         fhq.write(pysam.view(output_file))
         fhq.close()
 
         if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s+'\' \'' + test_file+'\''
+            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
@@ -58,23 +64,22 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file =    "tests/fix-chimeric/test_terg_02.filtered.bam"
-        output_file =   "tmp/test_terg_02.filtered.fixed.bam"
+        input_file = "tests/fix-chimeric/test_terg_02.filtered.bam"
+        output_file = "tmp/test_terg_02.filtered.fixed.bam"
         output_file_s = "tmp/test_terg_02.filtered.fixed.sam"
 
         test_file = "tests/fix-chimeric/test_terg_02.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
-        alignment_handle.convert(output_file,"tmp")
-
+        alignment_handle.convert(output_file, "tmp")
 
         # Bam2Sam
-        fhq = open(output_file_s,"w")
+        fhq = open(output_file_s, "w")
         fhq.write(pysam.view(output_file))
         fhq.close()
 
         if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s+'\' \'' + test_file+'\''
+            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
@@ -82,23 +87,22 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file =    "tests/fix-chimeric/test_terg_03.filtered.bam"
-        test_file =     "tests/fix-chimeric/test_terg_03.filtered.fixed.sam"
+        input_file = "tests/fix-chimeric/test_terg_03.filtered.bam"
+        test_file = "tests/fix-chimeric/test_terg_03.filtered.fixed.sam"
 
-        output_file =   "tmp/test_terg_03.filtered.fixed.bam"
+        output_file = "tmp/test_terg_03.filtered.fixed.bam"
         output_file_s = "tmp/test_terg_03.filtered.fixed.sam"
 
-
         alignment_handle = ChimericAlignment(input_file)
-        alignment_handle.convert(output_file,"tmp")
-
+        alignment_handle.convert(output_file, "tmp")
 
         # Bam2Sam
-        fhq = open(output_file_s,"w")
+        fhq = open(output_file_s, "w")
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file+"' '" + output_file_s+"':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+
 
 def main():
     unittest.main()
