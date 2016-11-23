@@ -2,29 +2,30 @@
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
-#http://www.samformat.info/sam-format-flag
+import os
+import logging
 
-import os, subprocess, logging
 import pysam
 
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
-from .CigarAlignment import *
+from fuma.Fusion import STRAND_FORWARD
+from .CigarAlignment import CigarAlignment
 
 
-#@todo check samtools v >= 1.3.*
+"""
+ Sep 01: fix bam files:
+ - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n
+ - Fix the mate of the other:
+  [     A   >                [  B ]   [  C >
+  A -> B
+  B -> C
+  C <- B
+ - Update NH tags per mate
+ - Mark as deletion if possible (N is for splicing, so do D/P)
+ - Set read group to sample name
+"""
 
-## Sep 01: fix bam files:
-## - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n
-## - Fix the mate of the other:
-##  [     A   >                [  B ]   [  C >
-##  A -> B
-##  B -> C
-##  C <- B
-## - Update NH tags per mate
-## - Mark as deletion if possible (N is for splicing, so do D/P)
-## - Set read group to sample name
+from drdisco import __version__
 
-from drdisco import __version__, __author__, __homepage__
 
 class ChimericAlignment:
     def __init__(self, input_alignment_file):
@@ -71,7 +72,7 @@ class ChimericAlignment:
             except:
                 nm = -1
 
-            sa_id = [bam_file.get_reference_name(a.reference_id), a.reference_start, a.cigarstring, a.mapping_quality,"-" if a.is_reverse else "+", nm]
+            sa_id = [bam_file.get_reference_name(a.reference_id), a.reference_start, a.cigarstring, a.mapping_quality, "-" if a.is_reverse else "+", nm]
             sa_ids.append(",".join([str(x) for x in sa_id]))
 
         for i in xrange(len(reads_updated)):
@@ -117,10 +118,10 @@ class ChimericAlignment:
                 dd_pos = abs(d_pos - location[1])
 
                 if (dd_chr < d_chr) or (dd_chr == d_chr and dd_pos < d_pos):
-                    # Ref to itself is ackward
-                    #if dd_chr == 0 and dd_pos == 0:
-                    #   pass
-                    #else:
+                    #  Ref to itself is ackward
+                    # if dd_chr == 0 and dd_pos == 0:
+                    #    pass
+                    # else:
                     d_chr = dd_chr
                     d_pos = dd_pos
 
@@ -153,7 +154,6 @@ class ChimericAlignment:
 
         return closest
 
-
     def fix_chain(self, alignments, bam_file, mates):
         """
         all segments in variable `aligments` must come from the same MATE (unless discordant pairs without suppl. alignments) and should not be marked as DUPLICATE or MULTIMAPPING
@@ -178,8 +178,8 @@ class ChimericAlignment:
         chains_from = set(chains_from)
         chains_to = set(chains_to)
 
-        _from = chains_from.difference(chains_to)
-        _to = chains_to.difference(chains_from)
+        # _from = chains_from.difference(chains_to)
+        # _to = chains_to.difference(chains_from)
         _linked = list(chains_to.intersection(chains_from))
 
         # situaties:
@@ -212,7 +212,7 @@ class ChimericAlignment:
 
             alignments = [a for a in alignments if a != start]
             # If the mate is not exactly matched but close, fix it:
-            new_mates.append(self.set_next_ref(mates[0],[start.reference_id, start.reference_start]))
+            new_mates.append(self.set_next_ref(mates[0], [start.reference_id, start.reference_start]))
 
             hi_closest = start.get_tag('HI')
             i = 0
@@ -277,8 +277,8 @@ class ChimericAlignment:
             # Now do it based on HI-tag
 
         elif len(mates) == 0:
-            ## Either 2 discordant mates
-            ## Or 2 discordant segments from one singleton
+            # Either 2 discordant mates
+            # Or 2 discordant segments from one singleton
 
             if len(_linked) == len(alignments):
                 # cross reffing each other - is already fine
@@ -310,7 +310,6 @@ class ChimericAlignment:
 
         return new_alignments, new_mates
 
-
     def reconstruct_alignments(self, alignments, bam_file, fh_out):
         """
         input: only reads with the same qname
@@ -332,8 +331,6 @@ class ChimericAlignment:
         n_r2 = len(r2)
         n_s = len(singletons)
 
-        double_disco = 0
-
         all_reads_updated = []
 
         if n_r1 == 2:
@@ -343,13 +340,13 @@ class ChimericAlignment:
             if ca.get_order() == STRAND_FORWARD:
                 """These reads have the opposite strand because they are both read1
                 """
-                self.set_read_group([reads_updated[0]],'spanning_paired_1_s')
-                self.set_read_group([reads_updated[1]],'spanning_paired_2_s')
+                self.set_read_group([reads_updated[0]], 'spanning_paired_1_s')
+                self.set_read_group([reads_updated[1]], 'spanning_paired_2_s')
             else:
-                self.set_read_group([reads_updated[0]],'spanning_paired_1_t')
-                self.set_read_group([reads_updated[1]],'spanning_paired_2_t')
+                self.set_read_group([reads_updated[0]], 'spanning_paired_1_t')
+                self.set_read_group([reads_updated[1]], 'spanning_paired_2_t')
 
-            self.set_read_group(mates_updated,'silent_mate')
+            self.set_read_group(mates_updated, 'silent_mate')
             for a in reads_updated:
                 all_reads_updated.append(a)
 
@@ -361,14 +358,14 @@ class ChimericAlignment:
 
             ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
             if ca.get_order() == STRAND_FORWARD:
-                self.set_read_group([reads_updated[0]],'spanning_paired_1')
-                self.set_read_group([reads_updated[1]],'spanning_paired_2')
+                self.set_read_group([reads_updated[0]], 'spanning_paired_1')
+                self.set_read_group([reads_updated[1]], 'spanning_paired_2')
             else:
                 # Tested in 'tests/fix-chimeric/test_terg_03.filtered.bam'
-                self.set_read_group([reads_updated[0]],'spanning_paired_2')
-                self.set_read_group([reads_updated[1]],'spanning_paired_1')
+                self.set_read_group([reads_updated[0]], 'spanning_paired_2')
+                self.set_read_group([reads_updated[1]], 'spanning_paired_1')
 
-            self.set_read_group(mates_updated,'silent_mate')
+            self.set_read_group(mates_updated, 'silent_mate')
             for a in reads_updated:
                 all_reads_updated.append(a)
 
@@ -376,26 +373,27 @@ class ChimericAlignment:
                 all_reads_updated.append(a)
 
         elif n_s == 2:
-            reads_updated, mates_updated = self.fix_chain(singletons, bam_file,[])
+            reads_updated, mates_updated = self.fix_chain(singletons, bam_file, [])
 
-            #ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            """ deprecated
+            ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            if ca.get_order() == STRAND_FORWARD:
+                if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
+                    self.set_read_group([reads_updated[0]],'spanning_singleton_1r')
+                    self.set_read_group([reads_updated[1]],'spanning_singleton_2')
+                elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
+                    self.set_read_group([reads_updated[0]],'spanning_singleton_2r')
+                    self.set_read_group([reads_updated[1]],'spanning_singleton_1')
+                else:
+                    raise Exception("Unknown strand order for singletons: %s\n%s\n", reads_updated[0], reads_updated[1])
+            """
 
-            #if ca.get_order() == STRAND_FORWARD:
-            #    if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
-            #        self.set_read_group([reads_updated[0]],'spanning_singleton_1r')
-            #        self.set_read_group([reads_updated[1]],'spanning_singleton_2')
-            #    elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
-            #        self.set_read_group([reads_updated[0]],'spanning_singleton_2r')
-            #        self.set_read_group([reads_updated[1]],'spanning_singleton_1')
-            #    else:
-            #        raise Exception("Unknown strand order for singletons: %s\n%s\n", reads_updated[0], reads_updated[1])
-            #else:
             if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
-                self.set_read_group([reads_updated[0]],'spanning_singleton_1_r')
-                self.set_read_group([reads_updated[1]],'spanning_singleton_2_r')
+                self.set_read_group([reads_updated[0]], 'spanning_singleton_1_r')
+                self.set_read_group([reads_updated[1]], 'spanning_singleton_2_r')
             elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
-                self.set_read_group([reads_updated[0]],'spanning_singleton_2')
-                self.set_read_group([reads_updated[1]],'spanning_singleton_1')
+                self.set_read_group([reads_updated[0]], 'spanning_singleton_2')
+                self.set_read_group([reads_updated[1]], 'spanning_singleton_1')
             else:
                 raise Exception("Unknown strand order for singletons: %s\n%s\n", reads_updated[0], reads_updated[1])
 
@@ -408,8 +406,8 @@ class ChimericAlignment:
                 all_reads_updated.append(a)
 
         elif n_r1 == 1 and n_r2 == 1 and n_s == 0:
-            reads_updated, mates_updated = self.fix_chain(r1 + r2, bam_file,[])
-            self.set_read_group(reads_updated,'discordant_mates')
+            reads_updated, mates_updated = self.fix_chain(r1 + r2, bam_file, [])
+            self.set_read_group(reads_updated, 'discordant_mates')
 
             for a in reads_updated:
                 all_reads_updated.append(a)
@@ -424,7 +422,6 @@ class ChimericAlignment:
             else:
                 raise Exception("what happens here?")
 
-
         all_reads_updated = self.update_sa_tags(all_reads_updated, bam_file)
         if len(all_reads_updated) != n:
             raise Exception("Error - reads have been lost")
@@ -433,13 +430,6 @@ class ChimericAlignment:
 
         for a in all_reads_updated:
             fh_out.write(a)
-
-        #if n > 2:
-        #print n, n_r1, n_r2, n_s
-        #   9038 2 0 0 2
-        # 122063 2 1 1 0
-        #  12689 3 1 2 0
-        #  15828 3 2 1 0
 
     def convert(self, bam_file_discordant_fixed, temp_dir):
         basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
