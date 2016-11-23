@@ -22,6 +22,10 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
+
+import drdisco
+from drdisco.ChimericAlignment import ChimericAlignment
+
 import unittest
 import logging
 import sys
@@ -30,10 +34,7 @@ import filecmp
 import pysam
 import os
 
-import drdisco
 logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
-
-from drdisco.ChimericAlignment import ChimericAlignment
 
 
 class TestChimericAlignment(unittest.TestCase):

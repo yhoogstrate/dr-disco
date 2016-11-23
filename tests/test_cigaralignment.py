@@ -22,15 +22,14 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
+import drdisco
+from drdisco.CigarAlignment import CigarAlignment, cigar_to_cigartuple
+
 import unittest
 import logging
 import sys
 
-import drdisco
 logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
-
-from drdisco.CigarAlignment import CigarAlignment, cigar_to_cigartuple
-
 
 from fuma.Fusion import STRAND_REVERSE
 

@@ -8,6 +8,8 @@ Tries to find genomic and exon to exon break points within a discordant
 RNA-Seq read alignment.
 """
 
+from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE
+
 import logging
 import math
 import operator
@@ -20,9 +22,6 @@ from .CigarAlignment import cigar_to_cigartuple
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
-
-# load cfg
-from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE
 
 
 def entropy(frequency_table):
