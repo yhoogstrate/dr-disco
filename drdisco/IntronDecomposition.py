@@ -820,7 +820,7 @@ class Subnet():
 
     def __str__(self):
         """Makes tabular output"""
-        node_a,  node_b  = self.edges[0]._origin, self.edges[0]._target
+        node_a, node_b  = self.edges[0]._origin, self.edges[0]._target
         nodes_a, nodes_b = self.get_n_nodes()
 
         return (
@@ -858,11 +858,11 @@ class Subnet():
     def get_n_split_reads(self):
         n = 0
 
-        for _type in [JunctionTypes.spanning_paired_1,      JunctionTypes.spanning_paired_2,
-                      JunctionTypes.spanning_paired_1_r,    JunctionTypes.spanning_paired_2_r,
-                      JunctionTypes.spanning_paired_1_s,    JunctionTypes.spanning_paired_2_s,
-                      JunctionTypes.spanning_paired_1_t,    JunctionTypes.spanning_paired_2_t,
-                      JunctionTypes.spanning_singleton_1,   JunctionTypes.spanning_singleton_2,
+        for _type in [JunctionTypes.spanning_paired_1, JunctionTypes.spanning_paired_2,
+                      JunctionTypes.spanning_paired_1_r, JunctionTypes.spanning_paired_2_r,
+                      JunctionTypes.spanning_paired_1_s, JunctionTypes.spanning_paired_2_s,
+                      JunctionTypes.spanning_paired_1_t, JunctionTypes.spanning_paired_2_t,
+                      JunctionTypes.spanning_singleton_1, JunctionTypes.spanning_singleton_2,
                       JunctionTypes.spanning_singleton_1_r, JunctionTypes.spanning_singleton_2_r]:
             for edge in self.edges:
                 n += edge.get_count(_type)
@@ -956,7 +956,7 @@ class BAMExtract(object):
         indeed fixed using Dr. Disco
         """
         bam_fh = pysam.AlignmentFile(alignment_file, "rb")
-        if bam_fh.header.has_key('PG'):
+        if 'PG' in bam_fh.header:
             for pg in bam_fh.header['PG']:
                 if pg['ID'] == 'drdisco_fix_chimeric':
                     try:  # pragma: no cover
