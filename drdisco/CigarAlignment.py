@@ -135,7 +135,7 @@ class CigarAlignment:
             if chunk[0] == last_type:
 
                 # increase last insert
-                concat[-1] = (chunk[0], concat[-1][1]+chunk[1])
+                concat[-1] = (chunk[0], concat[-1][1] + chunk[1])
             else:
                 concat.append(chunk)
                 last_type = chunk[0]

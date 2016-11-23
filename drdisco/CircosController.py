@@ -46,7 +46,7 @@ chromosomes_radius = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
 
         fh = open(self.coordinate_config_file, "w")
         fh.write("chromosomes_display_default = no\n")
-        fh.write("chromosomes = "+";".join([ c[0]+"["+c[4]+"]:"+(("%." + str(self.smoothing_prec)+"f") % c[1])+"-"+(("%." + str(self.smoothing_prec)+"f") %c[2]) for c in coordinates])+"\n")
+        fh.write("chromosomes = "+";".join([ c[0] + "["+c[4] + "]:"+(("%." + str(self.smoothing_prec)+"f") % c[1])+"-"+(("%." + str(self.smoothing_prec)+"f") %c[2]) for c in coordinates])+"\n")
         fh.write("chromosome_scale = "+";".join( [str(c[4])+":"+scales[c[3]] for c in coordinates])+"\n")
         fh.write("chromosome_radius = "+",".join( [str(c[4])+"="+radius[c[3]] for c in coordinates])+"\n")
 
