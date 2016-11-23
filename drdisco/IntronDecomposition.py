@@ -499,7 +499,7 @@ class Graph:
             short_pos1 = "%0.2X" % pos1.pos  # str(pos1.pos)
             short_pos2 = "%0.2X" % pos2.pos  # str(pos2.pos)
 
-            cigarstrs = short_pos1+strand_tt[pos1.strand]+cigarstrs[0]+"|"+short_pos2+strand_tt[pos2.strand]+cigarstrs[1]
+            cigarstrs = short_pos1 + strand_tt[pos1.strand] + cigarstrs[0]+"|"+short_pos2 + strand_tt[pos2.strand] + cigarstrs[1]
 
         edge1 = node1.get_edge_to_node(node2)
 
