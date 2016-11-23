@@ -1,14 +1,14 @@
-#!/usr/bin/env python2
+#!/usr /bin /env python2
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
-# https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
+# https://github.com /numpy /numpy /blob /master /doc /HOWTO_DOCUMENT.rst.txt
 
 """
 Tries to find genomic and exon to exon break points within a discordant
 RNA-Seq read alignment.
 """
 
-#http://www.samformat.info/sam-format-flag
+#http://www.samformat.info /sam-format-flag
 import logging,re,math,copy,sys,operator
 import pysam
 import HTSeq
@@ -98,14 +98,14 @@ class BreakPosition:
      ~~~ | 6 | 7 | 8 |
 
      string function of break points:
-     chr1:3/4 and chr2:5/6
+     chr1:3 /4 and chr2:5 /6
     """
 
     def __init__(self,_chr,position_0_based,strand):
         self._chr = _chr
         self.pos = position_0_based
         self.strand = strand
-        self._hash = self._chr.replace("chr","") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]#http://stackoverflow.com/questions/38430277/python-class-hash-method-and-set
+        self._hash = self._chr.replace("chr","") + ("%0.2X" % self.pos).zfill(8) + strand_tt[self.strand]#http://stackoverflow.com /questions /38430277 /python-class-hash-method-and-set
 
     def __lt__(self, other_bp):
         return self._hash < other_bp._hash
@@ -215,7 +215,7 @@ class Node:
                 out += "\n\t[" + str(id(edge)) + ":"+sedge+"] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
 
         if a > 0:
-            out += "\n\t-> soft/hard clips: " + str(self.clips)
+            out += "\n\t-> soft /hard clips: " + str(self.clips)
 
             return out+"\n"
         else:
@@ -309,10 +309,10 @@ class Edge:
         self._unique_alignment_hashes = {}# Used for determining entropy
 
     def get_entropy(self):
-        """Entropy is an important metric/ propery of an edge
+        """Entropy is an important metric / propery of an edge
         The assumption is that all reads should be 'different', i.e.
         have a different start position, different end position,
-        different soft/hardclips etc.
+        different soft /hardclips etc.
 
         It is more probable to find the following alignment for a true
         fusion gene:
@@ -835,7 +835,7 @@ class Subnet():
                     node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand], # Pos-A
                     node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand], # Pos-B
                     ("valid" if self.discarded == [] else ','.join(self.discarded)), # Classification status
-                    self.total_score/2, self.total_clips, self.get_n_split_reads()/2, self.get_n_discordant_reads()/2, # Evidence stats
+                    self.total_score /2, self.total_clips, self.get_n_split_reads()/2, self.get_n_discordant_reads()/2, # Evidence stats
                     len(self.edges), nodes_a, nodes_b, # Edges and nodes stats
                     len(self.left_splice_junctions), len(self.right_splice_junctions),
                     self.edges[0].get_entropy(), self.get_overall_entropy(), # Entropy stats
@@ -1113,7 +1113,7 @@ class BAMExtract(object):
             else:# pragma: no cover
                 raise Exception("Unknown type read: %s. Was the alignment fixed with a more up to date version of Dr.Disco?" % JunctionTypeUtils.str(rg))
 
-            # Detect introns, clipping and insertions/deletions by SAM flags
+            # Detect introns, clipping and insertions /deletions by SAM flags
             for internal_edge in self.find_cigar_edges(read):
                 i_pos1, i_pos2 = None, None
 
@@ -1181,7 +1181,7 @@ class BAMExtract(object):
         pysam.index(str(bamfile_out))
 
     # static is elegant for functions that do not use class properties
-    # http://stackoverflow.com/questions/18679803/python-calling-method-without-self
+    # http://stackoverflow.com /questions /18679803 /python-calling-method-without-self
     @staticmethod
     def parse_SA(SA_tag):
         sa_tags = SA_tag.split(";")
@@ -1218,10 +1218,10 @@ class BAMExtract(object):
  soft-clip: <========]
                                                                        [==>
             Softclip are usually one-directional, from the sequenced base until
-            the end. If it is before the first M/= flag, it's direction should
+            the end. If it is before the first M /= flag, it's direction should
             be '-', otherwise '+' as it clips from the end. In principle the
-            soft/hard clips are not edges but properties of nodes. One particular
-            base may have several soft/hard clips (from different locations but
+            soft /hard clips are not edges but properties of nodes. One particular
+            base may have several soft /hard clips (from different locations but
             adding weigt to the same node).
 
             Splice juncs are bi-directional, and real edges.
@@ -1313,8 +1313,8 @@ class IntronDecomposition:
         # If circos:
         #s = 1
         #for subnet in self.results:
-        #    c = CircosController(str(s), subnet, "tmp/circos.conf","tmp/select-coordinates.conf", "tmp/circos-data.txt")
-        #    c.draw_network("tmp/test.png","tmp/test.svg")
+        #    c = CircosController(str(s), subnet, "tmp /circos.conf","tmp /select-coordinates.conf", "tmp /circos-data.txt")
+        #    c.draw_network("tmp /test.png","tmp /test.svg")
         #    s += 1
 
         return len(self.results)
@@ -1401,9 +1401,9 @@ class IntronDecomposition:
                             """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
                                 if product > (8*k):
                                     # Average gene size = 10-15kb
-                                    # rmse <= 125000 - 120000/2^( product / 1200)
+                                    # rmse <= 125000 - 120000 /2^( product / 1200)
                                     # if rmse < max_rmse: valid data point
-                                    max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
+                                    max_rmse = 125000.0 - (120000 /pow(2, float(product) / 1200.0))
                                     return (rmse <= max_rmse)
                             """
 
@@ -1411,7 +1411,7 @@ class IntronDecomposition:
                                 new_merged = True
                             else:#@todo revise if / else / elif logic, and use linear regression or sth like that
                                 if n_l_dist > 0:
-                                    l_dist_ins_ratio = 1.0 * n_l_dist/len(l_dists)
+                                    l_dist_ins_ratio = 1.0 * n_l_dist / len(l_dists)
                                     if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
                                         new_merged = True
                                     elif l_dist_ins_ratio > 0.7 and rmsq_r_dist < 10000:
@@ -1420,7 +1420,7 @@ class IntronDecomposition:
                                         new_merged = True
 
                                 if n_r_dist > 0:
-                                    r_dist_ins_ratio = 1.0 * n_r_dist/len(r_dists)
+                                    r_dist_ins_ratio = 1.0 * n_r_dist / len(r_dists)
                                     if r_dist_ins_ratio == 1.0 and rmsq_l_dist < 15000:
                                         new_merged = True
                                     elif r_dist_ins_ratio > 0.7 and rmsq_l_dist < 10000:
