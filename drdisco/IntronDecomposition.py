@@ -258,7 +258,7 @@ class JunctionTypeUtils:
         'spanning_singleton_1': JunctionTypes.spanning_singleton_1,
         'spanning_singleton_2': JunctionTypes.spanning_singleton_2,
         'spanning_singleton_1_r': JunctionTypes.spanning_singleton_1_r,
-        'spanning_singleton_2_r': JunctionTypes.spanning_singleton_2_r }
+        'spanning_singleton_2_r': JunctionTypes.spanning_singleton_2_r}
 
     scoring_table = {
         JunctionTypes.discordant_mates: 1,
@@ -273,7 +273,7 @@ class JunctionTypeUtils:
         JunctionTypes.spanning_singleton_1: 2,
         JunctionTypes.spanning_singleton_2: 2,
         JunctionTypes.spanning_singleton_1_r: 2,
-        JunctionTypes.spanning_singleton_2_r: 2 }
+        JunctionTypes.spanning_singleton_2_r: 2}
 
     @staticmethod
     def enum(enumstring):
