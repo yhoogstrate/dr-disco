@@ -69,7 +69,7 @@ def bam_parse_alignment_offset(cigartuple):
             X	BAM_CDIFF	8
             """
 
-        if chunk[0] in [0,2,3]:
+        if chunk[0] in [0, 2, 3]:
             pos += chunk[1]
 
     return pos
@@ -1065,7 +1065,7 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
             elif rg in [JunctionTypes.spanning_paired_1_s]:
-                # Very clear example in S054 @ chr21:40,064,610-40,064,831  and implemented in test case 14
+                # Very clear example in S054 @ chr21:40, 064, 610-40, 064, 831  and implemented in test case 14
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      (read.reference_start+bam_parse_alignment_offset(read.cigar)),
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
@@ -1152,8 +1152,8 @@ class BAMExtract(object):
         logging.debug("alignment data loaded")
 
     def parse_pos(self, str_pos):
-        _chr,_poss = str_pos.split(":",2)
-        _poss = _poss.replace(",","").split("-",2)
+        _chr,_poss = str_pos.split(":", 2)
+        _poss = _poss.replace(",","").split("-", 2)
 
         return str(_chr), int(_poss[0]), int(_poss[1])
 
@@ -1260,11 +1260,11 @@ splice-junc:                           <=============>
                 5H 10S 5M
 
                 in that case, the first edge should be -15,-10 and the
-                second -10,0. Maybe soft- and hard clipping should
+                second -10, 0. Maybe soft- and hard clipping should
                 be merged together?
                 """
 
-                if chunk[0] in [4,5] and not solid:
+                if chunk[0] in [4, 5] and not solid:
                     offset -= chunk[1]
 
                 if chunk[1] > MAX_ACCEPTABLE_ALIGNMENT_ERROR:
@@ -1283,7 +1283,7 @@ splice-junc:                           <=============>
                         yield (offset, (offset + chunk[1]) , tt[chunk[0]])
 
 
-            if chunk[0] not in [4,5]:
+            if chunk[0] not in [4, 5]:
                 solid = True
 
             offset += chunk[1]
@@ -1370,7 +1370,7 @@ class IntronDecomposition:
         logging.info("initiated")
 
         def sq_dist(vec):
-            sum_of_squares = sum(pow(x,2) for x in vec)
+            sum_of_squares = sum(pow(x, 2) for x in vec)
 
             if sum_of_squares > 0:
                 avg_sq_d = float(sum_of_squares) / len(vec)

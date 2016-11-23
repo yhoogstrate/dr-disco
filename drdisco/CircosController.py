@@ -63,7 +63,7 @@ chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
 
         idx = {}
         for dp in self.data:
-            for i in [0,1]:
+            for i in [0, 1]:
                 _chr = dp[i]._target.position._chr.replace('chr', self.circos_chr_name)
                 if not idx.has_key(_chr):
                     idx[_chr] = {}
@@ -77,8 +77,8 @@ chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
 
             for pos in sorted(idx[_chr].keys()):
                 chunk = [pos-self.smoothing_offset, pos+self.smoothing_offset]
-                chunk[0] = float(chunk[0]) / float(pow(10,6))# a million -> Mb
-                chunk[1] = float(chunk[1]) / float(pow(10,6))# a million -> Mb
+                chunk[0] = float(chunk[0]) / float(pow(10, 6))# a million -> Mb
+                chunk[1] = float(chunk[1]) / float(pow(10, 6))# a million -> Mb
                 chunk = [round(chunk[0], self.smoothing_prec), round(chunk[1], self.smoothing_prec)]
 
                 # Look what to do with previous chunk, if there is any
