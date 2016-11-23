@@ -111,7 +111,7 @@ class BreakPosition:
         return self._hash < other_bp._hash
 
     def __str__(self):
-        return str(self._chr) + ":" + str(self.pos) + "/" + str(self.pos+ 1) + "("+strand_tt[self.strand] + ")"
+        return str(self._chr) + ":" + str(self.pos) + "/" + str(self.pos+ 1) + "(" + strand_tt[self.strand] + ")"
 
     def get_dist(self, other_bp, strand_specific):
         if not isinstance(other_bp, BreakPosition):  # pragma: no cover
@@ -212,7 +212,7 @@ class Node:
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t[" + str(id(edge)) + ":"+sedge+"] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
+                out += "\n\t[" + str(id(edge)) + ":" + sedge+"] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
 
         if a > 0:
             out += "\n\t-> soft /hard clips: " + str(self.clips)
@@ -424,7 +424,7 @@ class Edge:
         # spacer = " "*len(str(self._origin.position))
 
         # for _k in self._origin.splice_edges.keys():
-        #    out += "\n"+spacer+"=>" + str(_k.position) + ": score=" + str(self._origin.splice_edges[_k][1].get_splice_score())
+        #    out += "\n" + spacer+"=>" + str(_k.position) + ": score=" + str(self._origin.splice_edges[_k][1].get_splice_score())
 
         return out
 
@@ -469,7 +469,7 @@ class Graph:
         node2 = self.get_node_reference(pos2)
 
         if cigarstrs is not None:
-            cigarstrs = pos1._hash+cigarstrs[0] + "|"+pos2._hash+cigarstrs[1]
+            cigarstrs = pos1._hash+cigarstrs[0] + "|" + pos2._hash+cigarstrs[1]
 
         edge = node1.get_edge_to_node(node2)
         if edge == None:
@@ -499,7 +499,7 @@ class Graph:
             short_pos1 = "%0.2X" % pos1.pos  # str(pos1.pos)
             short_pos2 = "%0.2X" % pos2.pos  # str(pos2.pos)
 
-            cigarstrs = short_pos1 + strand_tt[pos1.strand] + cigarstrs[0] + "|"+short_pos2 + strand_tt[pos2.strand] + cigarstrs[1]
+            cigarstrs = short_pos1 + strand_tt[pos1.strand] + cigarstrs[0] + "|" + short_pos2 + strand_tt[pos2.strand] + cigarstrs[1]
 
         edge1 = node1.get_edge_to_node(node2)
 

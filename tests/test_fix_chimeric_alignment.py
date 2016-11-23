@@ -98,7 +98,7 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '"+test_file+"' '"+output_file_s+"':\n"+subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file+"' '" + output_file_s+"':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
 
 def main():
     unittest.main()

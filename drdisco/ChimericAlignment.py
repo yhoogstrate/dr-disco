@@ -33,7 +33,7 @@ class ChimericAlignment:
 
     def test_pysam_version(self):
         if pysam.__version__[0:4] != "0.9.":
-            raise Exception("Version of pysam needs to be at least 0.9 but is: "+pysam.__version__+" instead")
+            raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__+" instead")
         else:
             return True
 
@@ -164,8 +164,8 @@ class ChimericAlignment:
         k = len(alignments)
 
         for alignment in alignments:
-            chain_from = str(alignment.reference_id)+":" + str(alignment.reference_start)
-            chain_to = str(alignment.next_reference_id)+":" + str(alignment.next_reference_start)
+            chain_from = str(alignment.reference_id) + ":" + str(alignment.reference_start)
+            chain_to = str(alignment.next_reference_id) + ":" + str(alignment.next_reference_start)
 
             if chain_from not in chains_from.keys():
                 chains_from[chain_from] = []
@@ -237,7 +237,7 @@ class ChimericAlignment:
                 new_alignments.append(start)
 
             ##- Does it based on shortest genomic distance:
-            #if str(mates[0].next_reference_id)+":" + str(mates[0].next_reference_start) in chains_from:
+            #if str(mates[0].next_reference_id) + ":" + str(mates[0].next_reference_start) in chains_from:
                 #next_pos = [mates[0].next_reference_id, mates[0].next_reference_start]
                 #last_pos = [mates[0].reference_id, mates[0].reference_start]
 
@@ -419,7 +419,7 @@ class ChimericAlignment:
 
         else:
             if n == 1:
-                print("Warning: segments of mate are missing: "+alignments[0].query_name)
+                print("Warning: segments of mate are missing: " + alignments[0].query_name)
                 all_reads_updated.append(alignments[0])
             else:
                 raise Exception("what happens here?")
@@ -444,7 +444,7 @@ class ChimericAlignment:
     def convert(self, bam_file_discordant_fixed, temp_dir):
         path = os.path.dirname(self.input_alignment_file)
         basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
-        basename = temp_dir.rstrip("/")+"/"+basename
+        basename = temp_dir.rstrip("/") + "/" + basename
 
         #@TODO / consider todo - start straight from sam
         #samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
@@ -507,7 +507,7 @@ class ChimericAlignment:
 
         logging.info("Cleaning up temp files")
         for fname in [basename+".name-sorted.bam", basename+".name-sorted.fixed.sam", basename+".name-sorted.fixed.bam"]:
-            logging.debug("=> "+fname)
+            logging.debug("=> " + fname)
             os.remove(fname)
 
 

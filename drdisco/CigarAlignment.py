@@ -173,7 +173,7 @@ class CigarAlignment:
     def print_matrix(self):
         for j in xrange(self.n + 1):
             for i in xrange(self.m + 1):
-                print str(self.matrix[i][j])+"\t",
+                print str(self.matrix[i][j]) + "\t",
             print
         print
 

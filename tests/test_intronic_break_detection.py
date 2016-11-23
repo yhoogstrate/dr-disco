@@ -53,7 +53,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_02(self):
         input_file_a =   TEST_DIR+"test_02.bam"
@@ -68,7 +68,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_03(self):
         input_file_a =   TEST_DIR+"test_03.bam"
@@ -83,7 +83,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_04(self):
         input_file_a =    TEST_DIR+"test_04.bam"
@@ -98,7 +98,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_05(self):
         input_file_a =    TEST_DIR+"test_05.bam"
@@ -113,7 +113,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_06(self):
         input_file_a =    TEST_DIR+"test_06.bam"
@@ -158,7 +158,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_09(self):
         input_file_a =    TEST_DIR+"test_09.bam"
@@ -173,7 +173,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_10(self):
         input_file_a =    TEST_DIR+"test_10.bam"
@@ -188,7 +188,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_11(self):
         input_file_a =    TEST_DIR+"test_11.bam"
@@ -203,7 +203,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_12_extract_subnetworks(self):
         input_file_a =    TEST_DIR+"test_12.bam"
@@ -216,7 +216,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_13_merge_overlapping_subnetworks(self):
         input_file_a =    TEST_DIR+"test_13.bam"
@@ -229,7 +229,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_14_test_inserting_spanning_paired_12_s(self):
         input_file_a =    TEST_DIR+"test_14.bam"
@@ -242,7 +242,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_15_pruning_offset(self):
         input_file_a =    TEST_DIR+"test_15.bam"
@@ -255,7 +255,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_16_final(self):
         input_file_a =    TEST_DIR+"test_16.bam"
@@ -270,7 +270,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     #def test_17(self):
         #input_file_a =    TEST_DIR+"test_17.bam"
@@ -284,7 +284,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
             #ic.export(fh)
 
         ## Test data not checked, should just not throw an exception
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     #def test_18(self):
         #input_file_a =    TEST_DIR+"test_18.bam"
@@ -298,7 +298,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
             #ic.export(fh)
 
         ## Test data not checked, should just not throw an exception
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '"+test_file+"' '"+output_file+"':\n"+subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file+"' '" + output_file+"':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
 def main():
