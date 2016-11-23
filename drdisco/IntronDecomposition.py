@@ -1245,7 +1245,7 @@ splice-junc:                           <=============>
                 deletions of that size shouldn't add weight anyway
 
                 1S 5M means:
-                startpoint-1 , startpoint => Softclip 
+                startpoint-1, startpoint => Softclip 
 
                 5M 2S means:
                 startpoint +5, startpoint +5+2 => softclip
@@ -1273,14 +1273,14 @@ splice-junc:                           <=============>
                         M M M M M M M M M M S S S S S
                                            <========]
                         """
-                        # yield (offset , (offset + chunk[1]) , tt[chunk[0]])
-                        yield ((offset + chunk[1]), offset , tt[chunk[0]])
+                        # yield (offset, (offset + chunk[1]) , tt[chunk[0]])
+                        yield ((offset + chunk[1]), offset, tt[chunk[0]])
                     else:
                         """Clips to the second node:
                         S S S S S M M M M M M M M M M
                         [========>
                         """
-                        yield (offset , (offset + chunk[1]) , tt[chunk[0]])
+                        yield (offset, (offset + chunk[1]) , tt[chunk[0]])
 
 
             if chunk[0] not in [4,5]:
@@ -1385,7 +1385,7 @@ class IntronDecomposition:
         for i in xrange(n):
             if subnets[i] != None:
                 candidates = []
-                for j in xrange(i + 1, n):  # for i , j > i
+                for j in xrange(i + 1, n):  # for i, j > i
                     if subnets[j] != None:
                         new_merged = False
 

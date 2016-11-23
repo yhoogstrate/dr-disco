@@ -105,7 +105,7 @@ chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
                 i += 1
 
             vec.append( (_chr, vec_large[k+1][1], vec_large[k+1][2], vec_large[k+1][3], _chr+"_" + str(i)))
-            vec.append( (_chr, vec_large[k+1][2], 1000.0 , 'small', _chr+"_" + str(i+1)))
+            vec.append( (_chr, vec_large[k+1][2], 1000.0, 'small', _chr+"_" + str(i+1)))
 
         return vec
 
