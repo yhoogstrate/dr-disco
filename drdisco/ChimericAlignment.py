@@ -33,7 +33,7 @@ class ChimericAlignment:
 
     def test_pysam_version(self):
         if pysam.__version__[0:4] != "0.9.":
-            raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__+" instead")
+            raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__ + " instead")
         else:
             return True
 
@@ -205,7 +205,7 @@ class ChimericAlignment:
             if mates[0].is_read1:
                 hi_closest = -1
             else:
-                hi_closest = len(alignments)+1
+                hi_closest = len(alignments) + 1
 
             start = self.get_closest_by_hi(hi_closest, alignments)
             last_pos = [mates[0].reference_id, mates[0].reference_start]
@@ -266,7 +266,7 @@ class ChimericAlignment:
                 # alignments = [a for a in alignments if a != closest]
 
                 # start = closest
-                # i += 1
+                # i + = 1
 
             # # Map last one back to the mate again
             # if len(alignments) == 0:
@@ -442,42 +442,39 @@ class ChimericAlignment:
         #  15828 3 2 1 0
 
     def convert(self, bam_file_discordant_fixed, temp_dir):
-        path = os.path.dirname(self.input_alignment_file)
         basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
         basename = temp_dir.rstrip("/") + "/" + basename
 
-        #@TODO / consider todo - start straight from sam
-        #samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
-
+        # @TODO / consider todo - start straight from sam
+        # samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
 
         logging.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
-        pysam.sort("-o", basename+".name-sorted.bam", "-n", self.input_alignment_file)
-
+        pysam.sort("-o", basename + ".name-sorted.bam", "-n", self.input_alignment_file)
 
         logging.info("Fixing sam file")
-        sam_file_discordant = pysam.AlignmentFile(basename+".name-sorted.bam", "rb")
+        sam_file_discordant = pysam.AlignmentFile(basename + ".name-sorted.bam", "rb")
         header = sam_file_discordant.header
         header['RG'] = [
-            {'ID':'discordant_mates','DS':'This read has discordant mate pair'},
-            {'ID':'silent_mate','DS':'Reads of this type are not discordant while their mate is'},
-            {'ID':'spanning_paired_1','DS':'This read was aligned to two locations and also has an aligned mate'},
-            {'ID':'spanning_paired_1_r','DS':'This read was aligned to two locations and also has an aligned mate (strand type r)'},
-            {'ID':'spanning_paired_1_s','DS':'This read was aligned to two locations and also has an aligned mate (strand type s)'},
-            {'ID':'spanning_paired_1_t','DS':'This read was aligned to two locations and also has an aligned mate (strand type t)'},
-            {'ID':'spanning_paired_2','DS':'This read was aligned to two locations and also has an aligned mate'},
-            {'ID':'spanning_paired_2_r','DS':'This read was aligned to two locations and also has an aligned mate (strand type r)'},
-            {'ID':'spanning_paired_2_s','DS':'This read was aligned to two locations and also has an aligned mate (strand type s)'},
-            {'ID':'spanning_paired_2_t','DS':'This read was aligned to two locations and also has an aligned mate (strand type t)'},
-            {'ID':'spanning_singleton_1','DS':'This read was aligned to two locations but no aligned mate'},
-            {'ID':'spanning_singleton_1_r','DS':'This read was aligned to two locations but no aligned mate'},
-            {'ID':'spanning_singleton_2','DS':'This read was aligned to two locations but no aligned mate'},
-            {'ID':'spanning_singleton_2_r','DS':'This read was aligned to two locations but no aligned mate'}
-            ]
+            {'ID': 'discordant_mates', 'DS': 'This read has discordant mate pair'},
+            {'ID': 'silent_mate', 'DS': 'Reads of this type are not discordant while their mate is'},
+            {'ID': 'spanning_paired_1', 'DS': 'This read was aligned to two locations and also has an aligned mate'},
+            {'ID': 'spanning_paired_1_r', 'DS': 'This read was aligned to two locations and also has an aligned mate (strand type r)'},
+            {'ID': 'spanning_paired_1_s', 'DS': 'This read was aligned to two locations and also has an aligned mate (strand type s)'},
+            {'ID': 'spanning_paired_1_t', 'DS': 'This read was aligned to two locations and also has an aligned mate (strand type t)'},
+            {'ID': 'spanning_paired_2', 'DS': 'This read was aligned to two locations and also has an aligned mate'},
+            {'ID': 'spanning_paired_2_r', 'DS': 'This read was aligned to two locations and also has an aligned mate (strand type r)'},
+            {'ID': 'spanning_paired_2_s', 'DS': 'This read was aligned to two locations and also has an aligned mate (strand type s)'},
+            {'ID': 'spanning_paired_2_t', 'DS': 'This read was aligned to two locations and also has an aligned mate (strand type t)'},
+            {'ID': 'spanning_singleton_1', 'DS': 'This read was aligned to two locations but no aligned mate'},
+            {'ID': 'spanning_singleton_1_r', 'DS': 'This read was aligned to two locations but no aligned mate'},
+            {'ID': 'spanning_singleton_2', 'DS': 'This read was aligned to two locations but no aligned mate'},
+            {'ID': 'spanning_singleton_2_r', 'DS': 'This read was aligned to two locations but no aligned mate'}]
+
         header['PG'] = [
-            {'ID':'drdisco_fix_chimeric','PN':'drdisco fix-chimeric','CL':'','VN':__version__}
+            {'ID': 'drdisco_fix_chimeric', 'PN': 'drdisco fix-chimeric', 'CL': '', 'VN': __version__}
         ]
 
-        fh = pysam.AlignmentFile(basename+".name-sorted.fixed.sam", "wb", header=header)
+        fh = pysam.AlignmentFile(basename + ".name-sorted.fixed.sam", "wb", header=header)
         last_read_name = False
         alignments = []
         for read in sam_file_discordant:
@@ -490,27 +487,22 @@ class ChimericAlignment:
         self.reconstruct_alignments(alignments, sam_file_discordant, fh)
         fh.close()
 
-
         logging.info("Converting fixed file into BAM")
-        fhq = open(basename+".name-sorted.fixed.bam", "wb")
-        fhq.write(pysam.view('-bS', basename+".name-sorted.fixed.sam"))
+        fhq = open(basename + ".name-sorted.fixed.bam", "wb")
+        fhq.write(pysam.view('-bS', basename + ".name-sorted.fixed.sam"))
         fhq.close()
 
-
         logging.info("Sorting position based fixed file")
-        pysam.sort("-o", basename+".sorted.fixed.bam", basename+".name-sorted.fixed.bam")
-
+        pysam.sort("-o", basename + ".sorted.fixed.bam", basename + ".name-sorted.fixed.bam")
 
         logging.info("Indexing the position sorted bam file")
-        pysam.index(basename+".sorted.fixed.bam")
-
+        pysam.index(basename + ".sorted.fixed.bam")
 
         logging.info("Cleaning up temp files")
-        for fname in [basename+".name-sorted.bam", basename+".name-sorted.fixed.sam", basename+".name-sorted.fixed.bam"]:
+        for fname in [basename + ".name-sorted.bam", basename + ".name-sorted.fixed.sam", basename + ".name-sorted.fixed.bam"]:
             logging.debug("=> " + fname)
             os.remove(fname)
 
-
         logging.info("Moving to final destination")
-        os.rename(basename+".sorted.fixed.bam", bam_file_discordant_fixed)
-        os.rename(basename+".sorted.fixed.bam"+".bai", bam_file_discordant_fixed+".bai")
+        os.rename(basename + ".sorted.fixed.bam", bam_file_discordant_fixed)
+        os.rename(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
