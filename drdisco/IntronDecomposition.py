@@ -555,7 +555,7 @@ class Graph:
                             if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
                                 d2 = abs(pos2.pos - node2.position.pos)
                                 if d1+d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
-                                    yield pow(d1, 2) + pow(d2, 2) , edge
+                                    yield pow(d1, 2) + pow(d2, 2), edge
 
     def print_chain(self):  # pragma: no cover
         print "**************************************************************"
@@ -1273,15 +1273,14 @@ splice-junc:                           <=============>
                         M M M M M M M M M M S S S S S
                                            <========]
                         """
-                        # yield (offset, (offset + chunk[1]) , tt[chunk[0]])
+                        # yield (offset, (offset + chunk[1]), tt[chunk[0]])
                         yield ((offset + chunk[1]), offset, tt[chunk[0]])
                     else:
                         """Clips to the second node:
                         S S S S S M M M M M M M M M M
                         [========>
                         """
-                        yield (offset, (offset + chunk[1]) , tt[chunk[0]])
-
+                        yield (offset, (offset + chunk[1]), tt[chunk[0]])
 
             if chunk[0] not in [4, 5]:
                 solid = True
