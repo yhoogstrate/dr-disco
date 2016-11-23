@@ -135,7 +135,7 @@ class CigarAlignment:
             if chunk[0] == last_type:
 
                 # increase last insert
-                concat[-1] = (chunk[0], concat[-1][1] + chunk[1])
+                concat[-1] = (chunk[0], concat[-1][1]+chunk[1])
             else:
                 concat.append(chunk)
                 last_type = chunk[0]
@@ -143,36 +143,36 @@ class CigarAlignment:
         return concat
 
     def init_matrix(self):
-        #self.matrix = [[0] * (self.n+1) ] * (self.m + 1) << copies references of lists >,<
-        self.matrix = [[0 for i in xrange(self.n+1)] for i in xrange(self.m+1)]
+        #self.matrix = [[0] * (self.n + 1) ] * (self.m + 1) << copies references of lists >,<
+        self.matrix = [[0 for i in xrange(self.n + 1)] for i in xrange(self.m + 1)]
 
-        for i in xrange(1, self.m+1):
+        for i in xrange(1, self.m + 1):
             self.matrix[i][0] = pow(self.cigtup1[i-1][1], 2)
 
-        for j in xrange(1, self.n+1):
+        for j in xrange(1, self.n + 1):
             self.matrix[0][j] = pow(self.cigtup2[j-1][1], 2)
 
 
 
-        self.tb_matrix = [["?" for i in xrange(self.n+1)] for i in xrange(self.m+1)]
+        self.tb_matrix = [["?" for i in xrange(self.n + 1)] for i in xrange(self.m + 1)]
         self.tb_matrix[0][0] = 't' # Terminate traceback; finished
 
-        for i in xrange(1, self.m+1):
+        for i in xrange(1, self.m + 1):
             self.tb_matrix[i][0] = "|"
 
-        for j in xrange(1, self.n+1):
+        for j in xrange(1, self.n + 1):
             self.tb_matrix[0][j] = "-"
 
     def print_tb_matrix(self):
-        for j in xrange(self.n+1):
-            for i in xrange(self.m+1):
+        for j in xrange(self.n + 1):
+            for i in xrange(self.m + 1):
                 print self.tb_matrix[i][j],
             print
         print
 
     def print_matrix(self):
-        for j in xrange(self.n+1):
-            for i in xrange(self.m+1):
+        for j in xrange(self.n + 1):
+            for i in xrange(self.m + 1):
                 print str(self.matrix[i][j])+"\t",
             print
         print
@@ -186,7 +186,7 @@ class CigarAlignment:
             i = diagonal
             j = 0
 
-            for block in xrange(diagonal+1):
+            for block in xrange(diagonal + 1):
                 if i < self.m and j < self.n:
                     yield (i, j)
 

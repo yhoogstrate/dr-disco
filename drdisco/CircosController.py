@@ -101,11 +101,11 @@ chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
             for k in xrange(len(vec_large)-1):
                 vec.append( (_chr, vec_large[k][1], vec_large[k][2], vec_large[k][3], _chr+"_" + str(i)))
                 i += 1
-                vec.append( (_chr, vec_large[k][2], vec_large[k+1][1], 'small', _chr+"_" + str(i)))
+                vec.append( (_chr, vec_large[k][2], vec_large[k + 1][1], 'small', _chr+"_" + str(i)))
                 i += 1
 
-            vec.append( (_chr, vec_large[k+1][1], vec_large[k+1][2], vec_large[k+1][3], _chr+"_" + str(i)))
-            vec.append( (_chr, vec_large[k+1][2], 1000.0, 'small', _chr+"_" + str(i+1)))
+            vec.append( (_chr, vec_large[k + 1][1], vec_large[k + 1][2], vec_large[k + 1][3], _chr+"_" + str(i)))
+            vec.append( (_chr, vec_large[k + 1][2], 1000.0, 'small', _chr+"_" + str(i + 1)))
 
         return vec
 
@@ -113,8 +113,8 @@ chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
         k= 1
         fh = open(self.data_file, "w")
         for dp in self.data:
-            fh.write("fusion_event_" + str(self.sid)+"_dp_" + str(k)+" "+dp[0]._origin.position._chr.replace('chr','hs')+" " + str(dp[0]._origin.position.pos)+" " + str(dp[0]._origin.position.pos+1)+"\n")
-            fh.write("fusion_event_" + str(self.sid)+"_dp_" + str(k)+" "+dp[0]._target.position._chr.replace('chr','hs')+" " + str(dp[0]._target.position.pos)+" " + str(dp[0]._target.position.pos+1)+"\n")
+            fh.write("fusion_event_" + str(self.sid)+"_dp_" + str(k)+" "+dp[0]._origin.position._chr.replace('chr','hs')+" " + str(dp[0]._origin.position.pos)+" " + str(dp[0]._origin.position.pos + 1)+"\n")
+            fh.write("fusion_event_" + str(self.sid)+"_dp_" + str(k)+" "+dp[0]._target.position._chr.replace('chr','hs')+" " + str(dp[0]._target.position.pos)+" " + str(dp[0]._target.position.pos + 1)+"\n")
             fh.write("\n")
             k += 1
 
