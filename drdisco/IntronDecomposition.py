@@ -111,7 +111,7 @@ class BreakPosition:
         return self._hash < other_bp._hash
 
     def __str__(self):
-        return str(self._chr) + ":" + str(self.pos) + "/" + str(self.pos+1) + "("+strand_tt[self.strand]+")"
+        return str(self._chr) + ":" + str(self.pos) + "/" + str(self.pos+ 1) + "("+strand_tt[self.strand]+")"
 
     def get_dist(self, other_bp, strand_specific):
         if not isinstance(other_bp, BreakPosition):  # pragma: no cover
@@ -1385,7 +1385,7 @@ class IntronDecomposition:
         for i in xrange(n):
             if subnets[i] != None:
                 candidates = []
-                for j in xrange(i+1,n):  # for i , j > i
+                for j in xrange(i + 1,n):  # for i , j > i
                     if subnets[j] != None:
                         new_merged = False
 
