@@ -203,7 +203,7 @@ class Node:
             yield self.edges[k]
 
     def __str__(self):  # pragma: no cover
-        out  = str(self.position)
+        out = str(self.position)
 
         a = 0
         for sedge in self.edges:
@@ -223,23 +223,23 @@ class Node:
 
 
 class JunctionTypes:  # Enum definition to avoid string operations
-    silent_mate            = 1
-    cigar_soft_clip        = 2
-    cigar_hard_clip        = 3
-    cigar_deletion         = 4
-    cigar_splice_junction  = 5
-    discordant_mates       = 6
-    spanning_paired_1      = 7
-    spanning_paired_1_r    = 8
-    spanning_paired_1_s    = 9
-    spanning_paired_1_t    = 10
-    spanning_paired_2      = 11
-    spanning_paired_2_r    = 12
-    spanning_paired_2_s    = 13
-    spanning_paired_2_t    = 14
-    spanning_singleton_1   = 15
+    silent_mate = 1
+    cigar_soft_clip = 2
+    cigar_hard_clip = 3
+    cigar_deletion = 4
+    cigar_splice_junction = 5
+    discordant_mates = 6
+    spanning_paired_1 = 7
+    spanning_paired_1_r = 8
+    spanning_paired_1_s = 9
+    spanning_paired_1_t = 10
+    spanning_paired_2 = 11
+    spanning_paired_2_r = 12
+    spanning_paired_2_s = 13
+    spanning_paired_2_t = 14
+    spanning_singleton_1 = 15
     spanning_singleton_1_r = 16
-    spanning_singleton_2   = 17
+    spanning_singleton_2 = 17
     spanning_singleton_2_r = 18
 
 
@@ -820,7 +820,7 @@ class Subnet():
 
     def __str__(self):
         """Makes tabular output"""
-        node_a, node_b  = self.edges[0]._origin, self.edges[0]._target
+        node_a, node_b = self.edges[0]._origin, self.edges[0]._target
         nodes_a, nodes_b = self.get_n_nodes()
 
         return (

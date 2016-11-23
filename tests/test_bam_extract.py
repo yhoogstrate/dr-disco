@@ -38,10 +38,10 @@ if not os.path.exists(T_TEST_DIR):
 
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01a(self):
-        input_file    = TEST_DIR+"test_terg_02.bam"
-        output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
+        input_file = TEST_DIR+"test_terg_02.bam"
+        output_file = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
-        test_file     = TEST_DIR+"test_terg_02.filtered.sam"
+        test_file = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
         c.extract("chr21:39000000-40000000", "chr5:1-2", output_file)
@@ -57,10 +57,10 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
     def test_01b(self):
-        input_file    = TEST_DIR+"test_terg_02.bam"
-        output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
+        input_file = TEST_DIR+"test_terg_02.bam"
+        output_file = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
-        test_file     = TEST_DIR+"test_terg_02.filtered.sam"
+        test_file = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
         c.extract("chr5:1-2", "chr21:39000000-40000000", output_file)
@@ -76,10 +76,10 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
     def test_02a(self):
-        input_file    = TEST_DIR+"test_terg_02.bam"
-        output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
+        input_file = TEST_DIR+"test_terg_02.bam"
+        output_file = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
-        test_file     = TEST_DIR+"test_terg_02.filtered.sam"
+        test_file = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
         c.extract("chr7:151000000-153000000", "chr5:1-2", output_file)
@@ -95,10 +95,10 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
     def test_02b(self):
-        input_file    = TEST_DIR+"test_terg_02.bam"
-        output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
+        input_file = TEST_DIR+"test_terg_02.bam"
+        output_file = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
-        test_file     = TEST_DIR+"test_terg_02.filtered.sam"
+        test_file = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
         c.extract("chr5:1-2", "chr7:151000000-153000000", output_file)
@@ -115,10 +115,10 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
 
     def test_03(self):
-        input_file    = TEST_DIR+"test_terg_02.bam"
-        output_file   = T_TEST_DIR+"test_terg_02.filtered.bam"
+        input_file = TEST_DIR+"test_terg_02.bam"
+        output_file = T_TEST_DIR+"test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR+"test_terg_02.filtered.sam"
-        test_file     = TEST_DIR+"test_terg_02.filtered.sam"
+        test_file = TEST_DIR+"test_terg_02.filtered.sam"
 
         c = BAMExtract(input_file)
         c.extract("chr12:151000000-153000000", "chr5:1-2", output_file)

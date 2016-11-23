@@ -34,11 +34,11 @@ class CircosController:
     def write_coordinate_config(self, coordinates):
         """Generates a config file similar to this:
 chromosomes_display_default = no
-chromosomes                 = hs21[a]:0-39.7;hs21[b]:39.7-39.9;hs21[c]:39.9-42.7;hs21[d]:42.7-42.9;hs21[e]:42.9-50
-#chromosomes_reverse         = /hs[]/
-#chromosomes_scale           = hs1=0.5r,/hs[234]/=1.0rn
-chromosomes_scale           = a:1.0;b:25.0;c:1.0;d:25.0;e:1.0
-chromosomes_radius          = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
+chromosomes = hs21[a]:0-39.7;hs21[b]:39.7-39.9;hs21[c]:39.9-42.7;hs21[d]:42.7-42.9;hs21[e]:42.9-50
+#chromosomes_reverse = /hs[]/
+#chromosomes_scale = hs1=0.5r,/hs[234]/=1.0rn
+chromosomes_scale = a:1.0;b:25.0;c:1.0;d:25.0;e:1.0
+chromosomes_radius = a=0.4r, b=0.99r, c=0.4r, d=0.99r, e=0.4r
         """
 
         scales = {'small': '1.0', 'large': '35.0'}

@@ -330,7 +330,7 @@ class ChimericAlignment:
 
         n_r1 = len(r1)
         n_r2 = len(r2)
-        n_s  = len(singletons)
+        n_s = len(singletons)
 
         double_disco = 0
 
