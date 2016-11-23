@@ -52,7 +52,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.close()
 
         if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \''+output_file_s+'\' \''+test_file+'\''
+            print 'diff \'' + output_file_s+'\' \'' + test_file+'\''
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
@@ -71,7 +71,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.close()
 
         if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \''+output_file_s+'\' \''+test_file+'\''
+            print 'diff \'' + output_file_s+'\' \'' + test_file+'\''
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
@@ -90,7 +90,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.close()
 
         if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \''+output_file_s+'\' \''+test_file+'\''
+            print 'diff \'' + output_file_s+'\' \'' + test_file+'\''
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
@@ -109,7 +109,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.close()
 
         if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \''+output_file_s+'\' \''+test_file+'\''
+            print 'diff \'' + output_file_s+'\' \'' + test_file + '\''
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 

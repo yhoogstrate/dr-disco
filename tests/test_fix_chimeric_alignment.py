@@ -50,7 +50,7 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.close()
 
         if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \''+output_file_s+'\' \''+test_file+'\''
+            print 'diff \'' + output_file_s+'\' \'' + test_file+'\''
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
@@ -74,7 +74,7 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.close()
 
         if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \''+output_file_s+'\' \''+test_file+'\''
+            print 'diff \'' + output_file_s+'\' \'' + test_file+'\''
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 

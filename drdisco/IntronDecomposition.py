@@ -962,14 +962,14 @@ class BAMExtract(object):
                     try:  # pragma: no cover
                         bam_fh.fetch()
                     except:  # pragma: no cover
-                        logging.info('Indexing BAM file with pysam: '+bam_fh.filename)  # create index if it does not exist
+                        logging.info('Indexing BAM file with pysam: ' + bam_fh.filename)  # create index if it does not exist
                         pysam.index(bam_fh.filename)
                         bam_fh = pysam.AlignmentFile(bam_fh.filename)
 
                     try:
                         bam_fh.fetch()
                     except:
-                        raise Exception('Could not indexing BAM file: '+bam_fh.filename)
+                        raise Exception('Could not indexing BAM file: ' + bam_fh.filename)
 
                     return bam_fh
 
