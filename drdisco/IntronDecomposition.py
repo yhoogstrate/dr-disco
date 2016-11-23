@@ -1324,22 +1324,19 @@ class IntronDecomposition:
 
     def __str__(self):
         ordered = []
-        order = 0  # Order of top-edge in subnet
         for subnet in self.results:
             ordered.append((subnet, subnet.total_score, subnet.get_overall_entropy()))
         ordered = [subnet[0] for subnet in sorted(ordered, key=operator.itemgetter(1, 2), reverse=True)]
 
-        return (
-            "chr-A"           "\t" "pos-A"             "\t" "direction-A""\t"
-            "chr-B"           "\t" "pos-B"             "\t" "direction-B""\t"
-            "filter-status"   "\t"
-            "score"           "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
-            "n-edges"         "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
-            "n-splice-junc-A" "\t" "n-splice-junc-B"   "\t"
-            "entropy-bp-edge" "\t" "entropy-all-edges" "\t"
-            "data-structure"  "\n"
-            "%s" % (''.join([str(subnet) for subnet in ordered]))
-            )
+        return ("chr-A"           "\t" "pos-A"             "\t" "direction-A""\t"
+                "chr-B"           "\t" "pos-B"             "\t" "direction-B""\t"
+                "filter-status"   "\t"
+                "score"           "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
+                "n-edges"         "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
+                "n-splice-junc-A" "\t" "n-splice-junc-B"   "\t"
+                "entropy-bp-edge" "\t" "entropy-all-edges" "\t"
+                "data-structure"  "\n"
+                "%s" % (''.join([str(subnet) for subnet in ordered])))
 
     def merge_overlapping_subnets(self, subnets):
         """Merges very closely adjacent subnets based on the smallest
