@@ -300,8 +300,8 @@ class CigarAlignment:
         # 'S':4,#	BAM_CSOFT_CLIP	4
 
         offset = int(len(c1)/2)
-        c1_l = sum([x[1] for x in c1[0:offset] if x[0] == 0])
-        c2_l = sum([x[1] for x in c2[0:offset] if x[0] == 0])
+        c1_l = sum([x[1] for x in c1[0: offset] if x[0] == 0])
+        c2_l = sum([x[1] for x in c2[0: offset] if x[0] == 0])
 
         c1_total = sum([x[1] for x in c1 if x[0] in [0,4]])
         c2_total = sum([x[1] for x in c2 if x[0] in [0,4]])

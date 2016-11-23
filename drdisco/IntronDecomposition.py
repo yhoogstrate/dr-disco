@@ -208,7 +208,7 @@ class Node:
         a = 0
         for sedge in self.edges:
             edge = self.edges[sedge]
-            filtered_edges = {JunctionTypeUtils.str(x):edge._types[x] for x in sorted(edge._types.keys())}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
+            filtered_edges = {JunctionTypeUtils.str(x): edge._types[x] for x in sorted(edge._types.keys())}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
@@ -424,7 +424,7 @@ class Edge:
         # spacer = " "*len(str(self._origin.position))
 
         # for _k in self._origin.splice_edges.keys():
-        #    out += "\n"+spacer+"=>" + str(_k.position) + ":score=" + str(self._origin.splice_edges[_k][1].get_splice_score())
+        #    out += "\n"+spacer+"=>" + str(_k.position) + ": score=" + str(self._origin.splice_edges[_k][1].get_splice_score())
 
         return out
 
@@ -1230,10 +1230,10 @@ splice-junc:                           <=============>
             """
 
         tt = {
-            2:JunctionTypes.cigar_deletion,
-            3:JunctionTypes.cigar_splice_junction,
-            4:JunctionTypes.cigar_soft_clip,
-            5:JunctionTypes.cigar_hard_clip
+            2: JunctionTypes.cigar_deletion,
+            3: JunctionTypes.cigar_splice_junction,
+            4: JunctionTypes.cigar_soft_clip,
+            5: JunctionTypes.cigar_hard_clip
         }
 
         offset = read.reference_start
