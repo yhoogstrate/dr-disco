@@ -3,14 +3,14 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 """[License: GNU General Public License v3 (GPLv3)]
- 
+
  This file is part of Dr. Disco.
- 
+
  Dr. Disco is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
- 
+
  FuMa is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -24,7 +24,7 @@
 """
 
 __version_info__ = ('0', '1', '0')
-__version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.'.join(__version_info__[0:3])+"-"+__version_info__[3]
+__version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.'.join(__version_info__[0:3]) + "-" + __version_info__[3]
 __author__ = 'Youri Hoogstrate'
 __homepage__ = 'https://github.com/yhoogstrate/dr-disco'
 __license__ = 'GNU General Public License v3 (GPLv3)'
@@ -35,12 +35,11 @@ __log_format__ = "[%(filename)s:%(lineno)s - %(funcName)s()] %(asctime)s - %(lev
 
 # parameters
 MAX_ACCEPTABLE_INSERT_SIZE = 450
-MAX_ACCEPTABLE_ALIGNMENT_ERROR = 3 # acceptable splice junction error or other general alignment mistakes
+MAX_ACCEPTABLE_ALIGNMENT_ERROR = 3  # acceptable splice junction error or other general alignment mistakes
 MAX_GENOME_DISTANCE = 999999999
 
 
 # filter settings
 MIN_SUBNET_ENTROPY = 0.55
-MIN_DISCO_PER_SUBNET_PER_NODE = 1#minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
-MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4#minimum supporting reads is 8 per subnet
-MAX_SUBNET_MERGE_DIST = 5000
+MIN_DISCO_PER_SUBNET_PER_NODE = 1  # minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
+MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4  # minimum supporting reads is 8 per subnet
