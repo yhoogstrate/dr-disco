@@ -23,7 +23,7 @@ from . import *
 
 def entropy(frequency_table):
     n = sum(frequency_table.values())
-    prob = [float(x)/n for x in frequency_table.values()]
+    prob = [float(x) /n for x in frequency_table.values()]
 
     entropy = - sum([ p * math.log(p) / math.log(2.0) for p in prob if p > 0 ])
     if entropy <= 0:
@@ -835,7 +835,7 @@ class Subnet():
                     node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                     node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
                     ("valid" if self.discarded == [] else ','.join(self.discarded)),  # Classification status
-                    self.total_score / 2, self.total_clips, self.get_n_split_reads()/ 2, self.get_n_discordant_reads()/ 2,  # Evidence stats
+                    self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                     len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                     len(self.left_splice_junctions), len(self.right_splice_junctions),
                     self.edges[0].get_entropy(), self.get_overall_entropy(),  # Entropy stats
