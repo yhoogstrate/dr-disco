@@ -83,6 +83,29 @@ def CLI_bam_extract_regions(region1,region2,bam_output_file,bam_input_file):
     c.extract(region1, region2, bam_output_file)
 
 
+
+@CLI.command(name='logo-sequence',short_help='Extract reads from two chromosomal positions (and also take the mates with the same name) - regions are in the format chr1:123-546')
+@click.argument('region')
+@click.argument('fasta_input_file')
+@click.option('-n','--offset-negative', type=int, default=10)
+@click.option('-p','--offset-positive', type=int, default=10)
+@click.argument('fasta_output_file')
+def CLI_bam_extract_regions(region, fasta_input_file, offset_negative, offset_positive, fasta_output_file):
+    print region
+    _chr,_pos = region.split(':')
+    _chr = str(_chr)
+    _pos = int(_pos)
+    print 
+    print _chr
+    print _chr,_pos, type(_pos)
+    print offset_negative, type(offset_negative)
+    fh = pysam.Fastafile(fasta_input_file)
+    print ">1-", _pos - offset_negative + 1, _pos
+    print fh.fetch(_chr,_pos - offset_negative + 1, _pos + 1)
+    print ">1+",_pos, _pos + offset_positive
+    print fh.fetch(_chr, _pos+ 1, _pos + offset_positive + 1)
+
+
 if __name__ == '__main__':
     main()
 
