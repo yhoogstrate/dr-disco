@@ -1,7 +1,7 @@
 #!/usr /bin /env python2
 # *- coding: utf-8 -*-
-# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
-# https://github.com /numpy /numpy /blob /master /doc /HOWTO_DOCUMENT.rst.txt
+# -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
+# https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
 """
 Tries to find genomic and exon to exon break points within a discordant
@@ -51,7 +51,7 @@ def merge_frequency_tables(frequency_tables):
     """
     new_frequency_table = {}
     for t in frequency_tables:
-        for key in t.keys():
+        for key in t:
             if key not in new_frequency_table:
                 new_frequency_table[key] = 0
 
@@ -142,6 +142,15 @@ class Node:
         self.edges = {}
         self.splice_edges = {STRAND_FORWARD: {}, STRAND_REVERSE: {}}
 
+    def idx_sj_by_dist(self):
+        if len(self.edges) == 0:  # Edges have been pruned - Node should actually be removed
+            # @todo there is quite some performance to gain here i guess, as extract_by_sj iterates over all nodes that exist, even if they were used only before pruning
+            # possibly remove all empty nodes directly after pruning
+            self.splice_edges = {STRAND_FORWARD: [], STRAND_REVERSE: []}
+        else:
+            for strand in self.splice_edges:
+                self.splice_edges[strand] = sorted([(value[0], key, value[1]) for (key, value) in self.splice_edges[strand].items()], key=operator.itemgetter(1, 2), reverse=False)
+
     def __lt__(self, other_node):
         return self.position < other_node.position
 
@@ -163,20 +172,23 @@ class Node:
 
     def get_connected_splice_junctions_recursively(self, nodes, edges, insert_size_to_travel, direction):
         new_nodes = []
-        for edge_n in self.splice_edges[direction]:
-            if edge_n not in nodes:
-                edge = self.splice_edges[direction][edge_n]
-                dkey = insert_size_to_travel - edge[0]  # Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-                if dkey >= 0:
-                    new_nodes.append((edge_n, dkey))
+        dist = -1
 
-                    if edge_n not in edges:
-                        edges[edge_n] = set()
-                    edges[edge_n].add(edge[1])  # use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+        k = 0
+        n = len(self.splice_edges[direction])
+        while k < n:
+            dist, edge_n, edge_e = self.splice_edges[direction][k]
+            if insert_size_to_travel > dist:
+                new_nodes.append((edge_n, insert_size_to_travel - dist))  # Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
+                nodes.add(edge_n)
 
-        # old results, + recursive results
-        for edge_n in new_nodes:
-            nodes.add(edge_n[0])
+                if edge_n not in edges:
+                    edges[edge_n] = set()
+                edges[edge_n].add(edge_e)  # use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+
+                k += 1
+            else:
+                k = n
 
         # only recusively add to the new ones
         for edge_n in new_nodes:
@@ -205,7 +217,7 @@ class Node:
             del(self.edges[edge._target.position._hash])
 
     def __iter__(self):
-        for k in sorted(self.edges.keys()):
+        for k in sorted(self.edges):
             yield self.edges[k]
 
     def __str__(self):  # pragma: no cover
@@ -214,7 +226,8 @@ class Node:
         a = 0
         for sedge in self.edges:
             edge = self.edges[sedge]
-            filtered_edges = {JunctionTypeUtils.str(x): edge._types[x] for x in sorted(edge._types.keys())}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
+            filtered_edges = {JunctionTypeUtils.str(x): edge._types[x] for x in sorted(edge._types)}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
+
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
@@ -250,6 +263,7 @@ class JunctionTypes:  # Enum definition to avoid string operations
 class JunctionTypeUtils:
     tt = {
         'silent_mate': JunctionTypes.silent_mate,
+        'cigar_splice_junction': JunctionTypes.cigar_splice_junction,
         'discordant_mates': JunctionTypes.discordant_mates,
         'spanning_paired_1': JunctionTypes.spanning_paired_1,
         'spanning_paired_2': JunctionTypes.spanning_paired_2,
@@ -278,6 +292,21 @@ class JunctionTypeUtils:
         JunctionTypes.spanning_singleton_2: 2,
         JunctionTypes.spanning_singleton_1_r: 2,
         JunctionTypes.spanning_singleton_2_r: 2}
+
+    complement_table = {
+        JunctionTypes.discordant_mates: JunctionTypes.discordant_mates,
+        JunctionTypes.spanning_paired_1: JunctionTypes.spanning_paired_2,
+        JunctionTypes.spanning_paired_1_r: JunctionTypes.spanning_paired_2_r,
+        JunctionTypes.spanning_paired_1_s: JunctionTypes.spanning_paired_2_s,
+        JunctionTypes.spanning_paired_1_t: JunctionTypes.spanning_paired_2_t,
+        JunctionTypes.spanning_paired_2: JunctionTypes.spanning_paired_1,
+        JunctionTypes.spanning_paired_2_r: JunctionTypes.spanning_paired_1_r,
+        JunctionTypes.spanning_paired_2_s: JunctionTypes.spanning_paired_1_s,
+        JunctionTypes.spanning_paired_2_t: JunctionTypes.spanning_paired_1_t,
+        JunctionTypes.spanning_singleton_1: JunctionTypes.spanning_singleton_2,
+        JunctionTypes.spanning_singleton_2: JunctionTypes.spanning_singleton_1,
+        JunctionTypes.spanning_singleton_1_r: JunctionTypes.spanning_singleton_2_r,
+        JunctionTypes.spanning_singleton_2_r: JunctionTypes.spanning_singleton_1_r}
 
     @staticmethod
     def enum(enumstring):
@@ -383,22 +412,22 @@ class Edge:
                 self.add_type(_type, edge._types[_type])
 
     def add_type(self, _type, weight):
-        if _type not in self._types:
-            self._types[_type] = weight
-        else:
+        if _type in self._types:
             self._types[_type] += weight
+        else:
+            self._types[_type] = weight
 
     def add_alignment_key(self, alignment_key):
-        if alignment_key not in self._unique_alignment_hashes:
-            self._unique_alignment_hashes[alignment_key] = 1
-        else:
+        if alignment_key in self._unique_alignment_hashes:
             self._unique_alignment_hashes[alignment_key] += 1
+        else:
+            self._unique_alignment_hashes[alignment_key] = 1
 
     def get_count(self, _type):
-        if _type not in self._types:
-            return 0
-        else:
+        if _type in self._types:
             return self._types[_type]
+        else:
+            return 0
 
     def get_score(self, _type):
         return self.get_count(_type) * JunctionTypeUtils.scoring_table[_type]
@@ -410,7 +439,7 @@ class Edge:
 
         Later on spanning reads will be added, softclips will be added, etc.
         """
-        return sum([self.get_score(_type) for _type in JunctionTypeUtils.scoring_table.keys()])
+        return sum([self.get_score(_type) for _type in JunctionTypeUtils.scoring_table])
 
     def get_splice_score(self):  # pragma: no cover
         return (self.get_count(JunctionTypes.cigar_splice_junction), self.get_clips())
@@ -420,15 +449,16 @@ class Edge:
 
     def __str__(self):
         typestring = []
-        for _t in sorted(self._types.keys()):
+
+        for _t in sorted(self._types):
             typestring.append(str(JunctionTypeUtils.str(_t)) + ":" + str(self._types[_t]))
 
         out = str(self._origin.position) + "->" + str(self._target.position) + ":(" + ','.join(typestring) + ")"
 
         # spacer = " "*len(str(self._origin.position))
 
-        # for _k in self._origin.splice_edges.keys():
-        #    out += "\n" + spacer+"=>" + str(_k.position) + ": score=" + str(self._origin.splice_edges[_k][1].get_splice_score())
+        # for _k in self._origin.splice_edges:
+        #    out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_edges[_k][1].get_splice_score())
 
         return out
 
@@ -439,24 +469,39 @@ class Graph:
 
     def __iter__(self):
         for step in self.idxtree.steps():
-            position = step[1]
-            if position:
-                for strand in sorted(position.keys()):
-                    node = position[strand]
-                    yield node
+            if step[1]:
+                for strand in sorted(step[1]):
+                    yield step[1][strand]
+
+    def reindex_sj(self):
+        for node in self:
+            node.idx_sj_by_dist()
+
+    def check_symmetry(self):  # debug function
+        for edge in self.edge_idx:
+            for key in edge._types:
+                score = edge.get_score(key)
+                cscore = edge.get_score(JunctionTypeUtils.complement_table[key])
+
+                if score != cscore:
+                    raise Exception("Read types %s and %s do not have an identical score\n%s" % (JunctionTypeUtils.str(key), JunctionTypeUtils.str(JunctionTypeUtils.complement_table[key]), str(edge)))
 
     def create_node(self, pos):
-        position = self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)]
-        if not position:
-            self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)] = {pos.strand: Node(pos)}
-        else:
+        position_accession = HTSeq.GenomicPosition(pos._chr, pos.pos)
+        position = self.idxtree[position_accession]
+
+        if position:
             if pos.strand not in position:
-                self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)][pos.strand] = Node(pos)
+                position[pos.strand] = Node(pos)
+        else:
+            self.idxtree[position_accession] = {pos.strand: Node(pos)}
 
     def get_node_reference(self, pos):
         position = self.idxtree[HTSeq.GenomicPosition(pos._chr, pos.pos)]
+
         if position and pos.strand in position:
             return position[pos.strand]
+
         return None
 
     def insert_edge(self, pos1, pos2, _type, cigarstrs):
@@ -532,6 +577,8 @@ class Graph:
             node1.insert_edge(edge)
             node2.insert_edge(edge)
 
+        # self.print_chain()
+
     def remove_edge(self, edge):
         node1 = edge._origin
         node2 = edge._target
@@ -549,17 +596,17 @@ class Graph:
         for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
             if step[1]:
                 position = step[1]
-                if position:
-                    for strand in position.keys():
-                        node1 = position[strand]
-                        for edge in node1.edges.values():
-                            node2 = edge._target
 
-                            d1 = abs(pos1.pos - node1.position.pos)
-                            if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
-                                d2 = abs(pos2.pos - node2.position.pos)
-                                if d1 + d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
-                                    yield pow(d1, 2) + pow(d2, 2), edge
+                for strand in position:
+                    node1 = position[strand]
+                    for edge in node1.edges.values():
+                        node2 = edge._target
+
+                        d1 = abs(pos1.pos - node1.position.pos)
+                        if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
+                            d2 = abs(pos2.pos - node2.position.pos)
+                            if d1 + d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
+                                yield pow(d1, 2) + pow(d2, 2), edge
 
     def print_chain(self):  # pragma: no cover
         print "**************************************************************"
@@ -595,6 +642,8 @@ class Graph:
         self.generate_edge_idx()
         logging.info("Finding and merging other edges in close proximity (insert size)")
 
+        self.check_symmetry()
+
         candidates = []
         # self.print_chain()
 
@@ -606,7 +655,6 @@ class Graph:
 
             self.remove_edge(candidate)  # do not remove if splice junc exists?
 
-        # self.print_chain()
         logging.info("Pruned into " + str(len(candidates)) + " candidate edge(s)")
         return candidates
 
@@ -637,10 +685,10 @@ class Graph:
         pos1_min, pos1_max = pos_to_range(pos1)
         pos2_min, pos2_max = pos_to_range(pos2)
 
-        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, pos1_min, pos1_max + 1)].steps():
+        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1_min), pos1_max + 1)].steps():
             if step[1]:
                 position = step[1]
-                if pos1.strand in position:
+                if position and pos1.strand in position:
                     node_i = position[pos1.strand]
                     for edge in node_i.edges.values():
                         if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
@@ -667,26 +715,19 @@ thick edges:
 
         def search(pos1):
             # @todo make this member of Graph and use splice_junctions.search_..._..(pos)
-            nodes = []
-            for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
+            for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), max(1, pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1))].steps():
                 if step[1]:
-                    position = step[1]
-                    if position:
-                        for strand in position.keys():
-                            nodes.append(position[strand])
-            return nodes
+                    for strand in step[1]:
+                        yield step[1][strand]
 
         splice_edges_had = set()
 
         for node in splice_junctions:
             for splice_junction in node.edges.values():
                 if splice_junction not in splice_edges_had:
-                    lnodes = search(splice_junction._origin.position)
-                    rnodes = search(splice_junction._target.position)
-
-                    for lnode in lnodes:
-                        for rnode in rnodes:
-                            if lnode != rnode and lnode.position.strand == rnode.position.strand:
+                    for lnode in search(splice_junction._origin.position):
+                        for rnode in search(splice_junction._target.position):
+                            if lnode.position.strand == rnode.position.strand and lnode != rnode:
                                 d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
                                 d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
                                 dist = d1 + d2
@@ -740,7 +781,7 @@ terugloop probleem redelijk opgelost.
             left_splice_junctions = set()
             right_splice_junctions = set()
 
-            subedges = []
+            subedges = []  # [start_point] if code below is commented out
 
             # All edges between any of the left and right nodes are valid edges and have to be extracted
             # Find all direct edges joined by splice junctions
@@ -759,10 +800,12 @@ terugloop probleem redelijk opgelost.
 
                             if subedge != start_point:
                                 self.remove_edge(subedge)
-                                thicker_edges.remove(subedge)
 
-            del(left_splice_junctions_ds, right_splice_junctions_ds)
+                                thicker_edges.remove(subedge)  # goes wrong
+
+            # del(left_splice_junctions_ds,right_splice_junctions_ds)
             subnetworks.append(Subnet(q, subedges, left_splice_junctions, right_splice_junctions))
+            self.remove_edge(start_point)
 
         logging.info("Extracted %i subnetwork(s)" % len(subnetworks))
         return subnetworks
@@ -795,8 +838,8 @@ class Subnet():
             idx[key1][key2] = edge
 
         ordered = []
-        for key1 in sorted(idx.keys(), reverse=True):
-            for key2 in sorted(idx[key1].keys()):
+        for key1 in sorted(idx, reverse=True):
+            for key2 in sorted(idx[key1]):
                 ordered.append(idx[key1][key2])
 
         self.edges = ordered
@@ -1011,8 +1054,7 @@ class BAMExtract(object):
                     pos2 = BreakPosition(parsed_SA_tag[0],
                                          bam_parse_alignment_pos_using_cigar(parsed_SA_tag),
                                          STRAND_REVERSE)
-
-            elif rg in [JunctionTypes.spanning_singleton_1, JunctionTypes.spanning_paired_1]:
+            elif rg in [JunctionTypes.spanning_singleton_1]:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start + bam_parse_alignment_offset(read.cigar),
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
@@ -1020,6 +1062,44 @@ class BAMExtract(object):
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1],
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+
+            elif rg in [JunctionTypes.spanning_paired_1]:
+                if read.is_reverse:  # Tested in TERG s55 double inversion
+                    pos1_offset = bam_parse_alignment_offset(read.cigar)
+                else:
+                    pos1_offset = 0
+
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start + pos1_offset,
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+
+                if parsed_SA_tag[4] == '+':   # Tested in TERG s55 double inversion
+                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                else:
+                    pos2_offset = 0
+
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + pos2_offset,
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+
+            elif rg in [JunctionTypes.spanning_paired_2]:  # JunctionTypes.spanning_singleton_2,
+                if read.is_reverse:  # Tested in TERG s55 double inversion
+                    pos1_offset = 0
+                else:
+                    pos1_offset = bam_parse_alignment_offset(read.cigar)
+
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start + pos1_offset,
+                                     read.is_reverse)
+
+                if parsed_SA_tag[4] == '-':  # Tested in TERG s55 double inversion
+                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                else:
+                    pos2_offset = 0
+
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + pos2_offset,
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
             elif rg in [JunctionTypes.spanning_singleton_1_r, JunctionTypes.spanning_paired_1_t]:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1039,7 +1119,7 @@ class BAMExtract(object):
                                      parsed_SA_tag[1],
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-            elif rg in [JunctionTypes.spanning_singleton_2, JunctionTypes.spanning_paired_2]:
+            elif rg in [JunctionTypes.spanning_singleton_2]:  # JunctionTypes.spanning_paired_2
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start,
                                      read.is_reverse)
@@ -1240,7 +1320,7 @@ splice-junc:                           <=============>
         solid = False
 
         for chunk in read.cigar:
-            if chunk[0] in tt.keys():  # D N S H
+            if chunk[0] in tt:  # D N S H
                 """Small softclips occur all the time - introns and
                 deletions of that size shouldn't add weight anyway
 
@@ -1303,7 +1383,10 @@ class IntronDecomposition:
         thicker_edges = fusion_junctions.prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         fusion_junctions.rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions
         del(splice_junctions)
+
         fusion_junctions.reinsert_edges(thicker_edges)  # @todo move function into statuc function in this class
+
+        fusion_junctions.reindex_sj()
 
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges)
         subnets = self.merge_overlapping_subnets(subnets)
@@ -1375,68 +1458,125 @@ class IntronDecomposition:
 
             return math.sqrt(avg_sq_d)
 
+        def tree_insert(genometree, pos, entry):
+            """inserts entry into a set at pos in genometree"""
+            position_accession = HTSeq.GenomicPosition(pos._chr, pos.pos)
+            position_tree = genometree[position_accession]
+            if position_tree:  # position was not found in tree, insert completely
+                if pos.strand in position_tree:
+                    position_tree[pos.strand].add(entry)
+                else:
+                    position_tree[pos.strand] = set([entry])
+            else:
+                genometree[position_accession] = {pos.strand: set([entry])}
+
+        def tree_remove(genometree, subnet):
+            positions = set()
+            for edge in subnet.edges:
+                positions.add(edge._origin.position)
+                positions.add(edge._target.position)
+
+            for pos in positions:
+                position_accession = HTSeq.GenomicPosition(pos._chr, pos.pos)
+                position_tree = genometree[position_accession]
+                if position_tree and pos.strand in position_tree:
+                    sset = position_tree[pos.strand]
+                    if subnet in sset:
+                        sset.remove(subnet)
+
         n = len(subnets)
 
+        idx_l = HTSeq.GenomicArrayOfSets("auto", stranded=False)
+        idx_r = HTSeq.GenomicArrayOfSets("auto", stranded=False)
+
+        for subnet in subnets:
+            for edge in subnet.edges:
+                tree_insert(idx_l, edge._origin.position, subnet)
+                tree_insert(idx_r, edge._target.position, subnet)
+
         k = 0
-        for i in xrange(n):
-            if subnets[i] is not None:
-                candidates = []
-                for j in xrange(i + 1, n):  # for i, j > i
-                    if subnets[j] is not None:
-                        new_merged = False
+        new_subnets = []
+        subnets.reverse()
+        while subnets:
+            subnet = subnets.pop()
+            tree_remove(idx_l, subnet)
+            tree_remove(idx_r, subnet)
 
-                        l_dists, r_dists = subnets[i].find_distances(subnets[j])
-                        if l_dists:  # and r_dists != False:
+            to_be_merged_with = set()
+            candidates = set()
 
-                            n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
-                            n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
+            for edge in subnet.edges:
+                # based on l-node to be close
+                pos = edge._origin.position
+                for step in idx_l[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                    if step[1] and pos.strand in step[1]:
+                        for candidate_subnet in step[1][pos.strand]:
+                            if subnet != candidate_subnet:
+                                candidates.add(candidate_subnet)
 
-                            rmsq_l_dist = sq_dist(l_dists)
-                            rmsq_r_dist = sq_dist(r_dists)
+                pos = edge._target.position
+                for step in idx_r[HTSeq.GenomicInterval(pos._chr, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                    if step[1] and pos.strand in step[1]:
+                        for candidate_subnet in step[1][pos.strand]:
+                            if subnet != candidate_subnet:
+                                candidates.add(candidate_subnet)
 
-                            """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
-                                if product > (8*k):
-                                    # Average gene size = 10-15kb
-                                    # rmse <= 125000 - 120000 / 2^( product / 1200)
-                                    # if rmse < max_rmse: valid data point
-                                    max_rmse = 125000.0 - (120000 /pow(2, float(product) / 1200.0))
-                                    return (rmse <= max_rmse)
-                            """
+            for candidate_subnet in candidates:
+                new_merged = False
+                l_dists, r_dists = subnet.find_distances(candidate_subnet)
 
-                            if n_l_dist > 0 and n_r_dist > 0:
+                if l_dists:
+                    n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
+                    n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
+
+                    rmsq_l_dist = sq_dist(l_dists)
+                    rmsq_r_dist = sq_dist(r_dists)
+
+                    """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
+                        if product > (8*k):
+                            # Average gene size = 10-15kb
+                            # rmse <= 125000 - 120000/2^( product / 1200)
+                            # if rmse < max_rmse: valid data point
+                            max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
+                            return (rmse <= max_rmse)
+                    """
+
+                    if n_l_dist > 0 and n_r_dist > 0:
+                        new_merged = True
+                    else:  # @todo revise if / else / elif logic, and use linear regression or sth like that
+                        if n_l_dist > 0:
+                            l_dist_ins_ratio = 1.0 * n_l_dist / len(l_dists)
+                            if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
                                 new_merged = True
-                            else:  # @todo revise if / else / elif logic, and use linear regression or sth like that
-                                if n_l_dist > 0:
-                                    l_dist_ins_ratio = 1.0 * n_l_dist / len(l_dists)
-                                    if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
-                                        new_merged = True
-                                    elif l_dist_ins_ratio > 0.7 and rmsq_r_dist < 10000:
-                                        new_merged = True
-                                    elif l_dist_ins_ratio > 0.3 and rmsq_r_dist < 5000:
-                                        new_merged = True
+                            elif l_dist_ins_ratio > 0.7 and rmsq_r_dist < 10000:
+                                new_merged = True
+                            elif l_dist_ins_ratio > 0.3 and rmsq_r_dist < 5000:
+                                new_merged = True
 
-                                if n_r_dist > 0:
-                                    r_dist_ins_ratio = 1.0 * n_r_dist / len(r_dists)
-                                    if r_dist_ins_ratio == 1.0 and rmsq_l_dist < 15000:
-                                        new_merged = True
-                                    elif r_dist_ins_ratio > 0.7 and rmsq_l_dist < 10000:
-                                        new_merged = True
-                                    elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
-                                        new_merged = True
+                        if n_r_dist > 0:
+                            r_dist_ins_ratio = 1.0 * n_r_dist / len(r_dists)
+                            if r_dist_ins_ratio == 1.0 and rmsq_l_dist < 15000:
+                                new_merged = True
+                            elif r_dist_ins_ratio > 0.7 and rmsq_l_dist < 10000:
+                                new_merged = True
+                            elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
+                                new_merged = True
 
-                        if new_merged:
-                            candidates.append(subnets[j])
-                            subnets[j] = None
+                    if new_merged:
+                        to_be_merged_with.add(candidate_subnet)
 
-                for sn_j in candidates:
-                    subnets[i].merge(sn_j)
-                    del(sn_j)
-                    k += 1
-        subnets = [sn for sn in subnets if sn is not None]
+            for candidate_subnet in to_be_merged_with:
+                subnet.merge(candidate_subnet)
+                tree_remove(idx_l, candidate_subnet)
+                tree_remove(idx_r, candidate_subnet)
+                subnets.remove(candidate_subnet)  # [subnets.index(candidate_subnet)] = None# @todo inverse subnets and use .pop() and .remove()
+                del(candidate_subnet)
+                k += 1
 
-        logging.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(subnets)) + " merged subnetwork(s)")
+            new_subnets.append(subnet)
 
-        return subnets
+        logging.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(new_subnets)) + " merged subnetwork(s)")
+        return new_subnets
 
     def filter_subnets(self, subnets):
         logging.debug("init")
