@@ -43,43 +43,43 @@ if not os.path.exists(T_TEST_DIR):
 class TestLogoSequence(unittest.TestCase):
     def test_01(self):
         input_file = TEST_DIR + "test_01.ref.fa"
-        output_file = T_TEST_DIR + "test_01.logo.fa"
-        test_file = TEST_DIR + "test_01.logo.fa"
+        output_file_n = T_TEST_DIR + "test_01.logo-n.fa"
+        output_file_p = T_TEST_DIR + "test_01.logo-p.fa"
+        test_file_n = TEST_DIR + "test_01.logo-n.fa"
+        test_file_p = TEST_DIR + "test_01.logo-p.fa"
 
-        command = ['dr-disco',
-        'logo-sequence',
-        'chr1:25',
-        input_file,
-        '-n','5',
-        '-p','5',
-        output_file]
+        command = ['dr-disco', 'logo-sequence', 'chr1:25', input_file, '-n','5', '-p','5', output_file_n, output_file_p]
         print " ".join(command)
         self.assertEqual(subprocess.call(command) , 0)# Ensure error code is 0 - no exceptions have been thrown
 
-        if not filecmp.cmp(output_file, test_file):
-            print 'diff \'' + output_file + '\' \'' + test_file + '\''
+        if not filecmp.cmp(output_file_n, test_file_n):
+            print 'diff \'' + output_file_n + '\' \'' + test_file_n + '\''
 
-        self.assertTrue(filecmp.cmp(output_file, test_file))
+        if not filecmp.cmp(output_file_p, test_file_p):
+            print 'diff \'' + output_file_p + '\' \'' + test_file_p + '\''
+
+        self.assertTrue(filecmp.cmp(output_file_n, test_file_n))
+        self.assertTrue(filecmp.cmp(output_file_p, test_file_p))
 
     def test_02(self):
         input_file = TEST_DIR + "test_01.ref.fa"
-        output_file = T_TEST_DIR + "test_02.logo.fa"
-        test_file = TEST_DIR + "test_02.logo.fa"
+        output_file_n = T_TEST_DIR + "test_02.logo-n.fa"
+        output_file_p = T_TEST_DIR + "test_02.logo-p.fa"
+        test_file_n = TEST_DIR + "test_02.logo-n.fa"
+        test_file_p = TEST_DIR + "test_02.logo-p.fa"
 
-        command = ['dr-disco',
-        'logo-sequence',
-        'chr2:3',
-        input_file,
-        '-n','4',
-        '-p','4',
-        output_file]
+        command = ['dr-disco', 'logo-sequence', 'chr2:3', input_file, '-n','4', '-p','4', output_file_n, output_file_p]
         print " ".join(command)
         self.assertEqual(subprocess.call(command) , 0)# Ensure error code is 0 - no exceptions have been thrown
 
-        if not filecmp.cmp(output_file, test_file):
-            print 'diff \'' + output_file + '\' \'' + test_file + '\''
+        if not filecmp.cmp(output_file_n, test_file_n):
+            print 'diff \'' + output_file_n + '\' \'' + test_file_n + '\''
 
-        self.assertTrue(filecmp.cmp(output_file, test_file))
+        if not filecmp.cmp(output_file_p, test_file_p):
+            print 'diff \'' + output_file_p + '\' \'' + test_file_p + '\''
+
+        self.assertTrue(filecmp.cmp(output_file_n, test_file_n))
+        self.assertTrue(filecmp.cmp(output_file_p, test_file_p))
 
 
 def main():
