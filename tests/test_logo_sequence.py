@@ -57,9 +57,9 @@ class TestLogoSequence(unittest.TestCase):
         self.assertEqual(subprocess.call(command) , 0)# Ensure error code is 0 - no exceptions have been thrown
 
         if not filecmp.cmp(output_file, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
+            print 'diff \'' + output_file + '\' \'' + test_file + '\''
 
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(output_file, test_file))
 
     def test_02(self):
         input_file = TEST_DIR + "test_01.ref.fa"
@@ -77,9 +77,9 @@ class TestLogoSequence(unittest.TestCase):
         self.assertEqual(subprocess.call(command) , 0)# Ensure error code is 0 - no exceptions have been thrown
 
         if not filecmp.cmp(output_file, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
+            print 'diff \'' + output_file + '\' \'' + test_file + '\''
 
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(output_file, test_file))
 
 
 def main():
