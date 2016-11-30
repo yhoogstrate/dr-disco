@@ -4,4 +4,3 @@ nose
 fuma==3.0.5
 numpy
 HTSeq>=0.6.1
-nose
