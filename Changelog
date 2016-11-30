@@ -1,3 +1,6 @@
+2016-11-13	Youri Hoogstrate	v0.2.0
+    * Rewritten large parts of the code
+
 2016-11-13	Youri Hoogstrate	v0.1.0
 	* Rewritten rejoin_splice_junctions resulting in a huge performance
 	  increase. Rewritten and improved
