@@ -22,7 +22,7 @@ from .CigarAlignment import cigar_to_cigartuple
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
-x_onic_tt = {0: 'unknown', 1: 'exonic', 2:  'intronic'}
+x_onic_tt = {0: 'unknown', 1: 'exonic', 2: 'intronic'}
 
 
 def entropy(frequency_table):
@@ -235,7 +235,7 @@ class Node:
                 out += "\n\t[" + str(id(edge)) + ":" + sedge + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
 
         if a > 0:
-            return out+"\n\t-> soft /hard clips: " + str(self.clips) + "\n"
+            return out + "\n\t-> soft /hard clips: " + str(self.clips) + "\n"
         else:
             return ""
 
@@ -854,7 +854,7 @@ class SubGraph():
 
     def classify_intronic_exonic(self, splice_junctions):
         for pos in [self.edges[0]._origin.position, self.edges[0]._target.position]:
-            for step in splice_junctions.idxtree[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos -MAX_ACCEPTABLE_ALIGNMENT_ERROR), max(1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR + 1))].steps():
+            for step in splice_junctions.idxtree[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR), max(1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR + 1))].steps():
                 if step[1]:
                     for strand in step[1]:
                         self.xonic = 1
@@ -877,7 +877,7 @@ class SubGraph():
             "%s\t%s\t"  # %.2f\t%.2f\t
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
-                      ("valid" if self.discarded == [] else ','.join(self.discarded)), x_onic_tt[self.xonic], # Classification status
+                      ("valid" if self.discarded == [] else ','.join(self.discarded)), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
