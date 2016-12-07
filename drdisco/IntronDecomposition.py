@@ -22,6 +22,7 @@ from .CigarAlignment import cigar_to_cigartuple
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
+x_onic_tt = {0: 'unknown', 1: 'exonic', 2:  'intronic'}
 
 
 def entropy(frequency_table):
@@ -234,7 +235,7 @@ class Node:
                 out += "\n\t[" + str(id(edge)) + ":" + sedge + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
 
         if a > 0:
-            return "\n\t-> soft /hard clips: " + str(self.clips) + "\n"
+            return out+"\n\t-> soft /hard clips: " + str(self.clips) + "\n"
         else:
             return ""
 
@@ -592,22 +593,6 @@ class Graph:
         self.idxtree[HTSeq.GenomicPosition(node.position._chr, node.position.pos)] = set()
         del(node)
 
-    def search_splice_edges_between(self, pos1, pos2):  # insert size is two directional
-        for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos1.pos + MAX_ACCEPTABLE_INSERT_SIZE + 1)].steps():
-            if step[1]:
-                position = step[1]
-
-                for strand in position:
-                    node1 = position[strand]
-                    for edge in node1.edges.values():
-                        node2 = edge._target
-
-                        d1 = abs(pos1.pos - node1.position.pos)
-                        if d1 <= MAX_ACCEPTABLE_INSERT_SIZE:
-                            d2 = abs(pos2.pos - node2.position.pos)
-                            if d1 + d2 <= MAX_ACCEPTABLE_INSERT_SIZE:
-                                yield pow(d1, 2) + pow(d2, 2), edge
-
     def print_chain(self):  # pragma: no cover
         print "**************************************************************"
         for node in self:
@@ -804,14 +789,14 @@ terugloop probleem redelijk opgelost.
                                 thicker_edges.remove(subedge)  # goes wrong
 
             # del(left_splice_junctions_ds,right_splice_junctions_ds)
-            subnetworks.append(Subnet(q, subedges, left_splice_junctions, right_splice_junctions))
+            subnetworks.append(SubGraph(q, subedges, left_splice_junctions, right_splice_junctions))
             self.remove_edge(start_point)
 
         logging.info("Extracted %i subnetwork(s)" % len(subnetworks))
         return subnetworks
 
 
-class Subnet():
+class SubGraph():
     def __init__(self, _id, edges, left_splice_junctions, right_splice_junctions):
         self._id = _id
         self.edges = edges
@@ -820,6 +805,8 @@ class Subnet():
         self.total_clips = 0
         self.total_score = 0
         self.discarded = []
+
+        self.xonic = 0
 
         self.calc_clips()
         self.calc_scores()
@@ -865,6 +852,16 @@ class Subnet():
 
         return self.total_score
 
+    def classify_intronic_exonic(self, splice_junctions):
+        for pos in [self.edges[0]._origin.position, self.edges[0]._target.position]:
+            for step in splice_junctions.idxtree[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos -MAX_ACCEPTABLE_ALIGNMENT_ERROR), max(1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR + 1))].steps():
+                if step[1]:
+                    for strand in step[1]:
+                        self.xonic = 1
+                        print "!!!"
+                        return self.xonic
+        self.xonic = 2
+
     def __str__(self):
         """Makes tabular output"""
         node_a, node_b = self.edges[0]._origin, self.edges[0]._target
@@ -873,14 +870,14 @@ class Subnet():
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"
-            "%s\t"
+            "%s\t%s\t"
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
             "%i\t%i\t"
             "%s\t%s\t"  # %.2f\t%.2f\t
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
-                      ("valid" if self.discarded == [] else ','.join(self.discarded)),  # Classification status
+                      ("valid" if self.discarded == [] else ','.join(self.discarded)), x_onic_tt[self.xonic], # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
@@ -1382,7 +1379,6 @@ class IntronDecomposition:
 
         thicker_edges = fusion_junctions.prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         fusion_junctions.rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions
-        del(splice_junctions)
 
         fusion_junctions.reinsert_edges(thicker_edges)  # @todo move function into statuc function in this class
 
@@ -1391,6 +1387,10 @@ class IntronDecomposition:
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges)
         subnets = self.merge_overlapping_subnets(subnets)
         self.results = self.filter_subnets(subnets)  # Filters based on three rules: entropy, score and background
+
+        for subnet in self.results:
+            subnet.classify_intronic_exonic(splice_junctions)
+        del(splice_junctions)
 
         # If circos:
         # s = 1
@@ -1412,7 +1412,7 @@ class IntronDecomposition:
 
         return ("chr-A"           "\t" "pos-A"             "\t" "direction-A""\t"
                 "chr-B"           "\t" "pos-B"             "\t" "direction-B""\t"
-                "filter-status"   "\t"
+                "filter-status"   "\t" "intronic/exonic"   "\t"
                 "score"           "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
                 "n-edges"         "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
                 "n-splice-junc-A" "\t" "n-splice-junc-B"   "\t"
