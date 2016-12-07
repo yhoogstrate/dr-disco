@@ -15,8 +15,10 @@ python:
 install:
   - pip install flake8
   - pip install -r requirements.txt
+  - python setup.py install
 
 script:
+  - command -v dr-disco
   - nosetests -v tests/*.py
   - cd "$TRAVIS_BUILD_DIR" && flake8 --exclude=.git --ignore=E501 .
 

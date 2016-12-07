@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python2
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
@@ -82,6 +81,31 @@ def CLI_detect_intronic_break_points(
 def CLI_bam_extract_regions(region1,region2,bam_output_file,bam_input_file):
     c = BAMExtract(bam_input_file)
     c.extract(region1, region2, bam_output_file)
+
+
+
+@CLI.command(name='logo-sequence',short_help='Extracts the genomic sequence before (negative file) or after (positive file) a given genomic location, in order to be used for creating sequence logo\'s.')
+@click.argument('region')
+@click.argument('fasta_input_file')
+@click.option('-n','--offset-negative', type=int, default=10)
+@click.option('-p','--offset-positive', type=int, default=10)
+@click.argument('fasta_output_file_negative')
+@click.argument('fasta_output_file_positive')
+def CLI_bam_extract_regions(region, fasta_input_file, offset_negative, offset_positive, fasta_output_file_negative, fasta_output_file_positive):
+    _chr, _pos = region.split(':')
+    _chr, _pos = str(_chr), int(_pos)
+    
+    fh = pysam.Fastafile(fasta_input_file)
+    fh_n = open(fasta_output_file_negative,'w')
+    fh_n.write(">"+_chr+":"+str(_pos)+"- ("+str(_pos - offset_negative + 1)+"-"+str(_pos + 1)+")\n")
+    fh_n.write(fh.fetch(_chr,_pos - offset_negative + 1, _pos + 1)+"\n")
+    fh_n.close()
+    
+    fh_p = open(fasta_output_file_positive,'w')
+    fh_p.write(">"+_chr+":"+str(_pos)+"+ ("+str(_pos+ 1)+"-"+str(_pos + offset_positive + 1)+")\n")
+    fh_p.write(fh.fetch(_chr, _pos+ 1, _pos + offset_positive + 1)+"\n")
+    fh_p.close()
+    fh.close()
 
 
 if __name__ == '__main__':
