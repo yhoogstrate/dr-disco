@@ -22,7 +22,6 @@
 
 import drdisco
 import logging
-import pysam
 import sys
 import os
 import unittest
@@ -48,9 +47,9 @@ class TestLogoSequence(unittest.TestCase):
         test_file_n = TEST_DIR + "test_01.logo-n.fa"
         test_file_p = TEST_DIR + "test_01.logo-p.fa"
 
-        command = ['dr-disco', 'logo-sequence', 'chr1:25', input_file, '-n','5', '-p','5', output_file_n, output_file_p]
+        command = ['dr-disco', 'logo-sequence', 'chr1:25', input_file, '-n', '5', '-p', '5', output_file_n, output_file_p]
         print " ".join(command)
-        self.assertEqual(subprocess.call(command) , 0)# Ensure error code is 0 - no exceptions have been thrown
+        self.assertEqual(subprocess.call(command), 0)  # Ensure error code is 0 - no exceptions have been thrown
 
         if not filecmp.cmp(output_file_n, test_file_n):
             print 'diff \'' + output_file_n + '\' \'' + test_file_n + '\''
@@ -68,9 +67,9 @@ class TestLogoSequence(unittest.TestCase):
         test_file_n = TEST_DIR + "test_02.logo-n.fa"
         test_file_p = TEST_DIR + "test_02.logo-p.fa"
 
-        command = ['dr-disco', 'logo-sequence', 'chr2:3', input_file, '-n','4', '-p','4', output_file_n, output_file_p]
+        command = ['dr-disco', 'logo-sequence', 'chr2:3', input_file, '-n', '4', '-p', '4', output_file_n, output_file_p]
         print " ".join(command)
-        self.assertEqual(subprocess.call(command) , 0)# Ensure error code is 0 - no exceptions have been thrown
+        self.assertEqual(subprocess.call(command), 0)  # Ensure error code is 0 - no exceptions have been thrown
 
         if not filecmp.cmp(output_file_n, test_file_n):
             print 'diff \'' + output_file_n + '\' \'' + test_file_n + '\''
