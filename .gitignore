@@ -15,6 +15,7 @@
 # Required for testing
 tmp/
 *.bai
+*.fai
 /*.txt
 test.out
 truncated.*
