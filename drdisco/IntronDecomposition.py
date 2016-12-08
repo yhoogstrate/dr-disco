@@ -858,7 +858,6 @@ class SubGraph():
                 if step[1]:
                     for strand in step[1]:
                         self.xonic = 1
-                        print "!!!"
                         return self.xonic
         self.xonic = 2
 
