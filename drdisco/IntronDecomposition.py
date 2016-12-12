@@ -1589,7 +1589,7 @@ class IntronDecomposition:
                 subnet.discarded.append("entropy=" + str(entropy))
 
             n_disco = subnet.get_n_discordant_reads() / 2
-            n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes())
+            n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(sum(subnet.get_n_nodes()))))
             if n_disco < n_disco_min:
                 subnet.discarded.append("n_discordant_reads=" + str(n_disco) + "/" + str(n_disco_min))
 
