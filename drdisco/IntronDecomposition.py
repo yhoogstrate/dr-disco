@@ -1595,7 +1595,11 @@ class IntronDecomposition:
 
             n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) / 2
             n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
-            if n_support < n_support_min:
+            
+            n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) / 2
+            n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
+            n_support_min_new = q = int(round(pow( 1.2 * n_support_min , 0.92 )))
+            if n_support < n_support_min_new:
                 subnet.discarded.append("n_support=" + str(n_support) + "/" + str(n_support_min))
 
             if len(subnet.discarded) > 0:
