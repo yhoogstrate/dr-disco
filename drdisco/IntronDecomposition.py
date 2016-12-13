@@ -1597,23 +1597,14 @@ class IntronDecomposition:
 
             n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) / 2
             n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
-            
-            n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) / 2
-            n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
             n_support_min_new = q = int(round(pow( 1.2 * n_support_min , 0.913 )))
             if n_support < n_support_min_new:
                 subnet.discarded.append("n_support=" + str(n_support) + "/" + str(n_support_min))
 
-            """
-            although this goes currently wrong in sample 072, which has no spanning/disco reads,
-            the general rule of thumb is that the number of spanning reads is never HIGHER than
-            
-            35 + 0.55 * n_split_reads
-            
-            split_x = 1:600
-            spanning_y = 35 + 0.6*split_x
-
-            """
+            n_split = subnet.get_n_split_reads() / 2
+            n_disco_max = int(round(35 + (0.55 *  n_split)))
+            if n_disco > n_disco_max:
+                subnet.discarded.append("n_disco" + str(n_disco) + "/" + str(n_disco_max))
 
             if len(subnet.discarded) > 0:
                 k += 1
