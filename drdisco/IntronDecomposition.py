@@ -1584,27 +1584,31 @@ class IntronDecomposition:
             """Total of 8 reads is minimum, of which 2 must be
             discordant and the entropy must be above 0.55"""
 
-
-
             entropy = subnet.edges[0].get_entropy()
             if entropy < MIN_SUBNET_ENTROPY:
-                subnet.discarded.append("entropy=" + str(entropy))
+                subnet.discarded.append("entropy=" + str(entropy) + '<' + str(MIN_SUBNET_ENTROPY))
 
             n_disco = subnet.get_n_discordant_reads() / 2
-            n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(sum(subnet.get_n_nodes()))))
-            if n_disco < n_disco_min:
-                subnet.discarded.append("n_discordant_reads=" + str(n_disco) + "/" + str(n_disco_min))
-
-            n_support = (subnet.get_n_discordant_reads() + subnet.get_n_split_reads()) / 2
-            n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * sum(subnet.get_n_nodes()))
-            n_support_min_new = q = int(round(pow( 1.2 * n_support_min , 0.913 )))
-            if n_support < n_support_min_new:
-                subnet.discarded.append("n_support=" + str(n_support) + "/" + str(n_support_min))
-
             n_split = subnet.get_n_split_reads() / 2
+            n_support = n_disco + n_split
+            n_nodes = sum(subnet.get_n_nodes())
+
+            n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(n_nodes)))
+            if n_disco < n_disco_min:
+                subnet.discarded.append("n_discordant_reads=" + str(n_disco) + "<" + str(n_disco_min))
+
+            n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * n_nodes)
+            n_support_min_new = int(round(pow( 1.2 * n_support_min , 0.913 )))
+            if n_support < n_support_min_new:
+                subnet.discarded.append("n_support=" + str(n_support) + "<" + str(n_support_min))
+
             n_disco_max = int(round(35 + (0.55 *  n_split)))
             if n_disco > n_disco_max:
-                subnet.discarded.append("n_disco" + str(n_disco) + "/" + str(n_disco_max))
+                subnet.discarded.append("n_disco" + str(n_disco) + ">" + str(n_disco_max))
+
+            n_split_min = int(round((0.52*n_support) - pow((0.1*n_support), 1.2) - 2))
+            if n_split < n_split_min:
+                subnet.discarded.append("n_split" + str(n_split) + "<" + str(n_split_min))
 
             if len(subnet.discarded) > 0:
                 k += 1
