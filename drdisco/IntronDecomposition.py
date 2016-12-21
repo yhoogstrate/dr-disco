@@ -1598,15 +1598,15 @@ class IntronDecomposition:
                 subnet.discarded.append("n_discordant_reads=" + str(n_disco) + "<" + str(n_disco_min))
 
             n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * n_nodes)
-            n_support_min_new = int(round(pow( 1.2 * n_support_min , 0.913 )))
+            n_support_min_new = int(round(pow(1.2 * n_support_min, 0.913)))
             if n_support < n_support_min_new:
                 subnet.discarded.append("n_support=" + str(n_support) + "<" + str(n_support_min))
 
-            n_disco_max = int(round(35 + (0.55 *  n_split)))
+            n_disco_max = int(round(35 + (0.55 * n_split)))
             if n_disco > n_disco_max:
                 subnet.discarded.append("n_disco" + str(n_disco) + ">" + str(n_disco_max))
 
-            n_split_min = int(round((0.52*n_support) - pow((0.1*n_support), 1.2) - 2))
+            n_split_min = int(round((0.52 * n_support) - pow((0.1 * n_support), 1.2) - 2))
             if n_split < n_split_min:
                 subnet.discarded.append("n_split" + str(n_split) + "<" + str(n_split_min))
 
