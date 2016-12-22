@@ -6,14 +6,14 @@
 Dr. Disco
 
 [License: GNU General Public License v3 (GPLv3)]
- 
+
  This file is part of Dr. Disco.
- 
+
  FuMa is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
  (at your option) any later version.
- 
+
  Dr. Disco is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
@@ -23,91 +23,83 @@ Dr. Disco
 """
 
 import drdisco
-import unittest,logging,sys,subprocess,filecmp,pysam,os
+import logging
+import sys
+import pysam
 import click
 
-import drdisco
-from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
-from drdisco.IntronDecomposition import *
+#  from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
+from drdisco.BAMExtract import BAMExtract
+from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
 
-logging.basicConfig(level=logging.DEBUG,format=drdisco.__log_format__,stream=sys.stdout)
+logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 
 def main():
     CLI()
 
-@click.version_option(drdisco.__version__+"\n\n"+drdisco.__license_notice__+"\n\nWritten by "+drdisco.__author__+".\n\nFor more info please visit:\n"+drdisco.__homepage__)
+
+@click.version_option(drdisco.__version__ + "\n\n" + drdisco.__license_notice__ + "\n\nWritten by " + drdisco.__author__ + ".\n\nFor more info please visit:\n" + drdisco.__homepage__)
 @click.group()
 def CLI():
     pass
 
 
-#@click.command(help="This tool requires the '*.Chimeric.out.sam' files of RNA STAR converted into BAM")
-@CLI.command(name="fix",short_help="Fixes chimeric SAM/BAM alignment produced by RNA-STAR")
-@click.option("--temp-dir","-t",type=click.Path(exists=True),default="/tmp")#,help="Path in which temporary files will be stored (default: /tmp)"
+@CLI.command(name="fix", short_help="Fixes chimeric SAM/BAM alignment produced by RNA-STAR")
+@click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
 @click.argument('output_alignment_file')
 @click.argument('input_alignment_file', type=click.Path(exists=True))
-def CLI_fix_chimeric_alignment(
-        temp_dir,output_alignment_file,
-        input_alignment_file):
+def CLI_fix_chimeric_alignment(temp_dir, output_alignment_file, input_alignment_file):
     alignment_handle = ChimericAlignment(input_alignment_file)
-    alignment_handle.convert(output_alignment_file,temp_dir)
+    alignment_handle.convert(output_alignment_file, temp_dir)
 
 
-@CLI.command(name='intronic',short_help='Detects and interprets intronic break points')
+@CLI.command(name='intronic', short_help='Detects and interprets intronic break points')
+@click.option("--min-e-score", "-m", default=8, help="Minimal score to initiate pulling sub-graphs (larger numbers boost performance but result in suboptimal results)")
 @click.argument('output_file', type=click.File('w'))
 @click.argument('fusion_candidates_input_file', type=click.Path(exists=True))
 @click.argument('bam_input_file', type=click.Path(exists=True))
-def CLI_detect_intronic_break_points(
-        output_file,
-        fusion_candidates_input_file,
-        bam_input_file):
-    #bps = FusionCatcher(fusion_candidates_input_file,"")
-    #bps_i = bps.__iter__()
-    #bp = bps_i.next()
-
+def CLI_detect_intronic_break_points(min_e_score, output_file, fusion_candidates_input_file, bam_input_file):
     ic = IntronDecomposition(bam_input_file)
-    #ic.annotate_genes(gobj)
-    ic.decompose()
+    # ic.annotate_genes(gobj)
+    ic.decompose(min_e_score)
     ic.export(output_file)
 
 
-@CLI.command(name='bam-extract',short_help='Extract reads from two chromosomal positions (and also take the mates with the same name) - regions are in the format chr1:123-546')
+@CLI.command(name='bam-extract', short_help='Extract reads from two chromosomal positions (and also take the mates with the same name) - regions are in the format chr1:123-546')
 @click.argument('region1')
 @click.argument('region2')
 @click.argument('bam_output_file')
 @click.argument('bam_input_file', type=click.Path(exists=True))
-def CLI_bam_extract_regions(region1,region2,bam_output_file,bam_input_file):
+def CLI_bam_extract_regions(region1, region2, bam_output_file, bam_input_file):
     c = BAMExtract(bam_input_file)
     c.extract(region1, region2, bam_output_file)
 
 
-
-@CLI.command(name='logo-sequence',short_help='Extracts the genomic sequence before (negative file) or after (positive file) a given genomic location, in order to be used for creating sequence logo\'s.')
+@CLI.command(name='logo-sequence', short_help='Extracts the genomic sequence before (negative file) or after (positive file) a given genomic location, in order to be used for creating sequence logo\'s.')
 @click.argument('region')
 @click.argument('fasta_input_file')
-@click.option('-n','--offset-negative', type=int, default=10)
-@click.option('-p','--offset-positive', type=int, default=10)
+@click.option('-n', '--offset-negative', type=int, default=10)
+@click.option('-p', '--offset-positive', type=int, default=10)
 @click.argument('fasta_output_file_negative')
 @click.argument('fasta_output_file_positive')
-def CLI_bam_extract_regions(region, fasta_input_file, offset_negative, offset_positive, fasta_output_file_negative, fasta_output_file_positive):
+def CLI_logo_sequence(region, fasta_input_file, offset_negative, offset_positive, fasta_output_file_negative, fasta_output_file_positive):
     _chr, _pos = region.split(':')
     _chr, _pos = str(_chr), int(_pos)
-    
+
     fh = pysam.Fastafile(fasta_input_file)
-    fh_n = open(fasta_output_file_negative,'w')
-    fh_n.write(">"+_chr+":"+str(_pos)+"- ("+str(_pos - offset_negative + 1)+"-"+str(_pos + 1)+")\n")
-    fh_n.write(fh.fetch(_chr,_pos - offset_negative + 1, _pos + 1)+"\n")
+    fh_n = open(fasta_output_file_negative, 'w')
+    fh_n.write(">" + _chr + ":" + str(_pos) + "- (" + str(_pos - offset_negative + 1) + "-" + str(_pos + 1) + ")\n")
+    fh_n.write(fh.fetch(_chr, _pos - offset_negative + 1, _pos + 1) + "\n")
     fh_n.close()
-    
-    fh_p = open(fasta_output_file_positive,'w')
-    fh_p.write(">"+_chr+":"+str(_pos)+"+ ("+str(_pos+ 1)+"-"+str(_pos + offset_positive + 1)+")\n")
-    fh_p.write(fh.fetch(_chr, _pos+ 1, _pos + offset_positive + 1)+"\n")
+
+    fh_p = open(fasta_output_file_positive, 'w')
+    fh_p.write(">" + _chr + ":" + str(_pos) + " + (" + str(_pos + 1) + "-" + str(_pos + offset_positive + 1) + ")\n")
+    fh_p.write(fh.fetch(_chr, _pos + 1, _pos + offset_positive + 1) + "\n")
     fh_p.close()
     fh.close()
 
 
 if __name__ == '__main__':
     main()
-

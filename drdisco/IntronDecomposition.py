@@ -739,7 +739,7 @@ thick edges:
 
         logging.info("Linked " + str(k) + " splice junction(s)")
 
-    def extract_subnetworks_by_splice_junctions(self, thicker_edges):
+    def extract_subnetworks_by_splice_junctions(self, thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS):
         """ Deze functie haalt recursief per edge een set van edges op die
 binnen de splice afstand voldoen. De splice afstanden zijn voorgerekend
 in de rejoin_splice_junctions functie. Het enige dat hier dient te gebeuren
@@ -752,41 +752,43 @@ junction staan beschreven; 1 naar posities die kleiner zijn dan zichzelf
 en 1 met posities die groter zijn dan zichzelf. Hierdoor is een recursief
 terugloop probleem redelijk opgelost.
             """
-        logging.info("Initiated")
+        logging.info("Initiated [MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS=%i]" % MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
 
         thicker_edges.reverse()
         q = 0
         subnetworks = []
         while thicker_edges:
             start_point = thicker_edges.pop()
+            if start_point.get_scores() >= MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS:
+                left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions()
+                right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions()
 
-            left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions()
-            right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions()
+                left_splice_junctions = set()
+                right_splice_junctions = set()
 
-            left_splice_junctions = set()
-            right_splice_junctions = set()
+                subedges = []  # [start_point] if code below is commented out
 
-            subedges = []  # [start_point] if code below is commented out
+                # All edges between any of the left and right nodes are valid edges and have to be extracted
+                # Find all direct edges joined by splice junctions
+                for left_node in left_nodes:
+                    for right_node in right_nodes:
+                        if right_node.position._hash in left_node.edges:
+                            subedge = left_node.edges[right_node.position._hash]
+                            if subedge._target.position._hash == right_node.position._hash:
+                                subedges.append(subedge)
 
-            # All edges between any of the left and right nodes are valid edges and have to be extracted
-            # Find all direct edges joined by splice junctions
-            for left_node in left_nodes:
-                for right_node in right_nodes:
-                    if right_node.position._hash in left_node.edges:
-                        subedge = left_node.edges[right_node.position._hash]
-                        if subedge._target.position._hash == right_node.position._hash:
-                            subedges.append(subedge)
+                                if left_node != start_point._origin:  # must be merged by a splice junction
+                                    left_splice_junctions = left_splice_junctions.union(left_splice_junctions_ds[left_node])
 
-                            if left_node != start_point._origin:  # must be merged by a splice junction
-                                left_splice_junctions = left_splice_junctions.union(left_splice_junctions_ds[left_node])
+                                if right_node != start_point._target:
+                                    right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
 
-                            if right_node != start_point._target:
-                                right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
+                                if subedge != start_point:
+                                    self.remove_edge(subedge)
 
-                            if subedge != start_point:
-                                self.remove_edge(subedge)
-
-                                thicker_edges.remove(subedge)  # goes wrong
+                                    thicker_edges.remove(subedge)  # goes wrong
+            else:
+                subedges = [start_point]
 
             # del(left_splice_junctions_ds,right_splice_junctions_ds)
             subnetworks.append(SubGraph(q, subedges, left_splice_junctions, right_splice_junctions))
@@ -1368,7 +1370,7 @@ class IntronDecomposition:
     def __init__(self, alignment_file):
         self.alignment_file = alignment_file
 
-    def decompose(self):
+    def decompose(self, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS):
         alignment = BAMExtract(self.alignment_file)
 
         fusion_junctions = Graph()
@@ -1383,7 +1385,7 @@ class IntronDecomposition:
 
         fusion_junctions.reindex_sj()
 
-        subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges)
+        subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
         subnets = self.merge_overlapping_subnets(subnets)
         self.results = self.filter_subnets(subnets)  # Filters based on three rules: entropy, score and background
 
