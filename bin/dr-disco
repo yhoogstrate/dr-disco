@@ -29,7 +29,7 @@ import pysam
 import click
 
 #  from fuma.Readers import ReadFusionCatcherFinalList as FusionCatcher
-from drdisco.BAMExtract import BAMExtract
+from drdisco.IntronDecomposition import BAMExtract
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
 
@@ -95,7 +95,7 @@ def CLI_logo_sequence(region, fasta_input_file, offset_negative, offset_positive
     fh_n.close()
 
     fh_p = open(fasta_output_file_positive, 'w')
-    fh_p.write(">" + _chr + ":" + str(_pos) + " + (" + str(_pos + 1) + "-" + str(_pos + offset_positive + 1) + ")\n")
+    fh_p.write(">" + _chr + ":" + str(_pos) + "+ (" + str(_pos + 1) + "-" + str(_pos + offset_positive + 1) + ")\n")
     fh_p.write(fh.fetch(_chr, _pos + 1, _pos + offset_positive + 1) + "\n")
     fh_p.close()
     fh.close()
