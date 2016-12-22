@@ -23,7 +23,7 @@
  <http://epydoc.sourceforge.net/manual-fields.html#fields-synonyms>
 """
 
-__version_info__ = ('0', '1', '0')
+__version_info__ = ('0', '2', '0')
 __version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.'.join(__version_info__[0:3]) + "-" + __version_info__[3]
 __author__ = 'Youri Hoogstrate'
 __homepage__ = 'https://github.com/yhoogstrate/dr-disco'
@@ -40,6 +40,6 @@ MAX_GENOME_DISTANCE = 999999999
 
 
 # filter settings
-MIN_SUBNET_ENTROPY = 0.55
+MIN_SUBNET_ENTROPY = 0.8
 MIN_DISCO_PER_SUBNET_PER_NODE = 1  # minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
 MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4  # minimum supporting reads is 8 per subnet

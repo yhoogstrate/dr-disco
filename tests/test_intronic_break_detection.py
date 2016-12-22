@@ -51,7 +51,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_01.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
-        ic.decompose()
+        ic.decompose(0)
 
         fh = open(output_file, "w")
         ic.export(fh)
@@ -67,7 +67,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -82,7 +82,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -97,7 +97,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -112,7 +112,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -126,7 +126,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -141,7 +141,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -157,7 +157,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -172,7 +172,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -187,7 +187,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -202,7 +202,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -215,7 +215,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_12.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -228,7 +228,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_13.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -241,7 +241,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_14.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -254,7 +254,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_15.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -268,7 +268,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ic = IntronDecomposition(input_file_a)
         # ic.annotate_genes(gobj)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -281,7 +281,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_17.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -295,7 +295,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_18.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
@@ -309,7 +309,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_19.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
-        ic.decompose()
+        ic.decompose(0)
 
         with open(output_file, "w") as fh:
             ic.export(fh)
