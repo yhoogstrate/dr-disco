@@ -46,7 +46,7 @@ if not os.path.exists(T_TEST_DIR):
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
         input_file_a = TEST_DIR + "test_01.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_01.out.dbed"
         output_file = T_TEST_DIR + "test_01.out.dbed"
 
@@ -61,7 +61,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_02(self):
         input_file_a = TEST_DIR + "test_02.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_02.out.dbed"
         output_file = T_TEST_DIR + "test_02.out.dbed"
 
@@ -76,7 +76,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_03(self):
         input_file_a = TEST_DIR + "test_03.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_03.out.dbed"
         output_file = T_TEST_DIR + "test_03.out.dbed"
 
@@ -91,7 +91,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_04(self):
         input_file_a = TEST_DIR + "test_04.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_04.out.dbed"
         output_file = T_TEST_DIR + "test_04.out.dbed"
 
@@ -106,7 +106,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_05(self):
         input_file_a = TEST_DIR + "test_05.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_05.out.dbed"
         output_file = T_TEST_DIR + "test_05.out.dbed"
 
@@ -121,7 +121,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_06(self):
         input_file_a = TEST_DIR + "test_06.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         output_file = T_TEST_DIR + "test_06.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
@@ -136,7 +136,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_07(self):
         input_file_a = TEST_DIR + "test_07.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         output_file = T_TEST_DIR + "test_07.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
@@ -151,7 +151,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_08_test_inclusion_of_disco_reads(self):
         input_file_a = TEST_DIR + "test_08.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_08.out.dbed"
         output_file = T_TEST_DIR + "test_08.out.dbed"
 
@@ -166,7 +166,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_09(self):
         input_file_a = TEST_DIR + "test_09.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_09.out.dbed"
         output_file = T_TEST_DIR + "test_09.out.dbed"
 
@@ -181,7 +181,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_10(self):
         input_file_a = TEST_DIR + "test_10.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_10.out.dbed"
         output_file = T_TEST_DIR + "test_10.out.dbed"
 
@@ -196,7 +196,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     def test_11(self):
         input_file_a = TEST_DIR + "test_11.bam"
-        # input_file_f = TEST_DIR + "test_terg_01_final-list_candidate-fusion-genes.GRCh37.txt"
+
         test_file = TEST_DIR + "test_11.out.dbed"
         output_file = T_TEST_DIR + "test_11.out.dbed"
 
