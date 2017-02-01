@@ -79,12 +79,17 @@ class ChimericAlignment:
                      read.cigarstring,
                      read.mapping_quality, "-" if read.is_reverse else "+",
                      nm]
-            sa_ids[read] = ",".join([str(x) for x in sa_id])
 
+            # -- pysam 0.10.0 SPECIFIC --
+            # Use of id() is some kind of hack because the objects seem
+            # to get lost in memory after the set_tag?
+            # i suppose set_tag does not change the object but generates
+            # a new one
+            sa_ids[id(read)] = ",".join([str(x) for x in sa_id])
         for read in reads_updated:
             reads = [k for k in reads_updated if k != read]
 
-            sa_tags = [sa_ids[l] for l in reads]
+            sa_tags = [sa_ids[id(l)] for l in reads]
             sa_tag = ';'.join(sa_tags)
             read.set_tag('SA', sa_tag)
 
