@@ -58,7 +58,7 @@ def CLI_fix_chimeric_alignment(temp_dir, output_alignment_file, input_alignment_
 @CLI.command(name='detect', short_help='Detects and interprets intronic break points')
 @click.option("--min-e-score", "-m", default=8, help="Minimal score to initiate pulling sub-graphs (larger numbers boost performance but result in suboptimal results)")
 @click.argument('output_file', type=click.File('w'))
-#@click.argument('fusion_candidates_input_file', type=click.Path(exists=True))
+# @click.argument('fusion_candidates_input_file', type=click.Path(exists=True))
 @click.argument('bam_input_file', type=click.Path(exists=True))
 def CLI_detect_intronic_break_points(min_e_score, output_file, fusion_candidates_input_file, bam_input_file):
     ic = IntronDecomposition(bam_input_file)

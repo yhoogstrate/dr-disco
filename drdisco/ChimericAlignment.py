@@ -33,8 +33,8 @@ class ChimericAlignment:
         self.test_pysam_version()
 
     def test_pysam_version(self):
-        versions = pysam.__version__.split('.',2)
-        
+        versions = pysam.__version__.split('.', 2)
+
         if int(versions[1]) < 9:
             raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__ + " instead")
         else:
