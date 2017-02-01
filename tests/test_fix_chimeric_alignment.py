@@ -123,7 +123,6 @@ class TestChimericAlignment(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
 
 
-
 def main():
     unittest.main()
 
