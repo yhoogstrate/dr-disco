@@ -66,21 +66,27 @@ class ChimericAlignment:
         return all_reads_updated
 
     def update_sa_tags(self, reads_updated, bam_file):
-        sa_ids = []
+        sa_ids = {}
 
-        for a in reads_updated:
+        for read in reads_updated:
             try:
-                nm = a.get_tag('nM')
+                nm = read.get_tag('nM')
             except:
                 nm = -1
 
-            sa_id = [bam_file.get_reference_name(a.reference_id), a.reference_start, a.cigarstring, a.mapping_quality, "-" if a.is_reverse else "+", nm]
-            sa_ids.append(",".join([str(x) for x in sa_id]))
+            sa_id = [bam_file.get_reference_name(read.reference_id),
+                     read.reference_start,
+                     read.cigarstring,
+                     read.mapping_quality, "-" if read.is_reverse else "+",
+                     nm]
+            sa_ids[read] = ",".join([str(x) for x in sa_id])
 
-        for i in xrange(len(reads_updated)):
-            sa_id = sa_ids[i]
-            sa_tag = ";".join([x for x in sa_ids if x != sa_id])
-            reads_updated[i].set_tag('SA', sa_tag)
+        for read in reads_updated:
+            reads = [k for k in reads_updated if k != read]
+
+            sa_tags = [sa_ids[l] for l in reads]
+            sa_tag = ';'.join(sa_tags)
+            read.set_tag('SA', sa_tag)
 
         return reads_updated
 
