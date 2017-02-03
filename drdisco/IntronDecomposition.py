@@ -1008,13 +1008,17 @@ class BAMExtract(object):
                         proper_tag = True
 
             if not proper_tag:
+                bam_fh.close()
                 raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
 
         try:  # pragma: no cover
             bam_fh.fetch()
         except:  # pragma: no cover
-            logging.info('Indexing BAM file with pysam: ' + bam_fh.filename)  # create index if it does not exist
-            pysam.index(bam_fh.filename)
+            fname = bam_fh.filename
+            logging.info('Indexing BAM file with pysam: ' + fname)  # create index if it does not exist
+            bam_fh.close()
+
+            pysam.index(fname)
             bam_fh = pysam.AlignmentFile(bam_fh.filename)
 
         try:
@@ -1038,7 +1042,7 @@ class BAMExtract(object):
                 # ===2===>|   |<===1===
 
                 # Hypothetical:
-                # |<===1===    |<===2===
+                # |<===1===    |<===2==
 
                 if read.is_reverse:
                     pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),

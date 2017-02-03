@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
@@ -29,6 +29,8 @@ import subprocess
 import filecmp
 
 logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
+
+subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
 TEST_DIR = "tests/logo-sequence/"
 T_TEST_DIR = "tmp/" + TEST_DIR
