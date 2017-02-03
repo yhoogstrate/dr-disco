@@ -317,6 +317,11 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_20_tests_trigger_error_on_non_fixed_file(self):
+        input_file_a = TEST_DIR + "test_20.bam"
+
+        ic = IntronDecomposition(input_file_a)
+        self.assertRaises(Exception, ic.decompose, 0)# ic.decompose(0) triggers exception
 
 def main():
     unittest.main()
