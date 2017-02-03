@@ -32,6 +32,8 @@ import subprocess
 logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 # Nosetests doesn't use main()
 
+subprocess.call(["bash", "tests/rm_bai_files.sh"])
+
 
 class TestFunctional_bam_extract(unittest.TestCase):
     def __get_temp_dirs(self):
