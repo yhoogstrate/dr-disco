@@ -990,34 +990,39 @@ class SubGraph():
 
 
 class BAMExtract(object):
-    def __init__(self, bam_file):
-        self.pysam_fh = self.test_disco_alignment(bam_file)
+    def __init__(self, bam_file, require_fixed_bam_file):
+        self.pysam_fh = self.test_disco_alignment(bam_file, require_fixed_bam_file)
 
     @staticmethod
-    def test_disco_alignment(alignment_file):
+    def test_disco_alignment(alignment_file, require_fixed_bam_file):
         """Ensures by reading the BAM header whether the BAM file was
         indeed fixed using Dr. Disco
         """
         bam_fh = pysam.AlignmentFile(alignment_file, "rb")
-        if 'PG' in bam_fh.header:
-            for pg in bam_fh.header['PG']:
-                if pg['ID'] == 'drdisco_fix_chimeric':
-                    try:  # pragma: no cover
-                        bam_fh.fetch()
-                    except:  # pragma: no cover
-                        logging.info('Indexing BAM file with pysam: ' + bam_fh.filename)  # create index if it does not exist
-                        pysam.index(bam_fh.filename)
-                        bam_fh = pysam.AlignmentFile(bam_fh.filename)
 
-                    try:
-                        bam_fh.fetch()
-                    except:
-                        raise Exception('Could not indexing BAM file: ' + bam_fh.filename)
+        if require_fixed_bam_file:
+            proper_tag = False
+            if 'PG' in bam_fh.header:
+                for pg in bam_fh.header['PG']:
+                    if pg['ID'] == 'drdisco_fix_chimeric':
+                        proper_tag = True
 
-                    return bam_fh
+            if not proper_tag:
+                raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
 
-        # @todo write simple test
-        raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
+        try:  # pragma: no cover
+            bam_fh.fetch()
+        except:  # pragma: no cover
+            logging.info('Indexing BAM file with pysam: ' + bam_fh.filename)  # create index if it does not exist
+            pysam.index(bam_fh.filename)
+            bam_fh = pysam.AlignmentFile(bam_fh.filename)
+
+        try:
+            bam_fh.fetch()
+        except:
+            raise Exception('Could not indexing BAM file: ' + bam_fh.filename)
+
+        return bam_fh
 
     def extract_junctions(self, fusion_junctions, splice_junctions):
         def read_to_junction(read, rg, parsed_SA_tag, specific_type=None):
@@ -1371,7 +1376,7 @@ class IntronDecomposition:
         self.alignment_file = alignment_file
 
     def decompose(self, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS):
-        alignment = BAMExtract(self.alignment_file)
+        alignment = BAMExtract(self.alignment_file, True)
 
         fusion_junctions = Graph()
         splice_junctions = Graph()
