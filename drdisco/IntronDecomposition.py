@@ -999,17 +999,17 @@ class BAMExtract(object):
         indeed fixed using Dr. Disco
         """
         bam_fh = pysam.AlignmentFile(alignment_file, "rb")
-        
+
         if require_fixed_bam_file:
             proper_tag = False
             if 'PG' in bam_fh.header:
                 for pg in bam_fh.header['PG']:
                     if pg['ID'] == 'drdisco_fix_chimeric':
                         proper_tag = True
-            
+
             if not proper_tag:
                 raise Exception("Invalid STAR BAM File: has to be post processed with 'dr-disco fix-chimeric ...' first")
-        
+
         try:  # pragma: no cover
             bam_fh.fetch()
         except:  # pragma: no cover
@@ -1023,7 +1023,6 @@ class BAMExtract(object):
             raise Exception('Could not indexing BAM file: ' + bam_fh.filename)
 
         return bam_fh
-
 
     def extract_junctions(self, fusion_junctions, splice_junctions):
         def read_to_junction(read, rg, parsed_SA_tag, specific_type=None):

@@ -321,7 +321,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         input_file_a = TEST_DIR + "test_20.bam"
 
         ic = IntronDecomposition(input_file_a)
-        self.assertRaises(Exception, ic.decompose, 0)# ic.decompose(0) triggers exception
+        self.assertRaises(Exception, ic.decompose, 0)  # ic.decompose(0) triggers exception
+
 
 def main():
     unittest.main()

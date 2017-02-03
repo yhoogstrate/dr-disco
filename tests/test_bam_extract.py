@@ -44,7 +44,7 @@ if not os.path.exists(T_TEST_DIR):
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01_a(self):
         # Tests a file that has not (yet) been fixed with `dr-disco fix`
-        
+
         input_file = TEST_DIR + "test_terg_01.bam"
         output_file = T_TEST_DIR + "test_terg_01.filtered.bam"
         output_file_s = T_TEST_DIR + "test_terg_01.filtered.sam"
