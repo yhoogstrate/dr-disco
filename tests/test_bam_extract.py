@@ -42,13 +42,15 @@ if not os.path.exists(T_TEST_DIR):
 
 
 class TestIntronicBreakDetection(unittest.TestCase):
-    def test_01a(self):
-        input_file = TEST_DIR + "test_terg_02.bam"
-        output_file = T_TEST_DIR + "test_terg_02.filtered.bam"
-        output_file_s = T_TEST_DIR + "test_terg_02.filtered.sam"
+    def test_01_a(self):
+        # Tests a file that has not (yet) been fixed with `dr-disco fix`
+
+        input_file = TEST_DIR + "test_terg_01.bam"
+        output_file = T_TEST_DIR + "test_terg_01.filtered.bam"
+        output_file_s = T_TEST_DIR + "test_terg_01.filtered.sam"
         test_file = TEST_DIR + "test_terg_02.filtered.sam"
 
-        c = BAMExtract(input_file)
+        c = BAMExtract(input_file, False)
         c.extract("chr21:39000000-40000000", "chr5:1-2", output_file)
 
         # Bam2Sam
@@ -61,13 +63,32 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
-    def test_01b(self):
+    def test_02_a(self):
         input_file = TEST_DIR + "test_terg_02.bam"
         output_file = T_TEST_DIR + "test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR + "test_terg_02.filtered.sam"
         test_file = TEST_DIR + "test_terg_02.filtered.sam"
 
-        c = BAMExtract(input_file)
+        c = BAMExtract(input_file, False)
+        c.extract("chr21:39000000-40000000", "chr5:1-2", output_file)
+
+        # Bam2Sam
+        fhq = open(output_file_s, "w")
+        fhq.write(pysam.view(output_file))
+        fhq.close()
+
+        if not filecmp.cmp(output_file_s, test_file):
+            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
+
+        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+
+    def test_02_b(self):
+        input_file = TEST_DIR + "test_terg_02.bam"
+        output_file = T_TEST_DIR + "test_terg_02.filtered.bam"
+        output_file_s = T_TEST_DIR + "test_terg_02.filtered.sam"
+        test_file = TEST_DIR + "test_terg_02.filtered.sam"
+
+        c = BAMExtract(input_file, False)
         c.extract("chr5:1-2", "chr21:39000000-40000000", output_file)
 
         # Bam2Sam
@@ -80,13 +101,13 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
-    def test_02a(self):
+    def test_02_c(self):
         input_file = TEST_DIR + "test_terg_02.bam"
         output_file = T_TEST_DIR + "test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR + "test_terg_02.filtered.sam"
         test_file = TEST_DIR + "test_terg_02.filtered.sam"
 
-        c = BAMExtract(input_file)
+        c = BAMExtract(input_file, False)
         c.extract("chr7:151000000-153000000", "chr5:1-2", output_file)
 
         # Bam2Sam
@@ -99,13 +120,13 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
-    def test_02b(self):
+    def test_02_d(self):
         input_file = TEST_DIR + "test_terg_02.bam"
         output_file = T_TEST_DIR + "test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR + "test_terg_02.filtered.sam"
         test_file = TEST_DIR + "test_terg_02.filtered.sam"
 
-        c = BAMExtract(input_file)
+        c = BAMExtract(input_file, False)
         c.extract("chr5:1-2", "chr7:151000000-153000000", output_file)
 
         # Bam2Sam
@@ -118,12 +139,12 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(output_file_s, test_file))
 
-    def test_03(self):
+    def test_02_e(self):
         input_file = TEST_DIR + "test_terg_02.bam"
         output_file = T_TEST_DIR + "test_terg_02.filtered.bam"
         output_file_s = T_TEST_DIR + "test_terg_02.filtered.sam"
 
-        c = BAMExtract(input_file)
+        c = BAMExtract(input_file, False)
         c.extract("chr12:151000000-153000000", "chr5:1-2", output_file)
 
         # Bam2Sam
