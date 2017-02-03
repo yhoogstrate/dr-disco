@@ -23,6 +23,7 @@ Installer of Dr. Disco
 """
 
 import drdisco
+from setuptools import setup
 
 
 def get_requirements():
@@ -30,7 +31,7 @@ def get_requirements():
         content = fh.read().strip().split()
     return content
 
-from setuptools import setup
+
 setup(name="dr-disco",
       scripts=['bin/dr-disco'],
       packages=["drdisco"],
