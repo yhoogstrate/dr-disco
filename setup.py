@@ -24,6 +24,7 @@ Installer of Dr. Disco
 
 import drdisco
 
+
 def get_requirements():
     with open('requirements.txt', 'r') as fh:
         content = fh.read().strip().split()

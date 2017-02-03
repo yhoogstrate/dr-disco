@@ -1017,7 +1017,7 @@ class BAMExtract(object):
             fname = bam_fh.filename
             logging.info('Indexing BAM file with pysam: ' + fname)  # create index if it does not exist
             bam_fh.close()
-            
+
             pysam.index(fname)
             bam_fh = pysam.AlignmentFile(bam_fh.filename)
 
@@ -1042,7 +1042,7 @@ class BAMExtract(object):
                 # ===2===>|   |<===1===
 
                 # Hypothetical:
-                # |<===1===    |<===2===
+                # |<===1===    |<===2==
 
                 if read.is_reverse:
                     pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
