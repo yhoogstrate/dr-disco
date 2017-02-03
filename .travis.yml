@@ -18,7 +18,6 @@ install:
   - virtualenv -p python2 .venv_pysam_0_10 ; source .venv_pysam_0_10/bin/activate ; pip install --use-wheel pysam==0.10 ; pip install -r requirements.txt ; python setup.py install ; pip install flake8 ; deactivate
 
 script:
-  - command -v dr-disco
   - source .venv_pysam_0_9/bin/activate ; python -c 'import pysam; print (pysam.__version__)' ; nosetests -v tests/*.py ; deactivate ; source .venv_pysam_0_10/bin/activate ; python -c 'import pysam; print (pysam.__version__)' ;nosetests -v tests/*.py ; deactivate
   - cd "$TRAVIS_BUILD_DIR" && sudo pip install flake8 && ./scripts/flake8.sh
 
