@@ -165,10 +165,56 @@ class Node:
 
         linked_nodes = set([self])  # set(self) iterates over self.__iter__()
         linked_edges = {}
-
+        
         self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
         self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
 
+        # reimplement func
+        idx = {self: MAX_ACCEPTABLE_INSERT_SIZE}
+        direction = STRAND_REVERSE
+        todo = [self] # Node object
+        tree = {}
+        print todo
+        i = 1
+        
+        while len(todo) > 0:
+            next_iter = []
+            print "iteration:",i
+            
+            for t in todo:
+                dist_left = idx[t]
+                print " - ",t.position, " < ", dist_left
+                for splice_edge in t.splice_edges[direction]:
+                    cumulative_dist = dist_left - splice_edge[0]
+                    print "   * ", splice_edge[0],':',splice_edge[1].position
+                    if cumulative_dist >= 0:
+                        # als cumulative_dist met een kleinere value al in idx zit, sla over
+                        
+                        if splice_edge[1] in idx:
+                            if cumulative_dist > idx[splice_edge[1]]:
+                                print "duplicate: ",splice_edge[1].position,cumulative_dist
+                                idx[splice_edge[1]] = cumulative_dist
+                                next_iter.append(splice_edge[1])
+                                
+                                #@todo kill entire tree / linked list?
+                                #  in the example with e5.5 that is inbetween ex5 and ex6
+                            else:
+                                print "recusion hell that can now be skipped :)"
+                        else:
+                            idx[splice_edge[1]] = cumulative_dist
+                            next_iter.append(splice_edge[1])
+                    #else
+                    #    break ?
+                print
+            
+            i += 1
+            
+            todo = next_iter
+        
+        
+        import sys
+        sys.exit(1)
+        
         return linked_nodes, linked_edges
 
     def get_connected_splice_junctions_recursively(self, nodes, edges, insert_size_to_travel, direction):
