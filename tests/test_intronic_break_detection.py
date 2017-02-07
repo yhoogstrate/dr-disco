@@ -325,6 +325,20 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic = IntronDecomposition(input_file_a)
         self.assertRaises(Exception, ic.decompose, 0)  # ic.decompose(0) triggers exception
 
+    def test_21_tests_parsing_of_inversed_TERG_from_s55(self):
+        input_file_a = TEST_DIR + "test_21.bam"
+        test_file = TEST_DIR + "test_21.out.dbed"
+        output_file = T_TEST_DIR + "test_21.out.dbed"
+
+        ic = IntronDecomposition(input_file_a)
+        ic.decompose(0)
+
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
 
 def main():
     unittest.main()

@@ -759,12 +759,12 @@ terugloop probleem redelijk opgelost.
         subnetworks = []
         while thicker_edges:
             start_point = thicker_edges.pop()
+            left_splice_junctions = set()
+            right_splice_junctions = set()
+            
             if start_point.get_scores() >= MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS:
                 left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions()
                 right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions()
-
-                left_splice_junctions = set()
-                right_splice_junctions = set()
 
                 subedges = []  # [start_point] if code below is commented out
 
@@ -1386,6 +1386,8 @@ class IntronDecomposition:
         splice_junctions = Graph()
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
+        
+        fusion_junctions.print_chain()
 
         thicker_edges = fusion_junctions.prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         fusion_junctions.rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions
