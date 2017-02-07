@@ -173,7 +173,7 @@ class Node:
         idx = {self: MAX_ACCEPTABLE_INSERT_SIZE}
         direction = STRAND_REVERSE
         todo = [self] # Node object
-        tree = {}
+        tree = {}# For any object only include it's children, can be removed by some kinda recurse function
         print todo
         i = 1
         
