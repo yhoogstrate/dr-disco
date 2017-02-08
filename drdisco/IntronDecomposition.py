@@ -1,4 +1,4 @@
-#!/usr /bin /env python2
+#!/usr /bin /env python
 # *- coding: utf-8 -*-
 # -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
@@ -163,99 +163,48 @@ class Node:
          -  [     ] splice edge: splice p1, splice p2
         """
 
-        linked_nodes = set([self])  # set(self) iterates over self.__iter__()
-        linked_edges = {}
-        
-        #self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
-        #self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
-
         edges = {}
 
         def func(direction):
-            # reimplement func
             idx = {self: MAX_ACCEPTABLE_INSERT_SIZE}
-            #direction = STRAND_REVERSE
-            todo = [self] # Node object
-            tree = {}# For any object only include it's children, can be removed by some kinda recurse function
+            todo = [self]  # Node objects
             i = 1
-            
+
             while len(todo) > 0:
                 next_iter = []
-                
+
                 for t in todo:
                     dist_left = idx[t]
                     for splice_edge in t.splice_edges[direction]:
                         cumulative_dist = dist_left - splice_edge[0]
-                        if cumulative_dist >= 0:
-                            # als cumulative_dist met een kleinere value al in idx zit, sla over
-                            
+                        if cumulative_dist >= 0:  # als cumulative_dist met een kleinere value al in idx zit, sla over
                             if splice_edge[1] in idx:
                                 if cumulative_dist > idx[splice_edge[1]]:
                                     idx[splice_edge[1]] = cumulative_dist
                                     next_iter.append(splice_edge[1])
-                                    
-                                    
+
                                     edges[splice_edge[1]].add(splice_edge[2])
-                                    
-                                    #@todo kill entire tree / linked list?
-                                    #  in the example with e5.5 that is inbetween ex5 and ex6
-                                #else:
-                                #    print "recusion hell that can now be skipped :)"
+
+                                    # @todo kill entire tree / linked list?
+                                    # in the example with e5.5 that is inbetween ex5 and ex6
+
                             else:
                                 idx[splice_edge[1]] = cumulative_dist
                                 next_iter.append(splice_edge[1])
-                                
+
                                 edges[splice_edge[1]] = set([splice_edge[2]])
                         else:
                             break
-                
+
                 i += 1
-                
+
                 todo = next_iter
-            return set(idx.keys()), edges
-        
-        # Checked?
-        """
-        print linked_nodes
-        print set(idx.keys())
-        print
-        print linked_edges
-        print edges
-        
-        import sys
-        sys.exit(1)
-        
-        return linked_nodes, linked_edges
-        """
-        
-        rnodes, redges = func(STRAND_REVERSE)
-        lnodes, ledges = func(STRAND_FORWARD)
-        
+            return set(idx.keys())
+
+        rnodes = func(STRAND_REVERSE)
+        lnodes = func(STRAND_FORWARD)
+
         return rnodes.union(lnodes), edges
-
-    def get_connected_splice_junctions_recursively(self, nodes, edges, insert_size_to_travel, direction):
-        new_nodes = []
-        dist = -1
-
-        k = 0
-        n = len(self.splice_edges[direction])
-        while k < n:
-            dist, edge_n, edge_e = self.splice_edges[direction][k]
-            if insert_size_to_travel > dist:
-                new_nodes.append((edge_n, insert_size_to_travel - dist))  # Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-                nodes.add(edge_n)
-
-                if edge_n not in edges:
-                    edges[edge_n] = set()
-                edges[edge_n].add(edge_e)  # use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
-
-                k += 1
-            else:
-                k = n
-
-        # only recusively add to the new ones
-        for edge_n in new_nodes:
-            edge_n[0].get_connected_splice_junctions_recursively(nodes, edges, edge_n[1], direction)
 
     def add_clip(self):
         self.clips += 1
@@ -823,7 +772,7 @@ terugloop probleem redelijk opgelost.
             start_point = thicker_edges.pop()
             left_splice_junctions = set()
             right_splice_junctions = set()
-            
+
             if start_point.get_scores() >= MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS:
                 left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions()
                 right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions()
@@ -1448,8 +1397,8 @@ class IntronDecomposition:
         splice_junctions = Graph()
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
-        
-        #fusion_junctions.print_chain()
+
+        # fusion_junctions.print_chain()
 
         thicker_edges = fusion_junctions.prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         fusion_junctions.rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions

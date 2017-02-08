@@ -409,10 +409,10 @@ class ChimericAlignment:
                 self.set_read_group([reads_updated[1]], 'spanning_singleton_1')
             else:
                 raise Exception("Unknown strand order for singletons: %s (%i)\n%s (%i)\n",
-                    reads_updated[0].query_name,
-                    reads_updated[0].reference_start, 
-                    reads_updated[1].query_name,
-                    reads_updated[1].reference_start)
+                                reads_updated[0].query_name,
+                                reads_updated[0].reference_start,
+                                reads_updated[1].query_name,
+                                reads_updated[1].reference_start)
 
             self.fix_alignment_score(reads_updated)
 
