@@ -18,7 +18,6 @@ import pysam
 import HTSeq
 
 from .CigarAlignment import cigar_to_cigartuple
-# from .CircosController import CircosController
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
@@ -228,15 +227,12 @@ class Node:
         except:
             del(self.edges[edge._target.position._hash])
 
-    def __iter__(self):
-        for k in sorted(self.edges):
-            yield self.edges[k]
-
     def __str__(self):  # pragma: no cover
         out = str(self.position)
 
         a = 0
-        for sedge in self.edges:
+        for k in sorted(self.edges):
+            sedge = self.edges[k]
             edge = self.edges[sedge]
             filtered_edges = {JunctionTypeUtils.str(x): edge._types[x] for x in sorted(edge._types)}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
 
@@ -330,9 +326,9 @@ class JunctionTypeUtils:
             if value == enumcode:
                 return key
 
-    @staticmethod
-    def get_score(junction_type):
-        return JunctionTypeUtils.scoring_table[junction_type]
+#    @staticmethod
+#    def get_score(junction_type):
+#        return JunctionTypeUtils.scoring_table[junction_type]
 
     @staticmethod
     def is_fusion_junction(junction_type):
@@ -541,42 +537,6 @@ class Graph:
         edge.add_type(_type, 1)
         if node1 == edge._origin:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
-
-    def insert_splice_edge(self, pos1, pos2, _type, cigarstrs):
-        """ - Checks if Node exists at pos1, otherwise creates one
-            - Checks if Node exists at pos2, otherwise creates one
-            - Checks if Edge exists between them, otherwise inserts it into the Nodes
-
-         cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
-        """
-        self.create_node(pos1)
-        self.create_node(pos2)
-
-        node1 = self.get_node_reference(pos1)
-        node2 = self.get_node_reference(pos2)
-
-        if cigarstrs is not None:
-            # Hexadec saves more mem
-            short_pos1 = "%0.2X" % pos1.pos  # str(pos1.pos)
-            short_pos2 = "%0.2X" % pos2.pos  # str(pos2.pos)
-
-            cigarstrs = short_pos1 + strand_tt[pos1.strand] + cigarstrs[0] + "|" + short_pos2 + strand_tt[pos2.strand] + cigarstrs[1]
-
-        edge1 = node1.get_edge_to_node(node2)
-
-        if edge1 is None:
-            edge1 = Edge(node1, node2)
-            edge2 = Edge(node2, node1)
-
-            node1.insert_edge(edge1)
-            node2.insert_edge(edge2)
-        else:
-            edge2 = node2.get_edge_to_node(node1)
-
-        edge1.add_type(_type, 1)
-        edge2.add_type(_type, 1)
-        # if node1 == edge._origin:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
-        #    edge.add_alignment_key(cigarstrs)
 
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
@@ -1414,13 +1374,6 @@ class IntronDecomposition:
         for subnet in self.results:
             subnet.classify_intronic_exonic(splice_junctions)
         del(splice_junctions)
-
-        # If circos:
-        # s = 1
-        # for subnet in self.results:
-        #    c = CircosController(str(s), subnet, "tmp /circos.conf","tmp /select-coordinates.conf", "tmp /circos-data.txt")
-        #    c.draw_network("tmp /test.png","tmp /test.svg")
-        #    s += 1
 
         return len(self.results)
 
