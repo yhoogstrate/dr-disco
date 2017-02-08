@@ -39,83 +39,64 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cig1 = "15S15M"
         cig2 = "15M15S"
 
-        ans1 = [(4, 15), (0, 15)]
-        ans2 = [(0, 15), (4, 15)]
-
         ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
+        self.assertEqual(ca.str_tb_matrix(), 't\t|\t|\t\n-\t?\t?\t\n-\t?\t?\t\n')
+        self.assertEqual(ca.str_sc_matrix(), '0\t225\t225\t\n225\t0\t0\t\n225\t0\t0\t\n')
+
         ca.fill_matrix()
+        self.assertEqual(ca.str_tb_matrix(), 't\t|\t|\t\n-\tm\t|\t\n-\t-\tm\t\n')
+        self.assertEqual(ca.str_sc_matrix(), '0\t225\t225\t\n225\t0\t225\t\n225\t225\t0\t\n')
+
         aligned_cigars = ca.traceback_matrix()
+        self.assertEqual(ca.str_tb_matrix(), 't\t|\t|\t\n-\tm\t|\t\n-\t-\tm\t\n')
+        self.assertEqual(ca.str_sc_matrix(), '0\t225\t225\t\n225\t0\t225\t\n225\t225\t0\t\n')
 
-        # print aligned_cigars[0]
-        # print aligned_cigars[1]
-
-        self.assertEqual(aligned_cigars[0], ans1)
-        self.assertEqual(aligned_cigars[1], ans2)
+        self.assertEqual(aligned_cigars[0], [(4, 15), (0, 15)])
+        self.assertEqual(aligned_cigars[1], [(0, 15), (4, 15)])
 
     def test_02(self):
         cig1 = "15M15S"
         cig2 = "15S15M"
 
-        ans1 = [(0, 15), (4, 15)]
-        ans2 = [(4, 15), (0, 15)]
-
         ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
 
-        # print aligned_cigars[0]
-        # print aligned_cigars[1]
-
-        self.assertEqual(aligned_cigars[0], ans1)
-        self.assertEqual(aligned_cigars[1], ans2)
+        self.assertEqual(aligned_cigars[0], [(0, 15), (4, 15)])
+        self.assertEqual(aligned_cigars[1], [(4, 15), (0, 15)])
 
     def test_03(self):
         cig1 = "16M28431N69M41S"
         cig2 = "85S41M"
 
-        ans1 = [(0, 85), (4, 41)]
-        ans2 = [(4, 85), (0, 41)]
-
         ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
 
-        # print aligned_cigars[0]
-        # print aligned_cigars[1]
-
-        self.assertEqual(aligned_cigars[0], ans1)
-        self.assertEqual(aligned_cigars[1], ans2)
+        self.assertEqual(aligned_cigars[0], [(0, 85), (4, 41)])
+        self.assertEqual(aligned_cigars[1], [(4, 85), (0, 41)])
 
     def test_04(self):
         cig1 = "85S41M"
         cig2 = "16M28431N69M41S"
 
-        ans1 = [(4, 85), (0, 41)]
-        ans2 = [(0, 85), (4, 41)]
-
         ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
 
-        # print aligned_cigars[0]
-        # print aligned_cigars[1]
-
-        self.assertEqual(aligned_cigars[0], ans1)
-        self.assertEqual(aligned_cigars[1], ans2)
+        self.assertEqual(aligned_cigars[0], [(4, 85), (0, 41)])
+        self.assertEqual(aligned_cigars[1], [(0, 85), (4, 41)])
 
     def test_05(self):
         cig1 = "40S32M1I52M"
         cig2 = "40M85S"
 
-        ans1 = [(4, 40), (0, 84)]
-        ans2 = [(0, 40), (4, 85)]
-
         ca = CigarAlignment(cigar_to_cigartuple(cig1), cigar_to_cigartuple(cig2))
         ca.fill_matrix()
         aligned_cigars = ca.traceback_matrix()
 
-        self.assertEqual(aligned_cigars[0], ans1)
-        self.assertEqual(aligned_cigars[1], ans2)
+        self.assertEqual(aligned_cigars[0], [(4, 40), (0, 84)])
+        self.assertEqual(aligned_cigars[1], [(0, 40), (4, 85)])
         self.assertEqual(ca.get_order(), STRAND_REVERSE)
 
 
