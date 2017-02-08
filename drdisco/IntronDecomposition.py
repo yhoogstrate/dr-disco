@@ -166,56 +166,72 @@ class Node:
         linked_nodes = set([self])  # set(self) iterates over self.__iter__()
         linked_edges = {}
         
-        self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
-        self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
+        #self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
+        #self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
 
-        # reimplement func
-        idx = {self: MAX_ACCEPTABLE_INSERT_SIZE}
-        direction = STRAND_REVERSE
-        todo = [self] # Node object
-        tree = {}# For any object only include it's children, can be removed by some kinda recurse function
-        print todo
-        i = 1
-        
-        while len(todo) > 0:
-            next_iter = []
-            print "iteration:",i
+        edges = {}
+
+        def func(direction):
+            # reimplement func
+            idx = {self: MAX_ACCEPTABLE_INSERT_SIZE}
+            #direction = STRAND_REVERSE
+            todo = [self] # Node object
+            tree = {}# For any object only include it's children, can be removed by some kinda recurse function
+            i = 1
             
-            for t in todo:
-                dist_left = idx[t]
-                print " - ",t.position, " < ", dist_left
-                for splice_edge in t.splice_edges[direction]:
-                    cumulative_dist = dist_left - splice_edge[0]
-                    print "   * ", splice_edge[0],':',splice_edge[1].position
-                    if cumulative_dist >= 0:
-                        # als cumulative_dist met een kleinere value al in idx zit, sla over
-                        
-                        if splice_edge[1] in idx:
-                            if cumulative_dist > idx[splice_edge[1]]:
-                                print "duplicate: ",splice_edge[1].position,cumulative_dist
+            while len(todo) > 0:
+                next_iter = []
+                
+                for t in todo:
+                    dist_left = idx[t]
+                    for splice_edge in t.splice_edges[direction]:
+                        cumulative_dist = dist_left - splice_edge[0]
+                        if cumulative_dist >= 0:
+                            # als cumulative_dist met een kleinere value al in idx zit, sla over
+                            
+                            if splice_edge[1] in idx:
+                                if cumulative_dist > idx[splice_edge[1]]:
+                                    idx[splice_edge[1]] = cumulative_dist
+                                    next_iter.append(splice_edge[1])
+                                    
+                                    
+                                    edges[splice_edge[1]].add(splice_edge[2])
+                                    
+                                    #@todo kill entire tree / linked list?
+                                    #  in the example with e5.5 that is inbetween ex5 and ex6
+                                #else:
+                                #    print "recusion hell that can now be skipped :)"
+                            else:
                                 idx[splice_edge[1]] = cumulative_dist
                                 next_iter.append(splice_edge[1])
                                 
-                                #@todo kill entire tree / linked list?
-                                #  in the example with e5.5 that is inbetween ex5 and ex6
-                            else:
-                                print "recusion hell that can now be skipped :)"
+                                edges[splice_edge[1]] = set([splice_edge[2]])
                         else:
-                            idx[splice_edge[1]] = cumulative_dist
-                            next_iter.append(splice_edge[1])
-                    #else
-                    #    break ?
-                print
-            
-            i += 1
-            
-            todo = next_iter
+                            break
+                
+                i += 1
+                
+                todo = next_iter
+            return set(idx.keys()), edges
         
+        # Checked?
+        """
+        print linked_nodes
+        print set(idx.keys())
+        print
+        print linked_edges
+        print edges
         
         import sys
         sys.exit(1)
         
         return linked_nodes, linked_edges
+        """
+        
+        rnodes, redges = func(STRAND_REVERSE)
+        lnodes, ledges = func(STRAND_FORWARD)
+        
+        return rnodes.union(lnodes), edges
 
     def get_connected_splice_junctions_recursively(self, nodes, edges, insert_size_to_travel, direction):
         new_nodes = []
@@ -1433,7 +1449,7 @@ class IntronDecomposition:
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
         
-        fusion_junctions.print_chain()
+        #fusion_junctions.print_chain()
 
         thicker_edges = fusion_junctions.prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         fusion_junctions.rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions
@@ -1573,7 +1589,7 @@ class IntronDecomposition:
                                 candidates.add(candidate_subnet)
 
                 pos = edge._target.position
-                for step in idx_r[HTSeq.GenomicInterval(pos._chr, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                for step in idx_r[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
                     if step[1] and pos.strand in step[1]:
                         for candidate_subnet in step[1][pos.strand]:
                             if subnet != candidate_subnet:
