@@ -1,4 +1,4 @@
-#!/usr /bin /env python2
+#!/usr /bin /env python
 # *- coding: utf-8 -*-
 # -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
@@ -18,7 +18,6 @@ import pysam
 import HTSeq
 
 from .CigarAlignment import cigar_to_cigartuple
-# from .CircosController import CircosController
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
@@ -163,37 +162,48 @@ class Node:
          -  [     ] splice edge: splice p1, splice p2
         """
 
-        linked_nodes = set([self])  # set(self) iterates over self.__iter__()
-        linked_edges = {}
+        edges = {}
 
-        self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_REVERSE)
-        self.get_connected_splice_junctions_recursively(linked_nodes, linked_edges, MAX_ACCEPTABLE_INSERT_SIZE, STRAND_FORWARD)
+        def func(direction):
+            idx = {self: MAX_ACCEPTABLE_INSERT_SIZE}
+            todo = [self]  # Node objects
+            i = 1
 
-        return linked_nodes, linked_edges
+            while len(todo) > 0:
+                next_iter = []
 
-    def get_connected_splice_junctions_recursively(self, nodes, edges, insert_size_to_travel, direction):
-        new_nodes = []
-        dist = -1
+                for t in todo:
+                    dist_left = idx[t]
+                    for splice_edge in t.splice_edges[direction]:
+                        cumulative_dist = dist_left - splice_edge[0]
+                        if cumulative_dist >= 0:  # als cumulative_dist met een kleinere value al in idx zit, sla over
+                            if splice_edge[1] in idx:
+                                if cumulative_dist > idx[splice_edge[1]]:
+                                    idx[splice_edge[1]] = cumulative_dist
+                                    next_iter.append(splice_edge[1])
 
-        k = 0
-        n = len(self.splice_edges[direction])
-        while k < n:
-            dist, edge_n, edge_e = self.splice_edges[direction][k]
-            if insert_size_to_travel > dist:
-                new_nodes.append((edge_n, insert_size_to_travel - dist))  # Calculate new traversal size. If we start with isze=450 and the first SJ is 50 bp away for the junction, we need to continue with 450-50=400
-                nodes.add(edge_n)
+                                    edges[splice_edge[1]].add(splice_edge[2])
 
-                if edge_n not in edges:
-                    edges[edge_n] = set()
-                edges[edge_n].add(edge_e)  # use min() to consistsently use the one with the lowest mem addr - this only works if counts are used because otherwise the order may become dependent
+                                    # @todo kill entire tree / linked list?
+                                    # in the example with e5.5 that is inbetween ex5 and ex6
 
-                k += 1
-            else:
-                k = n
+                            else:
+                                idx[splice_edge[1]] = cumulative_dist
+                                next_iter.append(splice_edge[1])
 
-        # only recusively add to the new ones
-        for edge_n in new_nodes:
-            edge_n[0].get_connected_splice_junctions_recursively(nodes, edges, edge_n[1], direction)
+                                edges[splice_edge[1]] = set([splice_edge[2]])
+                        else:
+                            break
+
+                i += 1
+
+                todo = next_iter
+            return set(idx.keys())
+
+        rnodes = func(STRAND_REVERSE)
+        lnodes = func(STRAND_FORWARD)
+
+        return rnodes.union(lnodes), edges
 
     def add_clip(self):
         self.clips += 1
@@ -217,15 +227,12 @@ class Node:
         except:
             del(self.edges[edge._target.position._hash])
 
-    def __iter__(self):
-        for k in sorted(self.edges):
-            yield self.edges[k]
-
     def __str__(self):  # pragma: no cover
         out = str(self.position)
 
         a = 0
-        for sedge in self.edges:
+        for k in sorted(self.edges):
+            sedge = self.edges[k]
             edge = self.edges[sedge]
             filtered_edges = {JunctionTypeUtils.str(x): edge._types[x] for x in sorted(edge._types)}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
 
@@ -319,9 +326,9 @@ class JunctionTypeUtils:
             if value == enumcode:
                 return key
 
-    @staticmethod
-    def get_score(junction_type):
-        return JunctionTypeUtils.scoring_table[junction_type]
+#    @staticmethod
+#    def get_score(junction_type):
+#        return JunctionTypeUtils.scoring_table[junction_type]
 
     @staticmethod
     def is_fusion_junction(junction_type):
@@ -531,42 +538,6 @@ class Graph:
         if node1 == edge._origin:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
 
-    def insert_splice_edge(self, pos1, pos2, _type, cigarstrs):
-        """ - Checks if Node exists at pos1, otherwise creates one
-            - Checks if Node exists at pos2, otherwise creates one
-            - Checks if Edge exists between them, otherwise inserts it into the Nodes
-
-         cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
-        """
-        self.create_node(pos1)
-        self.create_node(pos2)
-
-        node1 = self.get_node_reference(pos1)
-        node2 = self.get_node_reference(pos2)
-
-        if cigarstrs is not None:
-            # Hexadec saves more mem
-            short_pos1 = "%0.2X" % pos1.pos  # str(pos1.pos)
-            short_pos2 = "%0.2X" % pos2.pos  # str(pos2.pos)
-
-            cigarstrs = short_pos1 + strand_tt[pos1.strand] + cigarstrs[0] + "|" + short_pos2 + strand_tt[pos2.strand] + cigarstrs[1]
-
-        edge1 = node1.get_edge_to_node(node2)
-
-        if edge1 is None:
-            edge1 = Edge(node1, node2)
-            edge2 = Edge(node2, node1)
-
-            node1.insert_edge(edge1)
-            node2.insert_edge(edge2)
-        else:
-            edge2 = node2.get_edge_to_node(node1)
-
-        edge1.add_type(_type, 1)
-        edge2.add_type(_type, 1)
-        # if node1 == edge._origin:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
-        #    edge.add_alignment_key(cigarstrs)
-
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
         still exists
@@ -759,12 +730,12 @@ terugloop probleem redelijk opgelost.
         subnetworks = []
         while thicker_edges:
             start_point = thicker_edges.pop()
+            left_splice_junctions = set()
+            right_splice_junctions = set()
+
             if start_point.get_scores() >= MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS:
                 left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions()
                 right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions()
-
-                left_splice_junctions = set()
-                right_splice_junctions = set()
 
                 subedges = []  # [start_point] if code below is commented out
 
@@ -1387,6 +1358,8 @@ class IntronDecomposition:
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
 
+        # fusion_junctions.print_chain()
+
         thicker_edges = fusion_junctions.prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         fusion_junctions.rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions
 
@@ -1401,13 +1374,6 @@ class IntronDecomposition:
         for subnet in self.results:
             subnet.classify_intronic_exonic(splice_junctions)
         del(splice_junctions)
-
-        # If circos:
-        # s = 1
-        # for subnet in self.results:
-        #    c = CircosController(str(s), subnet, "tmp /circos.conf","tmp /select-coordinates.conf", "tmp /circos-data.txt")
-        #    c.draw_network("tmp /test.png","tmp /test.svg")
-        #    s += 1
 
         return len(self.results)
 
@@ -1525,7 +1491,7 @@ class IntronDecomposition:
                                 candidates.add(candidate_subnet)
 
                 pos = edge._target.position
-                for step in idx_r[HTSeq.GenomicInterval(pos._chr, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE, pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                for step in idx_r[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
                     if step[1] and pos.strand in step[1]:
                         for candidate_subnet in step[1][pos.strand]:
                             if subnet != candidate_subnet:

@@ -160,19 +160,25 @@ class CigarAlignment:
         for j in xrange(1, self.n + 1):
             self.tb_matrix[0][j] = "-"
 
-    def print_tb_matrix(self):
-        for j in xrange(self.n + 1):
-            for i in xrange(self.m + 1):
-                print self.tb_matrix[i][j],
-            print
-        print
+    def str_tb_matrix(self):
+        out = ''
 
-    def print_matrix(self):
         for j in xrange(self.n + 1):
             for i in xrange(self.m + 1):
-                print str(self.matrix[i][j]) + "\t",
-            print
-        print
+                out += str(self.tb_matrix[i][j]) + "\t"
+            out += "\n"
+
+        return out
+
+    def str_sc_matrix(self):
+        out = ''
+
+        for j in xrange(self.n + 1):
+            for i in xrange(self.m + 1):
+                out += str(self.matrix[i][j]) + "\t"
+            out += "\n"
+
+        return out
 
     def get_diagonal(self, diagonal):
             #  0, 0
