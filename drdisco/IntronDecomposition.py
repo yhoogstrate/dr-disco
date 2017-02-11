@@ -83,6 +83,7 @@ def bam_parse_alignment_offset(cigartuple):
 def bam_parse_alignment_pos_using_cigar(sa_tag):
     """SA tag looks like this:
         ['chr21', 42879876, '85S41M', '3', '-', '1']
+        This function calculates the offset relative the the start position
     """
 
     pos = sa_tag[1]
@@ -697,11 +698,11 @@ thick edges:
 
                                     if insert:
                                         if rnode.position < lnode.position:  # inversed
-                                            rnode.splice_edges[STRAND_FORWARD][lnode] = [dist, splice_junction]
-                                            lnode.splice_edges[STRAND_REVERSE][rnode] = [dist, splice_junction]
+                                            rnode.splice_edges[STRAND_FORWARD][lnode] = (dist, splice_junction)
+                                            lnode.splice_edges[STRAND_REVERSE][rnode] = (dist, splice_junction)
                                         else:
-                                            lnode.splice_edges[STRAND_FORWARD][rnode] = [dist, splice_junction]
-                                            rnode.splice_edges[STRAND_REVERSE][lnode] = [dist, splice_junction]
+                                            lnode.splice_edges[STRAND_FORWARD][rnode] = (dist, splice_junction)
+                                            rnode.splice_edges[STRAND_REVERSE][lnode] = (dist, splice_junction)
 
                                         k += 1
 
