@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 #  *- coding: utf-8 -*-
 #  vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
@@ -38,6 +38,9 @@ pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
 
 
 def cigar_to_cigartuple(cigar_str):
+    """Converts a CIGAR string into a tuple compatible with Pysam.
+    E.g. '10M5S' becomes: [(0, 10), (4, 5)]
+    """
     tt = {'M': 0,  # BAM_CMATCH	0
           'I': 1,  # BAM_CINS	1
           'D': 2,  # BAM_CDEL	2
