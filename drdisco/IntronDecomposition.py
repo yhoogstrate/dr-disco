@@ -1,12 +1,7 @@
-#!/usr /bin /env python
+#!/usr/bin/env python
 # *- coding: utf-8 -*-
 # -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
-
-"""
-Tries to find genomic and exon to exon break points within a discordant
-RNA-Seq read alignment.
-"""
 
 from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE
 
@@ -20,6 +15,38 @@ import HTSeq
 from .CigarAlignment import cigar_to_cigartuple
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
+
+"""[License: GNU General Public License v3 (GPLv3)]
+
+    Dr. Disco: fusion gene detection in random hexamer RNA-seq data
+    Copyright (C) 2017  Youri Hoogstrate
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+    You can contact me via the github repository at the following url:
+    <https://github.com/yhoogstrate/dr-disco>
+
+    You can e-mail me via 'yhoogstrate' at the following webmail domain:
+    gmail dot com
+"""
+
+"""
+Tries to find genomic and exon to exon break points within a discordant
+RNA-Seq read alignment.
+"""
+
 strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
 x_onic_tt = {0: 'unknown', 1: 'exonic', 2: 'intronic'}
 
