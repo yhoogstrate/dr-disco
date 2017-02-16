@@ -2,6 +2,12 @@
 #  *- coding: utf-8 -*-
 #  vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
+# http://www.samformat.info/sam-format-flag
+
+import re
+
+from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE
+
 """[License: GNU General Public License v3 (GPLv3)]
 
     Dr. Disco: fusion gene detection in random hexamer RNA-seq data
@@ -53,12 +59,6 @@ cig2: 2S 98M 25S
 cig1: - 100S 25M
 cig2: 2S 98M 25S
 """
-
-# http://www.samformat.info/sam-format-flag
-
-import re
-
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE
 
 pat_bam_parse_alignment_offset_using_cigar = re.compile("([0-9]+)([MIDNSHPX=])")
 

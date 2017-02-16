@@ -10,6 +10,8 @@ import pysam
 from fuma.Fusion import STRAND_FORWARD
 from .CigarAlignment import CigarAlignment
 
+from drdisco import __version__
+
 """[License: GNU General Public License v3 (GPLv3)]
 
     Dr. Disco: fusion gene detection in random hexamer RNA-seq data
@@ -48,8 +50,6 @@ from .CigarAlignment import CigarAlignment
  - Mark as deletion if possible (N is for splicing, so do D/P)
  - Set read group to sample name
 """
-
-from drdisco import __version__
 
 
 class ChimericAlignment:

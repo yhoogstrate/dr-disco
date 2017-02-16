@@ -2,6 +2,18 @@
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
+
+import drdisco
+import logging
+import sys
+import pysam
+import click
+
+
+from drdisco.IntronDecomposition import BAMExtract
+from drdisco.IntronDecomposition import IntronDecomposition
+from drdisco.ChimericAlignment import ChimericAlignment
+
 """[License: GNU General Public License v3 (GPLv3)]
 
     Dr. Disco: fusion gene detection in random hexamer RNA-seq data
@@ -28,22 +40,13 @@
     gmail dot com
 """
 
-import drdisco
-import logging
-import sys
-import pysam
-import click
-
-
-from drdisco.IntronDecomposition import BAMExtract
-from drdisco.IntronDecomposition import IntronDecomposition
-from drdisco.ChimericAlignment import ChimericAlignment
 
 logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 
 def main():
     CLI()
+
 
 @click.version_option(drdisco.__version__ + "\n\n" + drdisco.__license_notice__ + "\n\nCopyright (C) 2017  " + drdisco.__author__ + ".\n\nFor more info please visit:\n" + drdisco.__homepage__)
 @click.group()
