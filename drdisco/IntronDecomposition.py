@@ -5,13 +5,13 @@
 
 from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE
 
-import logging
 import math
 import operator
 
 import pysam
 import HTSeq
 
+from drdisco import log
 from .CigarAlignment import cigar_to_cigartuple
 
 from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
@@ -601,7 +601,7 @@ class Graph:
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
     def generate_edge_idx(self):
-        logging.info("Creating edge index before pruning")
+        log.info("Creating edge index before pruning")
 
         edges = set()
         edges_tuple = []
@@ -624,7 +624,7 @@ class Graph:
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
         self.generate_edge_idx()
-        logging.info("Finding and merging other edges in close proximity (insert size)")
+        log.info("Finding and merging other edges in close proximity (insert size)")
 
         self.check_symmetry()
 
@@ -639,7 +639,7 @@ class Graph:
 
             self.remove_edge(candidate)  # do not remove if splice junc exists?
 
-        logging.info("Pruned into " + str(len(candidates)) + " candidate edge(s)")
+        log.info("Pruned into " + str(len(candidates)) + " candidate edge(s)")
         return candidates
 
     def prune_edge(self, edge):
@@ -694,7 +694,7 @@ thick edges:
 
         the goal is to add the splice juncs between the nodes
         """
-        logging.debug("Initiated")
+        log.debug("Initiated")
         k = 0
 
         def search(pos1):
@@ -736,7 +736,7 @@ thick edges:
                     splice_edges_had.add(splice_junction)
                     splice_edges_had.add(splice_junction.get_complement())
 
-        logging.info("Linked " + str(k) + " splice junction(s)")
+        log.info("Linked " + str(k) + " splice junction(s)")
 
     def extract_subnetworks_by_splice_junctions(self, thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS):
         """ Deze functie haalt recursief per edge een set van edges op die
@@ -751,7 +751,7 @@ junction staan beschreven; 1 naar posities die kleiner zijn dan zichzelf
 en 1 met posities die groter zijn dan zichzelf. Hierdoor is een recursief
 terugloop probleem redelijk opgelost.
             """
-        logging.info("Initiated [MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS=%i]" % MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
+        log.info("Initiated [MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS=%i]" % MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
 
         thicker_edges.reverse()
         q = 0
@@ -793,7 +793,7 @@ terugloop probleem redelijk opgelost.
             subnetworks.append(SubGraph(q, subedges, left_splice_junctions, right_splice_junctions))
             self.remove_edge(start_point)
 
-        logging.info("Extracted %i subnetwork(s)" % len(subnetworks))
+        log.info("Extracted %i subnetwork(s)" % len(subnetworks))
         return subnetworks
 
 
@@ -1014,7 +1014,7 @@ class BAMExtract(object):
             bam_fh.fetch()
         except:  # pragma: no cover
             fname = bam_fh.filename
-            logging.info('Indexing BAM file with pysam: ' + fname)  # create index if it does not exist
+            log.info('Indexing BAM file with pysam: ' + fname)  # create index if it does not exist
             bam_fh.close()
 
             pysam.index(fname)
@@ -1182,7 +1182,7 @@ class BAMExtract(object):
 
             return (None, None, None)
 
-        logging.debug("Parsing reads to obtain fusion gene and splice junctions")
+        log.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
             sa = self.parse_SA(read.get_tag('SA'))
             _chr = self.pysam_fh.get_reference_name(read.reference_id)
@@ -1237,7 +1237,7 @@ class BAMExtract(object):
                         else:
                             fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None)
 
-        logging.debug("alignment data loaded")
+        log.debug("alignment data loaded")
 
     def parse_pos(self, str_pos):
         _chr, _poss = str_pos.split(":", 2)
@@ -1450,7 +1450,7 @@ class IntronDecomposition:
 
             merge all subnets in M into i, and remove the former subnets
         """
-        logging.info("initiated")
+        log.info("initiated")
 
         def sq_dist(vec):
             sum_of_squares = sum(pow(x, 2) for x in vec)
@@ -1579,11 +1579,11 @@ class IntronDecomposition:
 
             new_subnets.append(subnet)
 
-        logging.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(new_subnets)) + " merged subnetwork(s)")
+        log.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(new_subnets)) + " merged subnetwork(s)")
         return new_subnets
 
     def filter_subnets(self, subnets):
-        logging.debug("init")
+        log.debug("init")
         k = 0
         for subnet in subnets:
             """Total of 8 reads is minimum, of which 2 must be
@@ -1618,5 +1618,5 @@ class IntronDecomposition:
             if len(subnet.discarded) > 0:
                 k += 1
 
-        logging.info("Filtered " + str(k) + " of the " + str(len(subnets)) + " subnetwork(s)")
+        log.info("Filtered " + str(k) + " of the " + str(len(subnets)) + " subnetwork(s)")
         return subnets

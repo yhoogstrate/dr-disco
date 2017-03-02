@@ -20,16 +20,12 @@
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import drdisco
 import unittest
-import logging
-import sys
 import filecmp
 import pysam
 import os
 import subprocess
 
-logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 # Nosetests doesn't use main()
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])

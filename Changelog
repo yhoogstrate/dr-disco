@@ -1,3 +1,6 @@
+2017-03-02	Youri Hoogstrate	v0.3.4
+	* Better way of handling stdio / logging for bioconda compatibility
+
 2017-02-08	Youri Hoogstrate	v0.3.3
 	* Huge improvement in performance in `extract subnetworks` by translating
 	  a recursion problem into an iterative linear problem.

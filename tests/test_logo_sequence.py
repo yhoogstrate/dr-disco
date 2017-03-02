@@ -20,15 +20,10 @@
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import drdisco
-import logging
-import sys
 import os
 import unittest
 import subprocess
 import filecmp
-
-logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
