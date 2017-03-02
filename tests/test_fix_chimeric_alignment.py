@@ -23,18 +23,13 @@ Dr. Disco - testing fix-chimeric
 """
 
 
-import drdisco
 from drdisco.ChimericAlignment import ChimericAlignment
 
 import unittest
-import logging
-import sys
 import subprocess
 import filecmp
 import pysam
 import os
-
-logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 

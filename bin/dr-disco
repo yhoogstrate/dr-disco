@@ -4,8 +4,6 @@
 
 
 import drdisco
-import logging
-import sys
 import pysam
 import click
 
@@ -39,9 +37,6 @@ from drdisco.ChimericAlignment import ChimericAlignment
     You can e-mail me via 'yhoogstrate' at the following webmail domain:
     gmail dot com
 """
-
-
-logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 
 def main():

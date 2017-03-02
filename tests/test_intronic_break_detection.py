@@ -22,17 +22,12 @@ Dr. Disco - testing fix-chimeric
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import drdisco
 from drdisco.IntronDecomposition import IntronDecomposition
 
 import unittest
-import logging
-import sys
 import subprocess
 import filecmp
 import os
-
-logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 

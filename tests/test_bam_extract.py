@@ -20,17 +20,12 @@
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-import drdisco
 from drdisco.IntronDecomposition import BAMExtract
 
 import unittest
-import logging
-import sys
 import filecmp
 import pysam
 import os
-
-logging.basicConfig(level=logging.DEBUG, format=drdisco.__log_format__, stream=sys.stdout)
 
 TEST_DIR = "tests/bam-extract/"
 T_TEST_DIR = "tmp/" + TEST_DIR

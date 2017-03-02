@@ -3,7 +3,6 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 import os
-import logging
 
 import pysam
 
@@ -11,6 +10,7 @@ from fuma.Fusion import STRAND_FORWARD
 from .CigarAlignment import CigarAlignment
 
 from drdisco import __version__
+from drdisco import log
 
 """[License: GNU General Public License v3 (GPLv3)]
 
@@ -282,7 +282,7 @@ class ChimericAlignment:
                 # start = self.get_closest(next_pos, alignments)
 
             # else:
-                # print("Warning - mates do not correspond? - maybe empty (-1) as well?")
+                # logger.warn("Warning - mates do not correspond? - maybe empty (-1) as well?")
 
                 # next_pos = [alignments[0].reference_id, alignments[0].reference_start]
                 # last_pos = [mates[0].reference_id, mates[0].reference_start]
@@ -459,7 +459,7 @@ class ChimericAlignment:
 
         else:
             if n == 1:
-                print("Warning: segments of mate are missing: " + alignments[0].query_name)
+                log.warn("segments of mate are missing: " + alignments[0].query_name)
                 all_reads_updated.append(alignments[0])
             else:
                 raise Exception("what happens here?")
@@ -480,10 +480,10 @@ class ChimericAlignment:
         # @TODO / consider todo - start straight from sam
         # samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
 
-        logging.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
+        log.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
         pysam.sort("-o", basename + ".name-sorted.bam", "-n", self.input_alignment_file)
 
-        logging.info("Fixing sam file")
+        log.info("Fixing sam file")
         sam_file_discordant = pysam.AlignmentFile(basename + ".name-sorted.bam", "rb")
         header = sam_file_discordant.header
         header['RG'] = [
@@ -519,22 +519,22 @@ class ChimericAlignment:
         self.reconstruct_alignments(alignments, sam_file_discordant, fh)
         fh.close()
 
-        logging.info("Converting fixed file into BAM")
+        log.info("Converting fixed file into BAM")
         fhq = open(basename + ".name-sorted.fixed.bam", "wb")
         fhq.write(pysam.view('-bS', basename + ".name-sorted.fixed.sam"))
         fhq.close()
 
-        logging.info("Sorting position based fixed file")
+        log.info("Sorting position based fixed file")
         pysam.sort("-o", basename + ".sorted.fixed.bam", basename + ".name-sorted.fixed.bam")
 
-        logging.info("Indexing the position sorted bam file")
+        log.info("Indexing the position sorted bam file")
         pysam.index(basename + ".sorted.fixed.bam")
 
-        logging.info("Cleaning up temp files")
+        log.info("Cleaning up temp files")
         for fname in [basename + ".name-sorted.bam", basename + ".name-sorted.fixed.sam", basename + ".name-sorted.fixed.bam"]:
-            logging.debug("=> " + fname)
+            log.debug("=> " + fname)
             os.remove(fname)
 
-        logging.info("Moving to final destination")
+        log.info("Moving to final destination")
         os.rename(basename + ".sorted.fixed.bam", bam_file_discordant_fixed)
         os.rename(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
