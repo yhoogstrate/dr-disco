@@ -3,6 +3,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 import os
+import shutil
 
 import pysam
 
@@ -536,5 +537,5 @@ class ChimericAlignment:
             os.remove(fname)
 
         log.info("Moving to final destination")
-        os.rename(basename + ".sorted.fixed.bam", bam_file_discordant_fixed)
-        os.rename(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
+        shutil.move(basename + ".sorted.fixed.bam", bam_file_discordant_fixed)
+        shutil.move(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
