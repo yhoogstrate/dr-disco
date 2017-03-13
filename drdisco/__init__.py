@@ -28,7 +28,7 @@
     gmail dot com
 """
 
-__version_info__ = ('0', '3', '4')
+__version_info__ = ('0', '3', '5')
 __version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.'.join(__version_info__[0:3]) + "-" + __version_info__[3]
 __author__ = 'Youri Hoogstrate'
 __homepage__ = 'https://github.com/yhoogstrate/dr-disco'
