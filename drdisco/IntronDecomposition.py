@@ -483,14 +483,8 @@ class Edge:
     def get_clips(self):  # pragma: no cover
         return self._origin.clips + self._target.clips
 
-
     def is_circular(self):
-        # strand pos 1: +
-        # strand pos 2: -
-        # chr1 == chr2
-        # dist pos1 & pos2 <= MAX_SIZE_CIRCULAR_RNA
-        #return (self._origin.position._chr == self._target._position._chr)
-        return False
+        return (self._origin.position._chr == self._target.position._chr) and (self._origin.position.strand == STRAND_FORWARD) and (self._target.position.strand == STRAND_REVERSE) and self._origin.position.get_dist(self._target.position, False) <= MAX_SIZE_CIRCULAR_RNA
 
     def __str__(self):
         typestring = []
@@ -878,7 +872,7 @@ class SubGraph():
         dist = node_a.position.get_dist(node_b.position, False)
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
-        
+
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"

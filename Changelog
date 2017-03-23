@@ -1,4 +1,5 @@
 2017-03-23  Youri Hoogstrate	v0.4.0
+	* Adds column indicating whether a result is likely to be circRNA
 	* Adds column with genomic distance between breakpoints
 
 2017-03-13	Youri Hoogstrate	v0.3.5
