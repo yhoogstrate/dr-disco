@@ -310,6 +310,34 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_22_interchromosomal_tp_sample_130(self):
+        input_file_a = TEST_DIR + "test_22.bam"
+        test_file = TEST_DIR + "test_22.out.dbed"
+        output_file = T_TEST_DIR + "test_22.out.dbed"
+
+        ic = IntronDecomposition(input_file_a)
+        ic.decompose(0)
+
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_23_circRNA(self):
+        input_file_a = TEST_DIR + "test_23.bam"
+        test_file = TEST_DIR + "test_23.out.dbed"
+        output_file = T_TEST_DIR + "test_23.out.dbed"
+
+        ic = IntronDecomposition(input_file_a)
+        ic.decompose(0)
+
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
 
 def main():
     unittest.main()

@@ -28,7 +28,7 @@
     gmail dot com
 """
 
-__version_info__ = ('0', '3', '5')
+__version_info__ = ('0', '4', '0')
 __version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.'.join(__version_info__[0:3]) + "-" + __version_info__[3]
 __author__ = 'Youri Hoogstrate'
 __homepage__ = 'https://github.com/yhoogstrate/dr-disco'
@@ -46,7 +46,7 @@ log = logging.getLogger(__name__)
 MAX_ACCEPTABLE_INSERT_SIZE = 450
 MAX_ACCEPTABLE_ALIGNMENT_ERROR = 3  # acceptable splice junction error or other general alignment mistakes
 MAX_GENOME_DISTANCE = 999999999
-
+MAX_SIZE_CIRCULAR_RNA = 100000
 
 # filter settings
 MIN_SUBNET_ENTROPY = 0.8

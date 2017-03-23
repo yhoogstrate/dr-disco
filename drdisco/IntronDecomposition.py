@@ -3,7 +3,7 @@
 # -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
-from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE
+from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE, MAX_SIZE_CIRCULAR_RNA
 
 import math
 import operator
@@ -483,6 +483,9 @@ class Edge:
     def get_clips(self):  # pragma: no cover
         return self._origin.clips + self._target.clips
 
+    def is_circular(self):
+        return (self._origin.position._chr == self._target.position._chr) and (self._origin.position.strand == STRAND_FORWARD) and (self._target.position.strand == STRAND_REVERSE) and self._origin.position.get_dist(self._target.position, False) <= MAX_SIZE_CIRCULAR_RNA
+
     def __str__(self):
         typestring = []
 
@@ -866,18 +869,21 @@ class SubGraph():
         """Makes tabular output"""
         node_a, node_b = self.edges[0]._origin, self.edges[0]._target
         nodes_a, nodes_b = self.get_n_nodes()
+        dist = node_a.position.get_dist(node_b.position, False)
+        if dist == MAX_GENOME_DISTANCE:
+            dist = 'inf'
 
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"
-            "%s\t%s\t"
+            "%s\t%s\t%s\t%s\t"
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
             "%i\t%i\t"
             "%s\t%s\t"  # %.2f\t%.2f\t
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
-                      ("valid" if self.discarded == [] else ','.join(self.discarded)), x_onic_tt[self.xonic],  # Classification status
+                      dist, ("valid" if self.discarded == [] else ','.join(self.discarded)), ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
@@ -1414,14 +1420,14 @@ class IntronDecomposition:
             ordered.append((subnet, subnet.total_score, subnet.get_overall_entropy()))
         ordered = [subnet[0] for subnet in sorted(ordered, key=operator.itemgetter(1, 2), reverse=True)]
 
-        return ("chr-A"           "\t" "pos-A"             "\t" "direction-A""\t"
-                "chr-B"           "\t" "pos-B"             "\t" "direction-B""\t"
-                "filter-status"   "\t" "intronic/exonic"   "\t"
-                "score"           "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
-                "n-edges"         "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
-                "n-splice-junc-A" "\t" "n-splice-junc-B"   "\t"
-                "entropy-bp-edge" "\t" "entropy-all-edges" "\t"
-                "data-structure"  "\n"
+        return ("chr-A"            "\t" "pos-A"             "\t" "direction-A"   "\t"
+                "chr-B"            "\t" "pos-B"             "\t" "direction-B"   "\t"
+                "genomic-distance" "\t" "filter-status"     "\t" "circRNA"  "\t" "intronic/exonic"    "\t"
+                "score"            "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
+                "n-edges"          "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
+                "n-splice-junc-A"  "\t" "n-splice-junc-B"   "\t"
+                "entropy-bp-edge"  "\t" "entropy-all-edges" "\t"
+                "data-structure"   "\n"
                 "%s" % (''.join([str(subnet) for subnet in ordered])))
 
     def merge_overlapping_subnets(self, subnets):
