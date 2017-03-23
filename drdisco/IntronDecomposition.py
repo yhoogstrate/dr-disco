@@ -870,14 +870,14 @@ class SubGraph():
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"
-            "%s\t%s\t"
+            "%i\t%s\t%s\t"
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
             "%i\t%i\t"
             "%s\t%s\t"  # %.2f\t%.2f\t
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
-                      ("valid" if self.discarded == [] else ','.join(self.discarded)), x_onic_tt[self.xonic],  # Classification status
+                      node_a.position.get_dist(node_b.position, False), ("valid" if self.discarded == [] else ','.join(self.discarded)), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
@@ -1414,14 +1414,14 @@ class IntronDecomposition:
             ordered.append((subnet, subnet.total_score, subnet.get_overall_entropy()))
         ordered = [subnet[0] for subnet in sorted(ordered, key=operator.itemgetter(1, 2), reverse=True)]
 
-        return ("chr-A"           "\t" "pos-A"             "\t" "direction-A""\t"
-                "chr-B"           "\t" "pos-B"             "\t" "direction-B""\t"
-                "filter-status"   "\t" "intronic/exonic"   "\t"
-                "score"           "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
-                "n-edges"         "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
-                "n-splice-junc-A" "\t" "n-splice-junc-B"   "\t"
-                "entropy-bp-edge" "\t" "entropy-all-edges" "\t"
-                "data-structure"  "\n"
+        return ("chr-A"            "\t" "pos-A"             "\t" "direction-A""\t"
+                "chr-B"            "\t" "pos-B"             "\t" "direction-B""\t"
+                "genomic-distance" "\t" "filter-status"     "\t" "intronic/exonic"   "\t"
+                "score"            "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
+                "n-edges"          "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
+                "n-splice-junc-A"  "\t" "n-splice-junc-B"   "\t"
+                "entropy-bp-edge"  "\t" "entropy-all-edges" "\t"
+                "data-structure"   "\n"
                 "%s" % (''.join([str(subnet) for subnet in ordered])))
 
     def merge_overlapping_subnets(self, subnets):
