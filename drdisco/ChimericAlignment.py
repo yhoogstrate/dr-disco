@@ -357,7 +357,7 @@ class ChimericAlignment:
         r1 = []
         r2 = []
         singletons = []
-
+        
         for alignment in alignments:
             if alignment.is_read1:
                 r1.append(alignment)
@@ -396,13 +396,18 @@ class ChimericAlignment:
             reads_updated, mates_updated = self.fix_chain(r2, bam_file, r1)
 
             ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
-            if ca.get_order() == STRAND_FORWARD:
-                self.set_read_group([reads_updated[0]], 'spanning_paired_1')
-                self.set_read_group([reads_updated[1]], 'spanning_paired_2')
-            else:
-                # Tested in 'tests/fix-chimeric/test_terg_03.filtered.bam'
+            if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_paired_2')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_1')
+            elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
+                self.set_read_group([reads_updated[0]], 'spanning_paired_1_r')
+                self.set_read_group([reads_updated[1]], 'spanning_paired_2_r')
+            else:
+                raise Exception("Unknown strand order for singletons: %s (%i)\n%s (%i)\n",
+                                reads_updated[0].query_name,
+                                reads_updated[0].reference_start,
+                                reads_updated[1].query_name,
+                                reads_updated[1].reference_start)
 
             self.set_read_group(mates_updated, 'silent_mate')
             for a in reads_updated:
@@ -539,3 +544,74 @@ class ChimericAlignment:
         log.info("Moving to final destination")
         shutil.move(basename + ".sorted.fixed.bam", bam_file_discordant_fixed)
         shutil.move(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
+
+
+
+
+class ChimericAlignmentFixed:
+    def __init__(self, input_alignment_file):
+        self.input_alignment_file = input_alignment_file
+        self.test_pysam_version()
+
+    def test_pysam_version(self):
+        versions = pysam.__version__.split('.', 2)
+
+        if int(versions[1]) < 9:
+            raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__ + " instead")
+        else:
+            return True
+
+    def convert(self, bam_file_discordant_fixed, temp_dir):
+        basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
+        basename = temp_dir.rstrip("/") + "/" + basename
+
+        # @TODO / consider todo - start straight from sam
+        # samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
+
+        log.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
+        pysam.sort("-o", basename + ".name-sorted.bam", "-n", self.input_alignment_file)
+
+        log.info("Fixing sam file")
+        sam_file_discordant = pysam.AlignmentFile(basename + ".name-sorted.bam", "rb")
+        header = sam_file_discordant.header
+        header['RG'] = []
+
+        header['PG'] = [
+            {'ID': 'drdisco_unfix', 'PN': 'drdisco unfix', 'CL': '', 'VN': __version__}
+        ]
+
+        fh = pysam.AlignmentFile(basename + ".name-sorted.fixed.sam", "wb", header=header)
+        last_read_name = False
+        alignments = []
+        for read in sam_file_discordant:
+            tag = read.get_tag('RG')
+            if tag in ['spanning_singleton_1', 'spanning_singleton_1_r', 'spanning_singleton_2',  'spanning_singleton_2_r']:
+                read.is_paired = False
+            read.set_tag('RG', None)
+            read.set_tag('SA', None)
+            read.set_tag('FI', None)
+            read.set_tag('LB', None)
+            fh.write(read)
+        fh.close()
+            
+        log.info("Converting fixed file into BAM")
+        fhq = open(basename + ".name-sorted.fixed.bam", "wb")
+        fhq.write(pysam.view('-bS', basename + ".name-sorted.fixed.sam"))
+        fhq.close()
+
+        log.info("Sorting position based fixed file")
+        pysam.sort("-o", basename + ".sorted.fixed.bam", basename + ".name-sorted.fixed.bam")
+
+        log.info("Indexing the position sorted bam file")
+        pysam.index(basename + ".sorted.fixed.bam")
+
+        log.info("Cleaning up temp files")
+        for fname in [basename + ".name-sorted.bam", basename + ".name-sorted.fixed.sam", basename + ".name-sorted.fixed.bam"]:
+            log.debug("=> " + fname)
+            os.remove(fname)
+
+        log.info("Moving to final destination")
+        shutil.move(basename + ".sorted.fixed.bam", bam_file_discordant_fixed)
+        shutil.move(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
+
+

@@ -28,6 +28,8 @@ import unittest
 import subprocess
 import filecmp
 import os
+import pysam
+from drdisco.ChimericAlignment import ChimericAlignment
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
@@ -40,9 +42,43 @@ if not os.path.exists(T_TEST_DIR):
     os.makedirs(T_TEST_DIR)
 
 
+def sam_to_fixed_bam(sam, fixed_bam):
+    basename, ext = os.path.splitext(os.path.basename(sam))
+    bam_file = T_TEST_DIR+'/'+basename+'.bam'
+    
+    fhq = open(bam_file, "wb")
+    fhq.write(pysam.view('-b',sam))
+    fhq.close()
+
+    alignment_handle = ChimericAlignment(bam_file)
+    return alignment_handle.convert(fixed_bam, T_TEST_DIR)
+
+def bam_diff(f1, f2):
+    basename, ext = os.path.splitext(os.path.basename(f1))
+    f1sam = T_TEST_DIR + basename + '.f1.sam'
+    f2sam = T_TEST_DIR + basename + '.f2.sam'
+    
+    fhq = open(f1sam, "w")
+    fhq.write(pysam.view('-h',f1))
+    fhq.close()
+    
+    fhq = open(f2sam, "w")
+    fhq.write(pysam.view('-h',f2))
+    fhq.close()
+    
+    return filecmp.cmp(f1sam, f2sam),f1sam, f2sam
+
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
+        sam = TEST_DIR + "test_01.sam"
+        fbam = T_TEST_DIR + "test_01.fixed.bam"
         input_file_a = TEST_DIR + "test_01.bam"
+        
+        sam_to_fixed_bam(sam, fbam)
+        d = bam_diff(fbam, input_file_a)
+        if not d[0]:
+            self.assertTrue(filecmp.cmp(d[1], d[2]), msg="diff '" + d[1] + "' '" + d[2] + "':\n" + subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read())
+        
         test_file = TEST_DIR + "test_01.out.dbed"
         output_file = T_TEST_DIR + "test_01.out.dbed"
 
