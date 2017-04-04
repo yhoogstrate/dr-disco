@@ -260,14 +260,13 @@ class Node:
 
         a = 0
         for k in sorted(self.edges):
-            sedge = self.edges[k]
-            edge = self.edges[sedge]
+            edge = self.edges[k]
             filtered_edges = {JunctionTypeUtils.str(x): edge._types[x] for x in sorted(edge._types)}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
-
+            
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t[" + str(id(edge)) + ":" + sedge + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
+                out += "\n\t[" + str(id(edge)) + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
 
         if a > 0:
             return out + "\n\t-> soft /hard clips: " + str(self.clips) + "\n"
@@ -583,7 +582,7 @@ class Graph:
             node1.insert_edge(edge)
             node2.insert_edge(edge)
 
-        # self.print_chain()
+        #self.print_chain()
 
     def remove_edge(self, edge):
         node1 = edge._origin
@@ -629,13 +628,13 @@ class Graph:
     def prune(self):
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
+        self.print_chain()
         self.generate_edge_idx()
         log.info("Finding and merging other edges in close proximity (insert size)")
 
         self.check_symmetry()
 
         candidates = []
-        # self.print_chain()
 
         while self.edge_idx:
             candidate = self.edge_idx.pop()
