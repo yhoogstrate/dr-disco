@@ -342,7 +342,7 @@ class ChimericAlignment:
                 new_alignments.append(self.set_next_ref(closest, seg_pos))
 
         else:
-            raise Exception("Dunno how to handle junctions in both mates yet... not aware of STAR Fusion producing them either")
+            raise Exception("Dunno how to handle junctions in both mates yet... not aware of STAR Fusion producing them either:\n\t%s" % mates[0].query_name)
 
         if len(new_alignments) != k:
             raise Exception("Somewhere alignments got lost in this function")
@@ -574,11 +574,8 @@ class ChimericAlignmentFixed:
         log.info("Fixing sam file")
         sam_file_discordant = pysam.AlignmentFile(basename + ".name-sorted.bam", "rb")
         header = sam_file_discordant.header
-        header['RG'] = []
-
-        header['PG'] = [
-            {'ID': 'drdisco_unfix', 'PN': 'drdisco unfix', 'CL': '', 'VN': __version__}
-        ]
+        header['RG'] = None
+        header['PG'] = None
 
         fh = pysam.AlignmentFile(basename + ".name-sorted.fixed.sam", "wb", header=header)
         last_read_name = False
