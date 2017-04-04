@@ -1198,23 +1198,40 @@ class BAMExtract(object):
                                      parsed_SA_tag[1],
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
+            # 1s & 2s
             elif rg in [JunctionTypes.spanning_paired_1_s]:
                 # Very clear example in S054 @ chr21:40, 064, 610-40, 064, 831  and implemented in test case 14
+                if read.is_reverse:  # Tested in TERG s55 double inversion
+                    pos1_offset = bam_parse_alignment_offset(read.cigar)
+                else:
+                    pos1_offset = 0
+                
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     read.reference_start + bam_parse_alignment_offset(read.cigar),
+                                     read.reference_start + pos1_offset,
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
+                if parsed_SA_tag[4] == "+":
+                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                else:
+                    pos2_offset = 0
                 pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1],
+                                     parsed_SA_tag[1] + pos2_offset,
                                      STRAND_REVERSE if parsed_SA_tag[4] == "+" else STRAND_FORWARD)
-
             elif rg in [JunctionTypes.spanning_paired_2_s]:
+                if read.is_reverse:  # Tested in TERG s55 double inversion
+                    pos1_offset = 0
+                else:
+                    pos1_offset = bam_parse_alignment_offset(read.cigar)
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                     read.reference_start,
+                                     read.reference_start + pos1_offset,
                                      STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
 
+                if parsed_SA_tag[4] == "-":
+                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                else:
+                    pos2_offset = 0
                 pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                     parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
             elif rg not in [JunctionTypes.silent_mate]:  # pragma: no cover
