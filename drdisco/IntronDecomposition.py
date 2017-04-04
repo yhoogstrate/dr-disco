@@ -262,7 +262,7 @@ class Node:
         for k in sorted(self.edges):
             edge = self.edges[k]
             filtered_edges = {JunctionTypeUtils.str(x): edge._types[x] for x in sorted(edge._types)}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
-            
+
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
@@ -582,7 +582,7 @@ class Graph:
             node1.insert_edge(edge)
             node2.insert_edge(edge)
 
-        #self.print_chain()
+        # self.print_chain()
 
     def remove_edge(self, edge):
         node1 = edge._origin
@@ -628,7 +628,8 @@ class Graph:
     def prune(self):
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
-        self.print_chain()
+        # self.print_chain()
+
         self.generate_edge_idx()
         log.info("Finding and merging other edges in close proximity (insert size)")
 
@@ -1205,7 +1206,6 @@ class BAMExtract(object):
                     pos1_offset = bam_parse_alignment_offset(read.cigar)
                 else:
                     pos1_offset = 0
-                
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start + pos1_offset,
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
