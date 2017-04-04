@@ -144,7 +144,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_09(self):
+    def test_09_insert_size_filter(self):
         input_file_a = TEST_DIR + "test_09.bam"
         test_file = TEST_DIR + "test_09.out.dbed"
         output_file = T_TEST_DIR + "test_09.out.dbed"
@@ -328,6 +328,21 @@ class TestIntronicBreakDetection(unittest.TestCase):
         input_file_a = TEST_DIR + "test_23.bam"
         test_file = TEST_DIR + "test_23.out.dbed"
         output_file = T_TEST_DIR + "test_23.out.dbed"
+
+        ic = IntronDecomposition(input_file_a)
+        ic.decompose(0)
+
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_24_spanning_singleton_x_r(self):
+        # Positions are 100% correct, strands I don't know
+        input_file_a = TEST_DIR + "test_24.bam"
+        test_file = TEST_DIR + "test_24.out.dbed"
+        output_file = T_TEST_DIR + "test_24.out.dbed"
 
         ic = IntronDecomposition(input_file_a)
         ic.decompose(0)
