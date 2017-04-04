@@ -397,11 +397,11 @@ class ChimericAlignment:
 
             ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
             if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
-                self.set_read_group([reads_updated[0]], 'spanning_paired_2')
-                self.set_read_group([reads_updated[1]], 'spanning_paired_1')
+                self.set_read_group([reads_updated[0]], 'spanning_paired_2_r')
+                self.set_read_group([reads_updated[1]], 'spanning_paired_1_r')
             elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
-                self.set_read_group([reads_updated[0]], 'spanning_paired_1_r')
-                self.set_read_group([reads_updated[1]], 'spanning_paired_2_r')
+                self.set_read_group([reads_updated[0]], 'spanning_paired_1')
+                self.set_read_group([reads_updated[1]], 'spanning_paired_2')
             else:
                 raise Exception("Unknown strand order for singletons: %s (%i)\n%s (%i)\n",
                                 reads_updated[0].query_name,
