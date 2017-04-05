@@ -373,7 +373,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         with open(output_file, "w") as fh:
             ic.export(fh)
 
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_17(self):
         test_id = '17'
@@ -430,7 +430,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
             ic.export(fh)
 
         # Test data not checked, should just not throw an exception
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_20_tests_trigger_error_on_non_fixed_file(self):
         input_file_a = TEST_DIR + "test_20.bam"
@@ -495,33 +495,24 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_24_spanning_singleton_x_r(self):
-        # Positions are 100% correct, strands I don't know
-        #input_file_a = TEST_DIR + "test_24.bam"
+    def test_24_spanning_singleton_x_r(self):
+        test_id = '24'
         
-        ## Dev stuff // insert
-        #sam = TEST_DIR + "test_24.sam"
-        #fixed_bam = T_TEST_DIR + "test_24.fixed.bam"
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
         
-        #sam_to_fixed_bam(sam, fixed_bam)
-        
-        #d = bam_diff(fixed_bam, input_file_a)
-        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
-        
-        #input_file_a = fixed_bam
-        ##
-        
-        #test_file = TEST_DIR + "test_24.out.dbed"
-        #output_file = T_TEST_DIR + "test_24.out.dbed"
+        sam_to_fixed_bam(input_file_a, fixed_bam)
 
-        #ic = IntronDecomposition(input_file_a)
-        #ic.decompose(0)
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
 
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
 
-        ## Test data not checked, should just not throw an exception
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
 def main():
