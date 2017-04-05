@@ -58,6 +58,7 @@ def CLI_fix_chimeric_alignment(temp_dir, output_alignment_file, input_alignment_
     alignment_handle = ChimericAlignment(input_alignment_file)
     alignment_handle.convert(output_alignment_file, temp_dir)
 
+
 @CLI.command(name="unfix", short_help="Tries to restore the BAM file")
 @click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
 @click.argument('output_alignment_file')

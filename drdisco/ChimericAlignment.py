@@ -7,8 +7,8 @@ import shutil
 
 import pysam
 
-from fuma.Fusion import STRAND_FORWARD
-from .CigarAlignment import CigarAlignment
+# from fuma.Fusion import STRAND_FORWARD
+# from .CigarAlignment import CigarAlignment
 
 from drdisco import __version__
 from drdisco import log
@@ -357,7 +357,7 @@ class ChimericAlignment:
         r1 = []
         r2 = []
         singletons = []
-        
+
         for alignment in alignments:
             if alignment.is_read1:
                 r1.append(alignment)
@@ -375,7 +375,7 @@ class ChimericAlignment:
         if n_r1 == 2:
             reads_updated, mates_updated = self.fix_chain(r1, bam_file, r2)
 
-            #ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
             if reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
                 """These reads have the opposite strand because they are both read1
                 """
@@ -401,7 +401,7 @@ class ChimericAlignment:
         elif n_r2 == 2:
             reads_updated, mates_updated = self.fix_chain(r2, bam_file, r1)
 
-            #ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
             if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_paired_2_r')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_1_r')
@@ -425,8 +425,8 @@ class ChimericAlignment:
         elif n_s == 2:
             reads_updated, mates_updated = self.fix_chain(singletons, bam_file, [])
 
-            #ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
-            #if ca.get_order() == STRAND_FORWARD:
+            # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            # if ca.get_order() == STRAND_FORWARD:
             if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_singleton_1_r')
                 self.set_read_group([reads_updated[1]], 'spanning_singleton_2_r')
@@ -541,8 +541,6 @@ class ChimericAlignment:
         shutil.move(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
 
 
-
-
 class ChimericAlignmentFixed:
     def __init__(self, input_alignment_file):
         self.input_alignment_file = input_alignment_file
@@ -573,26 +571,22 @@ class ChimericAlignmentFixed:
         header['PG'] = []
 
         fh = pysam.AlignmentFile(basename + ".name-sorted.fixed.sam", "wb", header=header)
-        last_read_name = False
-        alignments = []
-        print "checkpoint"
         for read in sam_file_discordant:
             tag = read.get_tag('RG')
-            if tag in ['spanning_singleton_1', 'spanning_singleton_1_r', 'spanning_singleton_2',  'spanning_singleton_2_r']:
+            if tag in ['spanning_singleton_1', 'spanning_singleton_1_r', 'spanning_singleton_2', 'spanning_singleton_2_r']:
                 read.is_paired = False
                 read.is_read1 = False
                 read.is_read2 = False
                 read.next_reference_id = None
                 read.next_reference_start = None
 
-            
             read.set_tag('RG', None)
             read.set_tag('SA', None)
             read.set_tag('FI', None)
             read.set_tag('LB', None)
             fh.write(read)
         fh.close()
-            
+
         log.info("Converting fixed file into BAM")
         fhq = open(basename + ".name-sorted.fixed.bam", "wb")
         fhq.write(pysam.view('-bS', basename + ".name-sorted.fixed.sam"))
@@ -612,5 +606,3 @@ class ChimericAlignmentFixed:
         log.info("Moving to final destination")
         shutil.move(basename + ".sorted.fixed.bam", bam_file_discordant_fixed)
         shutil.move(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
-
-
