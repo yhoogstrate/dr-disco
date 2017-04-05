@@ -618,37 +618,23 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ## Test data not checked, should just not throw an exception
         #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_22_interchromosomal_tp_sample_130(self):
-        input_file_a = TEST_DIR + "test_22.bam"
+    #def test_22_interchromosomal_tp_sample_130(self):
+        #input_file_a = TEST_DIR + "test_22.bam"
 
-        # Dev stuff // insert
-        sam = TEST_DIR + "test_22.sam"
-        fixed_bam = T_TEST_DIR + "test_22.fixed.bam"
+        ## Dev stuff // insert
+        #sam = TEST_DIR + "test_22.sam"
+        #fixed_bam = T_TEST_DIR + "test_22.fixed.bam"
         
-        sam_to_fixed_bam(sam, fixed_bam)
+        #sam_to_fixed_bam(sam, fixed_bam)
         
-        d = bam_diff(fixed_bam, input_file_a)
-        print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        #d = bam_diff(fixed_bam, input_file_a)
+        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
         
-        input_file_a = fixed_bam
-        #
+        #input_file_a = fixed_bam
+        ##
 
-        test_file = TEST_DIR + "test_22.out.dbed"
-        output_file = T_TEST_DIR + "test_22.out.dbed"
-
-        ic = IntronDecomposition(input_file_a)
-        ic.decompose(0)
-
-        with open(output_file, "w") as fh:
-            ic.export(fh)
-
-        # Test data not checked, should just not throw an exception
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
-    #def test_23_circRNA(self):
-        #input_file_a = TEST_DIR + "test_23.bam"
-        #test_file = TEST_DIR + "test_23.out.dbed"
-        #output_file = T_TEST_DIR + "test_23.out.dbed"
+        #test_file = TEST_DIR + "test_22.out.dbed"
+        #output_file = T_TEST_DIR + "test_22.out.dbed"
 
         #ic = IntronDecomposition(input_file_a)
         #ic.decompose(0)
@@ -658,6 +644,34 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         ## Test data not checked, should just not throw an exception
         #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_23_circRNA_s14(self):
+        input_file_a = TEST_DIR + "test_23.bam"
+
+
+        # Dev stuff // insert
+        sam = TEST_DIR + "test_23.sam"
+        fixed_bam = T_TEST_DIR + "test_23.fixed.bam"
+        
+        sam_to_fixed_bam(sam, fixed_bam)
+        
+        d = bam_diff(fixed_bam, input_file_a)
+        print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        
+        input_file_a = fixed_bam
+        #
+
+        test_file = TEST_DIR + "test_23.out.dbed"
+        output_file = T_TEST_DIR + "test_23.out.dbed"
+
+        ic = IntronDecomposition(input_file_a)
+        ic.decompose(0)
+
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     #def test_24_spanning_singleton_x_r(self):
         ## Positions are 100% correct, strands I don't know
