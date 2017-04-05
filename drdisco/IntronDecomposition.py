@@ -1160,7 +1160,7 @@ class BAMExtract(object):
 
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start + pos1_offset,
-                                     read.is_reverse)
+                                     STRAND_REVERSE if not read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == '-':  # Tested in TERG s55 double inversion
                     pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
