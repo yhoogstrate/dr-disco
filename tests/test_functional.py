@@ -87,7 +87,7 @@ class TestFunctional_detect(unittest.TestCase):
     def test_detect_01(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
         input_file_s = TEST_DIR + "test_01.sam"
-        input_file_a = TEST_DIR + "test_01.bam"
+        input_file_a = T_TEST_DIR + "test_01.bam"
         
         sam_to_fixed_bam(input_file_s, input_file_a)
         test_file = TEST_DIR + "test_01.out.dbed"
