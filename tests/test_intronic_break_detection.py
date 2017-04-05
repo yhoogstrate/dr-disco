@@ -393,31 +393,31 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_13_merge_overlapping_subnetworks(self):
-        input_file_a = TEST_DIR + "test_13.bam"
+    #def test_13_merge_overlapping_subnetworks(self):
+        #input_file_a = TEST_DIR + "test_13.bam"
 
-        # Dev stuff // insert
-        sam = TEST_DIR + "test_13.sam"
-        fixed_bam = T_TEST_DIR + "test_13.fixed.bam"
+        ## Dev stuff // insert
+        #sam = TEST_DIR + "test_13.sam"
+        #fixed_bam = T_TEST_DIR + "test_13.fixed.bam"
         
-        sam_to_fixed_bam(sam, fixed_bam)
+        #sam_to_fixed_bam(sam, fixed_bam)
         
-        d = bam_diff(fixed_bam, input_file_a)
-        print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        #d = bam_diff(fixed_bam, input_file_a)
+        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
         
-        input_file_a = fixed_bam
-        #
+        #input_file_a = fixed_bam
+        ##
 
-        test_file = TEST_DIR + "test_13.out.dbed"
-        output_file = T_TEST_DIR + "test_13.out.dbed"
+        #test_file = TEST_DIR + "test_13.out.dbed"
+        #output_file = T_TEST_DIR + "test_13.out.dbed"
 
-        ic = IntronDecomposition(input_file_a)
-        ic.decompose(0)
+        #ic = IntronDecomposition(input_file_a)
+        #ic.decompose(0)
 
-        with open(output_file, "w") as fh:
-            ic.export(fh)
+        #with open(output_file, "w") as fh:
+            #ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     #def test_14_test_inserting_spanning_paired_12_s(self):
         #input_file_a = TEST_DIR + "test_14.bam"
@@ -447,6 +447,19 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     #def test_15_pruning_offset(self):
         #input_file_a = TEST_DIR + "test_15.bam"
+
+        ## Dev stuff // insert
+        #sam = TEST_DIR + "test_15.sam"
+        #fixed_bam = T_TEST_DIR + "test_15.fixed.bam"
+        
+        #sam_to_fixed_bam(sam, fixed_bam)
+        
+        #d = bam_diff(fixed_bam, input_file_a)
+        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        
+        #input_file_a = fixed_bam
+        ##
+
         #test_file = TEST_DIR + "test_15.out.dbed"
         #output_file = T_TEST_DIR + "test_15.out.dbed"
 
@@ -460,6 +473,19 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     #def test_16_final(self):
         #input_file_a = TEST_DIR + "test_16.bam"
+
+        ## Dev stuff // insert
+        #sam = TEST_DIR + "test_16.sam"
+        #fixed_bam = T_TEST_DIR + "test_16.fixed.bam"
+        
+        #sam_to_fixed_bam(sam, fixed_bam)
+        
+        #d = bam_diff(fixed_bam, input_file_a)
+        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        
+        #input_file_a = fixed_bam
+        ##
+
         #test_file = TEST_DIR + "test_16.out.dbed"
         #output_file = T_TEST_DIR + "test_16.out.dbed"
 
@@ -473,6 +499,19 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
     #def test_17(self):
         #input_file_a = TEST_DIR + "test_17.bam"
+
+        ## Dev stuff // insert
+        #sam = TEST_DIR + "test_17.sam"
+        #fixed_bam = T_TEST_DIR + "test_17.fixed.bam"
+        
+        #sam_to_fixed_bam(sam, fixed_bam)
+        
+        #d = bam_diff(fixed_bam, input_file_a)
+        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        
+        #input_file_a = fixed_bam
+        ##
+
         #test_file = TEST_DIR + "test_17.out.dbed"
         #output_file = T_TEST_DIR + "test_17.out.dbed"
 
@@ -485,8 +524,21 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ## Test data not checked, should just not throw an exception
         #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_18(self):
-        #input_file_a = TEST_DIR + "test_18.bam"
+    def test_18_s27(self):
+        input_file_a = TEST_DIR + "test_18.bam"
+
+        # Dev stuff // insert
+        sam = TEST_DIR + "test_18.sam"
+        fixed_bam = T_TEST_DIR + "test_18.fixed.bam"
+        
+        sam_to_fixed_bam(sam, fixed_bam)
+        
+        d = bam_diff(fixed_bam, input_file_a)
+        print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        
+        input_file_a = fixed_bam
+        #
+
         #test_file = TEST_DIR + "test_18.out.dbed"
         #output_file = T_TEST_DIR + "test_18.out.dbed"
 
