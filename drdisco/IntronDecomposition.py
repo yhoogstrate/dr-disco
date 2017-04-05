@@ -321,12 +321,12 @@ class JunctionTypeUtils:
         JunctionTypes.discordant_mates: 1,
         JunctionTypes.spanning_paired_1: 3,
         JunctionTypes.spanning_paired_1_r: 3,
-        JunctionTypes.spanning_paired_1_s: 1,  # Very odd type of reads
+        JunctionTypes.spanning_paired_1_s: 3,
         JunctionTypes.spanning_paired_1_t: 3,
         JunctionTypes.spanning_paired_1_u: 3,
         JunctionTypes.spanning_paired_2: 3,
         JunctionTypes.spanning_paired_2_r: 3,
-        JunctionTypes.spanning_paired_2_s: 1,  # Very odd type of reads
+        JunctionTypes.spanning_paired_2_s: 3,
         JunctionTypes.spanning_paired_2_t: 3,
         JunctionTypes.spanning_paired_2_u: 3,
         JunctionTypes.spanning_singleton_1: 2,
@@ -1142,7 +1142,7 @@ class BAMExtract(object):
 
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start + pos1_offset,
-                                     STRAND_REVERSE if not read.is_reverse else STRAND_FORWARD)
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == '+':   # Tested in TERG s55 double inversion
                     pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
@@ -1169,7 +1169,7 @@ class BAMExtract(object):
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
-                                     STRAND_FORWARD if parsed_SA_tag[4] != "+" else STRAND_REVERSE)
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
             #  paired 1&2 r
             elif rg in [JunctionTypes.spanning_paired_1_r]:
@@ -1218,7 +1218,7 @@ class BAMExtract(object):
                     pos1_offset = bam_parse_alignment_offset(read.cigar)
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start + pos1_offset,
-                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                                     STRAND_REVERSE if not read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == "-":
                     pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
@@ -1226,7 +1226,7 @@ class BAMExtract(object):
                     pos2_offset = 0
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
-                                     STRAND_REVERSE if parsed_SA_tag[4] == "+" else STRAND_FORWARD)
+                                     STRAND_REVERSE if parsed_SA_tag[4] == "-" else STRAND_FORWARD)
             elif rg in [JunctionTypes.spanning_paired_2_s]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
                     pos1_offset = bam_parse_alignment_offset(read.cigar)
@@ -1234,7 +1234,7 @@ class BAMExtract(object):
                     pos1_offset = 0
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
                                      read.reference_start + pos1_offset,
-                                     STRAND_FORWARD if read.is_reverse else STRAND_REVERSE)
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == "-":
                     pos2_offset = 0
@@ -1242,7 +1242,7 @@ class BAMExtract(object):
                     pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
-                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                                     STRAND_FORWARD if parsed_SA_tag[4] != "+" else STRAND_REVERSE)
 
             #  paired 1&2 t
             elif rg in [JunctionTypes.spanning_paired_1_t]:
