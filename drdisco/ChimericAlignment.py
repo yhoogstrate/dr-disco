@@ -574,16 +574,31 @@ class ChimericAlignmentFixed:
         log.info("Fixing sam file")
         sam_file_discordant = pysam.AlignmentFile(basename + ".name-sorted.bam", "rb")
         header = sam_file_discordant.header
-        header['RG'] = None
-        header['PG'] = None
+        header['RG'] = []
+        header['PG'] = []
 
         fh = pysam.AlignmentFile(basename + ".name-sorted.fixed.sam", "wb", header=header)
         last_read_name = False
         alignments = []
+        print "checkpoint"
         for read in sam_file_discordant:
             tag = read.get_tag('RG')
             if tag in ['spanning_singleton_1', 'spanning_singleton_1_r', 'spanning_singleton_2',  'spanning_singleton_2_r']:
                 read.is_paired = False
+            
+            if tag == 'spanning_singleton_1':
+                read.is_read1 = False
+                read.is_read2 = False
+            elif tag == 'spanning_singleton_2':
+                read.is_read1 = False
+                read.is_read2 = False
+            elif tag == 'spanning_singleton_1_r':
+                read.is_read1 = False
+                read.is_read2 = False
+            elif tag == 'spanning_singleton_2_r':
+                read.is_read1 = False
+                read.is_read2 = False
+            
             read.set_tag('RG', None)
             read.set_tag('SA', None)
             read.set_tag('FI', None)
