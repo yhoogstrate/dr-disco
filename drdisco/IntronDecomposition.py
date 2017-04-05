@@ -636,7 +636,7 @@ class Graph:
     def prune(self):
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
-        self.print_chain()
+        #self.print_chain()
 
         self.generate_edge_idx()
         log.info("Finding and merging other edges in close proximity (insert size)")
@@ -1099,39 +1099,35 @@ class BAMExtract(object):
             elif rg in [JunctionTypes.spanning_singleton_1_r]:
                 # test 24 covers these - positions are 100% correct, strands not sure ...
                 if not read.is_reverse:
-                    pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                         read.reference_start,
-                                         STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                    pos1_offset = 0
                 else:
-                    pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                         read.reference_start + bam_parse_alignment_offset(read.cigar),
-                                         STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
+                    pos1_offset = bam_parse_alignment_offset(read.cigar)
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start + pos1_offset,
+                                     STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == "-":
-                    pos2 = BreakPosition(parsed_SA_tag[0],
-                                         parsed_SA_tag[1],
-                                         STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+                    pos2_offset = 0
                 else:
-                    pos2 = BreakPosition(parsed_SA_tag[0],
-                                         parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
-                                         STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
+                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + pos2_offset,
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
             elif rg in [JunctionTypes.spanning_singleton_2_r]:
                 if read.is_reverse:
-                    pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                         read.reference_start,
-                                         read.is_reverse)
+                    pos1_offset = 0
                 else:
-                    pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
-                                         read.reference_start + bam_parse_alignment_offset(read.cigar),
-                                         read.is_reverse)
+                    pos1_offset = bam_parse_alignment_offset(read.cigar)
+                pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
+                                     read.reference_start + pos1_offset,
+                                     read.is_reverse)
                 if parsed_SA_tag[4] == "-":
-                    pos2 = BreakPosition(parsed_SA_tag[0],
-                                         parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
-                                         STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
                 else:
-                    pos2 = BreakPosition(parsed_SA_tag[0],
-                                         parsed_SA_tag[1],
-                                         STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
+                    pos2_offset = 0
+                pos2 = BreakPosition(parsed_SA_tag[0],
+                                     parsed_SA_tag[1] + pos2_offset,
+                                     STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
             #  paired 1&2
             elif rg in [JunctionTypes.spanning_paired_1]:
