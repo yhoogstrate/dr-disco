@@ -476,32 +476,24 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_23_circRNA_s14(self):
-        #input_file_a = TEST_DIR + "test_23.bam"
-
-        ## Dev stuff // insert
-        #sam = TEST_DIR + "test_23.sam"
-        #fixed_bam = T_TEST_DIR + "test_23.fixed.bam"
+    def test_23_circRNA_s14(self):
+        test_id = '23'
         
-        #sam_to_fixed_bam(sam, fixed_bam)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
         
-        #d = bam_diff(fixed_bam, input_file_a)
-        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
-        
-        #input_file_a = fixed_bam
-        ##
+        sam_to_fixed_bam(input_file_a, fixed_bam)
 
-        #test_file = TEST_DIR + "test_23.out.dbed"
-        #output_file = T_TEST_DIR + "test_23.out.dbed"
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
 
-        #ic = IntronDecomposition(input_file_a)
-        #ic.decompose(0)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
 
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
-
-        ## Test data not checked, should just not throw an exception
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     #def test_24_spanning_singleton_x_r(self):
         # Positions are 100% correct, strands I don't know
