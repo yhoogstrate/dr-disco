@@ -375,15 +375,21 @@ class ChimericAlignment:
         if n_r1 == 2:
             reads_updated, mates_updated = self.fix_chain(r1, bam_file, r2)
 
-            ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
-            if ca.get_order() == STRAND_FORWARD:
+            #ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            if reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
                 """These reads have the opposite strand because they are both read1
                 """
                 self.set_read_group([reads_updated[0]], 'spanning_paired_1_s')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_2_s')
-            else:
+            elif reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_paired_1_t')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_2_t')
+            else:
+                raise Exception("Unknown strand order for singletons: %s (%i)\n%s (%i)\n",
+                                reads_updated[0].query_name,
+                                reads_updated[0].reference_start,
+                                reads_updated[1].query_name,
+                                reads_updated[1].reference_start)
 
             self.set_read_group(mates_updated, 'silent_mate')
             for a in reads_updated:
@@ -395,7 +401,7 @@ class ChimericAlignment:
         elif n_r2 == 2:
             reads_updated, mates_updated = self.fix_chain(r2, bam_file, r1)
 
-            ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            #ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
             if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_paired_2_r')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_1_r')
@@ -419,19 +425,8 @@ class ChimericAlignment:
         elif n_s == 2:
             reads_updated, mates_updated = self.fix_chain(singletons, bam_file, [])
 
-            """ deprecated
-            ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
-            if ca.get_order() == STRAND_FORWARD:
-                if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
-                    self.set_read_group([reads_updated[0]],'spanning_singleton_1r')
-                    self.set_read_group([reads_updated[1]],'spanning_singleton_2')
-                elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
-                    self.set_read_group([reads_updated[0]],'spanning_singleton_2r')
-                    self.set_read_group([reads_updated[1]],'spanning_singleton_1')
-                else:
-                    raise Exception("Unknown strand order for singletons: %s\n%s\n", reads_updated[0], reads_updated[1])
-            """
-
+            #ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            #if ca.get_order() == STRAND_FORWARD:
             if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_singleton_1_r')
                 self.set_read_group([reads_updated[1]], 'spanning_singleton_2_r')
@@ -585,19 +580,11 @@ class ChimericAlignmentFixed:
             tag = read.get_tag('RG')
             if tag in ['spanning_singleton_1', 'spanning_singleton_1_r', 'spanning_singleton_2',  'spanning_singleton_2_r']:
                 read.is_paired = False
-            
-            if tag == 'spanning_singleton_1':
                 read.is_read1 = False
                 read.is_read2 = False
-            elif tag == 'spanning_singleton_2':
-                read.is_read1 = False
-                read.is_read2 = False
-            elif tag == 'spanning_singleton_1_r':
-                read.is_read1 = False
-                read.is_read2 = False
-            elif tag == 'spanning_singleton_2_r':
-                read.is_read1 = False
-                read.is_read2 = False
+                read.next_reference_id = None
+                read.next_reference_start = None
+
             
             read.set_tag('RG', None)
             read.set_tag('SA', None)
