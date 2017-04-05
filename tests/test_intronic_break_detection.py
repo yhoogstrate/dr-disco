@@ -105,59 +105,41 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_02(self):
-        #input_file_a = TEST_DIR + "test_02.bam"
-
-        ## Dev stuff // insert
-        #sam = TEST_DIR + "test_02.sam"
-        #fixed_bam = T_TEST_DIR + "test_02.fixed.bam"
+    def test_02(self):
+        test_id = '02'
         
-        #sam_to_fixed_bam(sam, fixed_bam)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
         
-        #d = bam_diff(fixed_bam, input_file_a)
-        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
+
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_03(self):
+        test_id = '03'
         
-        #input_file_a = fixed_bam
-        ###
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
         
+        sam_to_fixed_bam(input_file_a, fixed_bam)
 
-        #test_file = TEST_DIR + "test_02.out.dbed"
-        #output_file = T_TEST_DIR + "test_02.out.dbed"
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
 
-        #ic = IntronDecomposition(input_file_a)
-        #ic.decompose(0)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
 
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
-
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
-    #def test_03(self):
-        #input_file_a = TEST_DIR + "test_03.bam"
-        
-        ## Dev stuff // insert
-        #sam = TEST_DIR + "test_03.sam"
-        #fixed_bam = T_TEST_DIR + "test_03.fixed.bam"
-        
-        #sam_to_fixed_bam(sam, fixed_bam)
-        
-        #d = bam_diff(fixed_bam, input_file_a)
-        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
-        
-        #input_file_a = fixed_bam
-        ###
-        
-        #test_file = TEST_DIR + "test_03.out.dbed"
-        #output_file = T_TEST_DIR + "test_03.out.dbed"
-
-
-        #ic = IntronDecomposition(input_file_a)
-        #ic.decompose(0)
-
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
-
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     #def test_04(self):
         #input_file_a = TEST_DIR + "test_04.bam"

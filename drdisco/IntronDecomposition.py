@@ -636,7 +636,7 @@ class Graph:
     def prune(self):
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
-        self.print_chain()
+        #self.print_chain()
 
         self.generate_edge_idx()
         log.info("Finding and merging other edges in close proximity (insert size)")
