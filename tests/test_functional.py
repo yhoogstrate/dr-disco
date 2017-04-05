@@ -33,7 +33,6 @@ from test_intronic_break_detection import sam_to_fixed_bam
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
 
-
 class TestFunctional_bam_extract(unittest.TestCase):
     def __get_temp_dirs(self):
         TEST_DIR = "tests/bam-extract/"
@@ -88,7 +87,7 @@ class TestFunctional_detect(unittest.TestCase):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
         input_file_s = TEST_DIR + "test_01.sam"
         input_file_a = T_TEST_DIR + "test_01.bam"
-        
+
         sam_to_fixed_bam(input_file_s, input_file_a)
         test_file = TEST_DIR + "test_01.out.dbed"
         output_file = T_TEST_DIR + "test_01.out.dbed"
@@ -109,9 +108,9 @@ class TestFunctional_detect(unittest.TestCase):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
         input_file_s = TEST_DIR + "test_02.sam"
         input_file_a = T_TEST_DIR + "test_02.bam"
-        
+
         sam_to_fixed_bam(input_file_s, input_file_a)
-        
+
         test_file = TEST_DIR + "test_02.out.dbed"
         output_file = T_TEST_DIR + "test_02.out.dbed"
 
