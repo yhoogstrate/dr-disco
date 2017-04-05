@@ -26,9 +26,12 @@ import pysam
 import os
 import subprocess
 
+from test_intronic_break_detection import sam_to_fixed_bam
+
 # Nosetests doesn't use main()
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
+
 
 
 class TestFunctional_bam_extract(unittest.TestCase):
@@ -83,7 +86,10 @@ class TestFunctional_detect(unittest.TestCase):
 
     def test_detect_01(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+        input_file_s = TEST_DIR + "test_01.sam"
         input_file_a = TEST_DIR + "test_01.bam"
+        
+        sam_to_fixed_bam(input_file_s, input_file_a)
         test_file = TEST_DIR + "test_01.out.dbed"
         output_file = T_TEST_DIR + "test_01.out.dbed"
 
@@ -101,7 +107,11 @@ class TestFunctional_detect(unittest.TestCase):
 
     def test_detect_02(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
-        input_file_a = TEST_DIR + "test_02.bam"
+        input_file_s = TEST_DIR + "test_02.sam"
+        input_file_a = T_TEST_DIR + "test_02.bam"
+        
+        sam_to_fixed_bam(input_file_s, input_file_a)
+        
         test_file = TEST_DIR + "test_02.out.dbed"
         output_file = T_TEST_DIR + "test_02.out.dbed"
 
