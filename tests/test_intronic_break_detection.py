@@ -74,6 +74,13 @@ def bam_diff(f1, f2):
     fhq.close()
     
     subprocess.Popen(['sed', '-i' , '-r', 's@(SA:[^\\t]+)\\t(LB:[^\\t]+)\t(RG:[^\\t]+)@\\3\\t\\1\\t\\2@', f2sam], stdout=subprocess.PIPE).stdout.read()
+
+    subprocess.Popen(['sed', '-i' , '-r', 's@\\tFI:i:[0-9]+@@', f1sam], stdout=subprocess.PIPE).stdout.read()
+    subprocess.Popen(['sed', '-i' , '-r', 's@\\tFI:i:[0-9]+@@', f2sam], stdout=subprocess.PIPE).stdout.read()
+    
+    # one time only
+    #subprocess.Popen(['sed', '-i' , '-r', 's@\\tSA:Z:[^\\t]+@@', f1sam], stdout=subprocess.PIPE).stdout.read()
+    #subprocess.Popen(['sed', '-i' , '-r', 's@\\tSA:Z:[^\\t]+@@', f2sam], stdout=subprocess.PIPE).stdout.read()
     
     
     return filecmp.cmp(f1sam, f2sam),f1sam, f2sam
@@ -524,20 +531,20 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ## Test data not checked, should just not throw an exception
         #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_18_s27(self):
-        input_file_a = TEST_DIR + "test_18.bam"
+    #def test_18_s27(self):
+        #input_file_a = TEST_DIR + "test_18.bam"
 
-        # Dev stuff // insert
-        sam = TEST_DIR + "test_18.sam"
-        fixed_bam = T_TEST_DIR + "test_18.fixed.bam"
+        ## Dev stuff // insert
+        #sam = TEST_DIR + "test_18.sam"
+        #fixed_bam = T_TEST_DIR + "test_18.fixed.bam"
         
-        sam_to_fixed_bam(sam, fixed_bam)
+        #sam_to_fixed_bam(sam, fixed_bam)
         
-        d = bam_diff(fixed_bam, input_file_a)
-        print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        #d = bam_diff(fixed_bam, input_file_a)
+        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
         
-        input_file_a = fixed_bam
-        #
+        #input_file_a = fixed_bam
+        ###
 
         #test_file = TEST_DIR + "test_18.out.dbed"
         #output_file = T_TEST_DIR + "test_18.out.dbed"
@@ -551,8 +558,21 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ## Test data not checked, should just not throw an exception
         #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    #def test_19_tests_parsing_of_inversed_TERG_from_s55(self):
+    #def test_19_tests_parsing_of_inversed_TERG_s55(self):
         #input_file_a = TEST_DIR + "test_19.bam"
+
+        ## Dev stuff // insert
+        #sam = TEST_DIR + "test_19.sam"
+        #fixed_bam = T_TEST_DIR + "test_19.fixed.bam"
+        
+        #sam_to_fixed_bam(sam, fixed_bam)
+        
+        #d = bam_diff(fixed_bam, input_file_a)
+        #print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        
+        #input_file_a = fixed_bam
+        ###
+
         #test_file = TEST_DIR + "test_19.out.dbed"
         #output_file = T_TEST_DIR + "test_19.out.dbed"
 
@@ -571,19 +591,32 @@ class TestIntronicBreakDetection(unittest.TestCase):
         #ic = IntronDecomposition(input_file_a)
         #self.assertRaises(Exception, ic.decompose, 0)  # ic.decompose(0) triggers exception
 
-    #def test_21_tests_extracting_subnetworks_in_ideal_optimization_usecase(self):
-        #input_file_a = TEST_DIR + "test_21.bam"
-        #test_file = TEST_DIR + "test_21.out.dbed"
-        #output_file = T_TEST_DIR + "test_21.out.dbed"
+    def test_21_tests_extracting_subnetworks_in_ideal_optimization_usecase(self):
+        input_file_a = TEST_DIR + "test_21.bam"
+        
+        # Dev stuff // insert
+        sam = TEST_DIR + "test_21.sam"
+        fixed_bam = T_TEST_DIR + "test_21.fixed.bam"
+        
+        sam_to_fixed_bam(sam, fixed_bam)
+        
+        d = bam_diff(fixed_bam, input_file_a)
+        print subprocess.Popen(['diff', d[1], d[2]], stdout=subprocess.PIPE).stdout.read()
+        
+        input_file_a = fixed_bam
+        ##
+        
+        test_file = TEST_DIR + "test_21.out.dbed"
+        output_file = T_TEST_DIR + "test_21.out.dbed"
 
-        #ic = IntronDecomposition(input_file_a)
-        #ic.decompose(0)
+        ic = IntronDecomposition(input_file_a)
+        ic.decompose(0)
 
-        #with open(output_file, "w") as fh:
-            #ic.export(fh)
+        with open(output_file, "w") as fh:
+            ic.export(fh)
 
-        ## Test data not checked, should just not throw an exception
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     #def test_22_interchromosomal_tp_sample_130(self):
         #input_file_a = TEST_DIR + "test_22.bam"

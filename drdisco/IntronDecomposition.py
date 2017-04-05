@@ -1276,7 +1276,10 @@ class BAMExtract(object):
 
         log.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
-            sa = self.parse_SA(read.get_tag('SA'))
+            try:
+                sa = self.parse_SA(read.get_tag('SA'))
+            except:
+                raise ValueError("Problems parsing SA tag for:\n\t%s", str(read))
             _chr = self.pysam_fh.get_reference_name(read.reference_id)
             rg = JunctionTypeUtils.enum(read.get_tag('RG'))
 

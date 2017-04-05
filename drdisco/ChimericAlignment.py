@@ -468,7 +468,7 @@ class ChimericAlignment:
                 log.warn("segments of mate are missing: " + alignments[0].query_name)
                 all_reads_updated.append(alignments[0])
             else:
-                raise Exception("what happens here?")
+                raise Exception("what happens here?\n\t%s", str(alignments[0]))
 
         all_reads_updated = self.update_sa_tags(all_reads_updated, bam_file)
         if len(all_reads_updated) != n:
