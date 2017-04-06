@@ -11,6 +11,7 @@ import click
 from drdisco.IntronDecomposition import BAMExtract
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
+from drdisco.ChimericAlignment import ChimericAlignmentFixed
 
 """[License: GNU General Public License v3 (GPLv3)]
 
@@ -55,6 +56,15 @@ def CLI():
 @click.argument('input_alignment_file', type=click.Path(exists=True))
 def CLI_fix_chimeric_alignment(temp_dir, output_alignment_file, input_alignment_file):
     alignment_handle = ChimericAlignment(input_alignment_file)
+    alignment_handle.convert(output_alignment_file, temp_dir)
+
+
+@CLI.command(name="unfix", short_help="Tries to restore the BAM file")
+@click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
+@click.argument('output_alignment_file')
+@click.argument('input_alignment_file', type=click.Path(exists=True))
+def CLI_unfix_chimeric_alignment(temp_dir, output_alignment_file, input_alignment_file):
+    alignment_handle = ChimericAlignmentFixed(input_alignment_file)
     alignment_handle.convert(output_alignment_file, temp_dir)
 
 

@@ -28,6 +28,8 @@ import unittest
 import subprocess
 import filecmp
 import os
+import pysam
+from drdisco.ChimericAlignment import ChimericAlignment
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
@@ -40,13 +42,62 @@ if not os.path.exists(T_TEST_DIR):
     os.makedirs(T_TEST_DIR)
 
 
+def sam_to_fixed_bam(sam, fixed_bam):
+    basename, ext = os.path.splitext(os.path.basename(sam))
+    bam_file = T_TEST_DIR + '/' + basename + '.bam'
+
+    fhq = open(bam_file, "wb")
+    fhq.write(pysam.view('-b', sam))
+    fhq.close()
+
+    alignment_handle = ChimericAlignment(bam_file)
+    return alignment_handle.convert(fixed_bam, T_TEST_DIR)
+
+
+def bam_diff(f1, f2):
+    basename, ext = os.path.splitext(os.path.basename(f1))
+
+    f1sorted = T_TEST_DIR + basename + '.f1.sorted.bam'
+    f2sorted = T_TEST_DIR + basename + '.f2.sorted.bam'
+
+    pysam.sort(f1, '-n', '-o', f1sorted)
+    pysam.sort(f2, '-n', '-o', f2sorted)
+
+    f1sam = T_TEST_DIR + basename + '.f1.sam'
+    f2sam = T_TEST_DIR + basename + '.f2.sam'
+
+    fhq = open(f1sam, "w")
+    fhq.write(pysam.view('-h', f1sorted))
+    fhq.close()
+
+    fhq = open(f2sam, "w")
+    fhq.write(pysam.view('-h', f2sorted))
+    fhq.close()
+
+    subprocess.Popen(['sed', '-i', '-r', 's@(SA:[^\\t]+)\\t(LB:[^\\t]+)\t(RG:[^\\t]+)@\\3\\t\\1\\t\\2@', f2sam], stdout=subprocess.PIPE).stdout.read()
+
+    subprocess.Popen(['sed', '-i', '-r', 's@\\tFI:i:[0-9]+@@', f1sam], stdout=subprocess.PIPE).stdout.read()
+    subprocess.Popen(['sed', '-i', '-r', 's@\\tFI:i:[0-9]+@@', f2sam], stdout=subprocess.PIPE).stdout.read()
+
+    # one time only
+    # subprocess.Popen(['sed', '-i' , '-r', 's@\\tSA:Z:[^\\t]+@@', f1sam], stdout=subprocess.PIPE).stdout.read()
+    # subprocess.Popen(['sed', '-i' , '-r', 's@\\tSA:Z:[^\\t]+@@', f2sam], stdout=subprocess.PIPE).stdout.read()
+
+    return filecmp.cmp(f1sam, f2sam), f1sam, f2sam
+
+
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
-        input_file_a = TEST_DIR + "test_01.bam"
-        test_file = TEST_DIR + "test_01.out.dbed"
-        output_file = T_TEST_DIR + "test_01.out.dbed"
+        test_id = '01'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         fh = open(output_file, "w")
@@ -56,11 +107,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_02(self):
-        input_file_a = TEST_DIR + "test_02.bam"
-        test_file = TEST_DIR + "test_02.out.dbed"
-        output_file = T_TEST_DIR + "test_02.out.dbed"
+        test_id = '02'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -69,11 +125,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_03(self):
-        input_file_a = TEST_DIR + "test_03.bam"
-        test_file = TEST_DIR + "test_03.out.dbed"
-        output_file = T_TEST_DIR + "test_03.out.dbed"
+        test_id = '03'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -82,11 +143,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_04(self):
-        input_file_a = TEST_DIR + "test_04.bam"
-        test_file = TEST_DIR + "test_04.out.dbed"
-        output_file = T_TEST_DIR + "test_04.out.dbed"
+        test_id = '04'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -95,11 +161,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_05(self):
-        input_file_a = TEST_DIR + "test_05.bam"
-        test_file = TEST_DIR + "test_05.out.dbed"
-        output_file = T_TEST_DIR + "test_05.out.dbed"
+        test_id = '05'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -108,9 +179,15 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_06(self):
-        input_file_a = TEST_DIR + "test_06.bam"
-        output_file = T_TEST_DIR + "test_06.out.dbed"
-        ic = IntronDecomposition(input_file_a)
+        test_id = '06'
+
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -120,9 +197,15 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # by STAR? at least, throw a warning and don't terminate
 
     def test_07(self):
-        input_file_a = TEST_DIR + "test_07.bam"
-        output_file = T_TEST_DIR + "test_07.out.dbed"
-        ic = IntronDecomposition(input_file_a)
+        test_id = '07'
+
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -132,11 +215,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # not throw an exception
 
     def test_08_test_inclusion_of_disco_reads(self):
-        input_file_a = TEST_DIR + "test_08.bam"
-        test_file = TEST_DIR + "test_08.out.dbed"
-        output_file = T_TEST_DIR + "test_08.out.dbed"
+        test_id = '08'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -144,12 +232,17 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_09(self):
-        input_file_a = TEST_DIR + "test_09.bam"
-        test_file = TEST_DIR + "test_09.out.dbed"
-        output_file = T_TEST_DIR + "test_09.out.dbed"
+    def test_09_insert_size_filter(self):
+        test_id = '09'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -158,11 +251,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_10(self):
-        input_file_a = TEST_DIR + "test_10.bam"
-        test_file = TEST_DIR + "test_10.out.dbed"
-        output_file = T_TEST_DIR + "test_10.out.dbed"
+        test_id = '10'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -171,11 +269,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_11(self):
-        input_file_a = TEST_DIR + "test_11.bam"
-        test_file = TEST_DIR + "test_11.out.dbed"
-        output_file = T_TEST_DIR + "test_11.out.dbed"
+        test_id = '11'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -184,11 +287,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_12_extract_subnetworks(self):
-        input_file_a = TEST_DIR + "test_12.bam"
-        test_file = TEST_DIR + "test_12.out.dbed"
-        output_file = T_TEST_DIR + "test_12.out.dbed"
+        test_id = '12'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -197,11 +305,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_13_merge_overlapping_subnetworks(self):
-        input_file_a = TEST_DIR + "test_13.bam"
-        test_file = TEST_DIR + "test_13.out.dbed"
-        output_file = T_TEST_DIR + "test_13.out.dbed"
+        test_id = '13'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -210,11 +323,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_14_test_inserting_spanning_paired_12_s(self):
-        input_file_a = TEST_DIR + "test_14.bam"
-        test_file = TEST_DIR + "test_14.out.dbed"
-        output_file = T_TEST_DIR + "test_14.out.dbed"
+        test_id = '14'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -223,11 +341,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_15_pruning_offset(self):
-        input_file_a = TEST_DIR + "test_15.bam"
-        test_file = TEST_DIR + "test_15.out.dbed"
-        output_file = T_TEST_DIR + "test_15.out.dbed"
+        test_id = '15'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -236,11 +359,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_16_final(self):
-        input_file_a = TEST_DIR + "test_16.bam"
-        test_file = TEST_DIR + "test_16.out.dbed"
-        output_file = T_TEST_DIR + "test_16.out.dbed"
+        test_id = '16'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -249,11 +377,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_17(self):
-        input_file_a = TEST_DIR + "test_17.bam"
-        test_file = TEST_DIR + "test_17.out.dbed"
-        output_file = T_TEST_DIR + "test_17.out.dbed"
+        test_id = '17'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -262,12 +395,17 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_18(self):
-        input_file_a = TEST_DIR + "test_18.bam"
-        test_file = TEST_DIR + "test_18.out.dbed"
-        output_file = T_TEST_DIR + "test_18.out.dbed"
+    def test_18_s27(self):
+        test_id = '18'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -276,12 +414,17 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_19_tests_parsing_of_inversed_TERG_from_s55(self):
-        input_file_a = TEST_DIR + "test_19.bam"
-        test_file = TEST_DIR + "test_19.out.dbed"
-        output_file = T_TEST_DIR + "test_19.out.dbed"
+    def test_19_tests_parsing_of_inversed_TERG_s55(self):
+        test_id = '19'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -297,11 +440,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertRaises(Exception, ic.decompose, 0)  # ic.decompose(0) triggers exception
 
     def test_21_tests_extracting_subnetworks_in_ideal_optimization_usecase(self):
-        input_file_a = TEST_DIR + "test_21.bam"
-        test_file = TEST_DIR + "test_21.out.dbed"
-        output_file = T_TEST_DIR + "test_21.out.dbed"
+        test_id = '21'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -311,11 +459,16 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_22_interchromosomal_tp_sample_130(self):
-        input_file_a = TEST_DIR + "test_22.bam"
-        test_file = TEST_DIR + "test_22.out.dbed"
-        output_file = T_TEST_DIR + "test_22.out.dbed"
+        test_id = '22'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:
@@ -324,12 +477,36 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_23_circRNA(self):
-        input_file_a = TEST_DIR + "test_23.bam"
-        test_file = TEST_DIR + "test_23.out.dbed"
-        output_file = T_TEST_DIR + "test_23.out.dbed"
+    def test_23_circRNA_s14(self):
+        test_id = '23'
 
-        ic = IntronDecomposition(input_file_a)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
+
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_24_spanning_singleton_x_r(self):
+        test_id = '24'
+
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
         with open(output_file, "w") as fh:

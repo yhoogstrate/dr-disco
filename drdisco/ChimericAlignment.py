@@ -7,8 +7,8 @@ import shutil
 
 import pysam
 
-from fuma.Fusion import STRAND_FORWARD
-from .CigarAlignment import CigarAlignment
+# from fuma.Fusion import STRAND_FORWARD
+# from .CigarAlignment import CigarAlignment
 
 from drdisco import __version__
 from drdisco import log
@@ -342,7 +342,7 @@ class ChimericAlignment:
                 new_alignments.append(self.set_next_ref(closest, seg_pos))
 
         else:
-            raise Exception("Dunno how to handle junctions in both mates yet... not aware of STAR Fusion producing them either")
+            raise Exception("Dunno how to handle junctions in both mates yet... not aware of STAR Fusion producing them either:\n\t%s" % mates[0].query_name)
 
         if len(new_alignments) != k:
             raise Exception("Somewhere alignments got lost in this function")
@@ -375,15 +375,21 @@ class ChimericAlignment:
         if n_r1 == 2:
             reads_updated, mates_updated = self.fix_chain(r1, bam_file, r2)
 
-            ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
-            if ca.get_order() == STRAND_FORWARD:
+            # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            if reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
                 """These reads have the opposite strand because they are both read1
                 """
                 self.set_read_group([reads_updated[0]], 'spanning_paired_1_s')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_2_s')
-            else:
+            elif reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_paired_1_t')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_2_t')
+            else:
+                raise Exception("Unknown strand order for singletons: %s (%i)\n%s (%i)\n",
+                                reads_updated[0].query_name,
+                                reads_updated[0].reference_start,
+                                reads_updated[1].query_name,
+                                reads_updated[1].reference_start)
 
             self.set_read_group(mates_updated, 'silent_mate')
             for a in reads_updated:
@@ -395,14 +401,19 @@ class ChimericAlignment:
         elif n_r2 == 2:
             reads_updated, mates_updated = self.fix_chain(r2, bam_file, r1)
 
-            ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
-            if ca.get_order() == STRAND_FORWARD:
+            # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
+                self.set_read_group([reads_updated[0]], 'spanning_paired_2_r')
+                self.set_read_group([reads_updated[1]], 'spanning_paired_1_r')
+            elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
                 self.set_read_group([reads_updated[0]], 'spanning_paired_1')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_2')
             else:
-                # Tested in 'tests/fix-chimeric/test_terg_03.filtered.bam'
-                self.set_read_group([reads_updated[0]], 'spanning_paired_2')
-                self.set_read_group([reads_updated[1]], 'spanning_paired_1')
+                raise Exception("Unknown strand order for singletons: %s (%i)\n%s (%i)\n",
+                                reads_updated[0].query_name,
+                                reads_updated[0].reference_start,
+                                reads_updated[1].query_name,
+                                reads_updated[1].reference_start)
 
             self.set_read_group(mates_updated, 'silent_mate')
             for a in reads_updated:
@@ -414,19 +425,8 @@ class ChimericAlignment:
         elif n_s == 2:
             reads_updated, mates_updated = self.fix_chain(singletons, bam_file, [])
 
-            """ deprecated
-            ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
-            if ca.get_order() == STRAND_FORWARD:
-                if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
-                    self.set_read_group([reads_updated[0]],'spanning_singleton_1r')
-                    self.set_read_group([reads_updated[1]],'spanning_singleton_2')
-                elif reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
-                    self.set_read_group([reads_updated[0]],'spanning_singleton_2r')
-                    self.set_read_group([reads_updated[1]],'spanning_singleton_1')
-                else:
-                    raise Exception("Unknown strand order for singletons: %s\n%s\n", reads_updated[0], reads_updated[1])
-            """
-
+            # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            # if ca.get_order() == STRAND_FORWARD:
             if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_singleton_1_r')
                 self.set_read_group([reads_updated[1]], 'spanning_singleton_2_r')
@@ -463,7 +463,7 @@ class ChimericAlignment:
                 log.warn("segments of mate are missing: " + alignments[0].query_name)
                 all_reads_updated.append(alignments[0])
             else:
-                raise Exception("what happens here?")
+                raise Exception("what happens here?\n\t%s", str(alignments[0]))
 
         all_reads_updated = self.update_sa_tags(all_reads_updated, bam_file)
         if len(all_reads_updated) != n:
@@ -518,6 +518,73 @@ class ChimericAlignment:
                 last_read_name = read.qname
             alignments.append(read)
         self.reconstruct_alignments(alignments, sam_file_discordant, fh)
+        fh.close()
+
+        log.info("Converting fixed file into BAM")
+        fhq = open(basename + ".name-sorted.fixed.bam", "wb")
+        fhq.write(pysam.view('-bS', basename + ".name-sorted.fixed.sam"))
+        fhq.close()
+
+        log.info("Sorting position based fixed file")
+        pysam.sort("-o", basename + ".sorted.fixed.bam", basename + ".name-sorted.fixed.bam")
+
+        log.info("Indexing the position sorted bam file")
+        pysam.index(basename + ".sorted.fixed.bam")
+
+        log.info("Cleaning up temp files")
+        for fname in [basename + ".name-sorted.bam", basename + ".name-sorted.fixed.sam", basename + ".name-sorted.fixed.bam"]:
+            log.debug("=> " + fname)
+            os.remove(fname)
+
+        log.info("Moving to final destination")
+        shutil.move(basename + ".sorted.fixed.bam", bam_file_discordant_fixed)
+        shutil.move(basename + ".sorted.fixed.bam" + ".bai", bam_file_discordant_fixed + ".bai")
+
+
+class ChimericAlignmentFixed:
+    def __init__(self, input_alignment_file):
+        self.input_alignment_file = input_alignment_file
+        self.test_pysam_version()
+
+    def test_pysam_version(self):
+        versions = pysam.__version__.split('.', 2)
+
+        if int(versions[1]) < 9:
+            raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__ + " instead")
+        else:
+            return True
+
+    def convert(self, bam_file_discordant_fixed, temp_dir):
+        basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
+        basename = temp_dir.rstrip("/") + "/" + basename
+
+        # @TODO / consider todo - start straight from sam
+        # samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
+
+        log.info("Convert into a name-sorted bam file, to get all reads with the same name adjacent to each other")
+        pysam.sort("-o", basename + ".name-sorted.bam", "-n", self.input_alignment_file)
+
+        log.info("Fixing sam file")
+        sam_file_discordant = pysam.AlignmentFile(basename + ".name-sorted.bam", "rb")
+        header = sam_file_discordant.header
+        header['RG'] = []
+        header['PG'] = []
+
+        fh = pysam.AlignmentFile(basename + ".name-sorted.fixed.sam", "wb", header=header)
+        for read in sam_file_discordant:
+            tag = read.get_tag('RG')
+            if tag in ['spanning_singleton_1', 'spanning_singleton_1_r', 'spanning_singleton_2', 'spanning_singleton_2_r']:
+                read.is_paired = False
+                read.is_read1 = False
+                read.is_read2 = False
+                read.next_reference_id = None
+                read.next_reference_start = None
+
+            read.set_tag('RG', None)
+            read.set_tag('SA', None)
+            read.set_tag('FI', None)
+            read.set_tag('LB', None)
+            fh.write(read)
         fh.close()
 
         log.info("Converting fixed file into BAM")
