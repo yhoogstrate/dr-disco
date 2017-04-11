@@ -1361,9 +1361,12 @@ class BAMExtract(object):
         log.debug("alignment data loaded")
 
     def parse_pos(self, str_pos):
-        _chr, _poss = str_pos.split(":", 2)
-        _poss = _poss.replace(",", "").split("-", 2)
-
+        try:
+            _chr, _poss = str_pos.split(":", 2)
+            _poss = _poss.replace(",", "").split("-", 2)
+        except:
+            raise ValueError("No understandable region format (chr:123-345): %s", str_pos)
+        
         return str(_chr), int(_poss[0]), int(_poss[1])
 
     def extract(self, pos1, pos2, bamfile_out):
