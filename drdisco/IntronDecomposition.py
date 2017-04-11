@@ -86,6 +86,13 @@ def merge_frequency_tables(frequency_tables):
 
     return new_frequency_table
 
+def list_to_freq_table(as_list):
+    table = {}
+    for val in as_list:
+        if val not in table:
+            table[val] = 0
+        table[val] += 1
+    return table
 
 def bam_parse_alignment_offset(cigartuple):
     pos = 0
@@ -712,7 +719,7 @@ class Graph:
         return candidates
 
     def prune_edge(self, edge):
-        #  # @ todo double check if this is strand specific
+        #  @todo double check if this is strand specific
 
         for edge_m in self.search_edges_between(edge):
             d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
@@ -729,8 +736,10 @@ class Graph:
         """searches for other junctions in-between edge+insert size:"""
         def pos_to_range(pos):
             if pos.strand == STRAND_REVERSE:
-                return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE) - 1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR
+                #return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE) - 1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR
+                return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE) - 1, pos.pos + MAX_ACCEPTABLE_INSERT_SIZE
             else:
+                #return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE) + 1
                 return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE) + 1
 
         pos1, pos2 = edge_to_prune._origin.position, edge_to_prune._target.position
@@ -944,6 +953,16 @@ class SubGraph():
         else:
             return 0.0
 
+    def get_breakpoint_disco_entropy(self):
+        """ Calculates the variance of the breakpoints post merge - low values indicate consistent results"""
+        sq_dists = 0.0
+        n = 0
+        as_list = []
+        for edge in self.edges:
+            as_list += edge.get_distances_to_breakpoints(True)
+        
+        return entropy(list_to_freq_table(as_list))
+
     def __str__(self):
         """Makes tabular output"""
         node_a, node_b = self.edges[0]._origin, self.edges[0]._target
@@ -952,9 +971,9 @@ class SubGraph():
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
 
-        print "bp entropy:"
-        print "\t",self.get_breakpoint_stddev()
-        #print "\t",self.get_breakpoint_stddev()
+        # 2 important variables that may destinguish between contamination and real data
+        # get_breakpoint_stddev()
+        # self.get_breakpoint_disco_entropy()
 
         return (
             "%s\t%i\t%s\t"
