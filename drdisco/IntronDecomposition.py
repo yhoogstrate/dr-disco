@@ -384,7 +384,11 @@ class Edge:
         self._types = {}
         self._unique_alignment_hashes = {}  # Used for determining entropy
 
-    def get_entropy(self):
+        #  Used for determining entropy / rmsqd:
+        self._unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)
+                                    False: ({}, {})}  # other types: (origin, target)
+
+    def get_entropy_of_alignments(self):
         """Entropy is an important metric / propery of an edge
         The assumption is that all reads should be 'different', i.e.
         have a different start position, different end position,
@@ -438,6 +442,36 @@ class Edge:
 
         return entropy(self._unique_alignment_hashes)
 
+    def get_distances_to_breakpoints(self, distances_of_discordant_mates):
+        """
+         In the following case all (non-disco) breakpoints are nearly identical:
+         
+          [==========> |
+            [========> |
+           [=========> |
+          [==========> |
+           [=========> |
+        
+         and here quite variable:
+
+          [=========>   |
+            [=======>   |
+           [=========>  |
+          [===========> |
+           [==========> |
+        
+        Here we return the dist to the median of each of the values (0,0,0,0,0) for top example, (-1, -1, 0, 2, 2) for bottom
+        """
+ 
+        medians = (self._origin.position.pos, self._target.position.pos)
+
+        dists = []
+        for i in [0, 1]:
+            for key in self._unique_breakpoints[distances_of_discordant_mates][i]:
+                dists += self._unique_breakpoints[distances_of_discordant_mates][i][key] * [medians[i] - key]
+
+        return dists
+
     def get_complement(self):
         try:
             return self._target.edges[self._origin.position._hash]
@@ -449,6 +483,16 @@ class Edge:
 
         for alignment_key in edge._unique_alignment_hashes:
             self.add_alignment_key(alignment_key)
+
+        def update_pos(pos, i, is_discordant_mates, n):
+            if not pos in self._unique_breakpoints[is_discordant_mates][i]:
+                self._unique_breakpoints[is_discordant_mates][i][pos] = 0
+            self._unique_breakpoints[is_discordant_mates][i][pos] += n
+
+        for key in [True, False]:
+            for i in [0, 1]:
+                for breakpoint in edge._unique_breakpoints[key][i]:
+                    update_pos(breakpoint, i, key, edge._unique_breakpoints[key][i][breakpoint])
 
         for _type in edge._types:
             if _type != JunctionTypes.silent_mate:
@@ -465,6 +509,16 @@ class Edge:
             self._unique_alignment_hashes[alignment_key] += 1
         else:
             self._unique_alignment_hashes[alignment_key] = 1
+
+    def add_break_pos(self, pos1, pos2, is_discordant_mates):
+        def update_pos(pos, i):
+            if pos not in self._unique_breakpoints[is_discordant_mates][i]:
+                self._unique_breakpoints[is_discordant_mates][i][pos] = 1
+            else:
+                self._unique_breakpoints[is_discordant_mates][i][pos] += 1
+
+        update_pos(pos1.pos, 0)
+        update_pos(pos2.pos, 1)
 
     def get_count(self, _type):
         if _type in self._types:
@@ -576,8 +630,9 @@ class Graph:
             node2.insert_edge(edge)
 
         edge.add_type(_type, 1)
-        if node1 == edge._origin:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
+        if node1 == edge._origin and _type != JunctionTypes.cigar_splice_junction :  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
+            edge.add_break_pos(pos1, pos2, (_type == JunctionTypes.discordant_mates))
 
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
@@ -876,6 +931,19 @@ class SubGraph():
                         return self.xonic
         self.xonic = 2
 
+    def get_breakpoint_stddev(self):
+        """ Calculates the variance of the breakpoints post merge - low values indicate consistent results"""
+        sq_dists = 0.0
+        n = 0
+        for edge in self.edges:
+            for dist in edge.get_distances_to_breakpoints(False):
+                sq_dists += dist*dist
+                n += 1
+        if n > 0:
+            return math.sqrt(sq_dists / float(n))
+        else:
+            return 0.0
+
     def __str__(self):
         """Makes tabular output"""
         node_a, node_b = self.edges[0]._origin, self.edges[0]._target
@@ -883,6 +951,10 @@ class SubGraph():
         dist = node_a.position.get_dist(node_b.position, False)
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
+
+        print "bp entropy:"
+        print "\t",self.get_breakpoint_stddev()
+        #print "\t",self.get_breakpoint_stddev()
 
         return (
             "%s\t%i\t%s\t"
@@ -898,7 +970,7 @@ class SubGraph():
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
-                      self.edges[0].get_entropy(), self.get_overall_entropy(),  # Entropy stats
+                      self.edges[0].get_entropy_of_alignments(), self.get_overall_entropy(),  # Entropy stats
                       "&".join([str(edge) for edge in self.edges])))  # Data structure
 
     def get_overall_entropy(self):
@@ -1710,7 +1782,7 @@ class IntronDecomposition:
             """Total of 8 reads is minimum, of which 2 must be
             discordant and the entropy must be above 0.55"""
 
-            entropy = subnet.edges[0].get_entropy()
+            entropy = subnet.edges[0].get_entropy_of_alignments()
             if entropy < MIN_SUBNET_ENTROPY:
                 subnet.discarded.append("entropy=" + str(entropy) + '<' + str(MIN_SUBNET_ENTROPY))
 
