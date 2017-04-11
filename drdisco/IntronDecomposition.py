@@ -86,6 +86,7 @@ def merge_frequency_tables(frequency_tables):
 
     return new_frequency_table
 
+
 def list_to_freq_table(as_list):
     table = {}
     for val in as_list:
@@ -93,6 +94,7 @@ def list_to_freq_table(as_list):
             table[val] = 0
         table[val] += 1
     return table
+
 
 def bam_parse_alignment_offset(cigartuple):
     pos = 0
@@ -452,13 +454,13 @@ class Edge:
     def get_distances_to_breakpoints(self, distances_of_discordant_mates):
         """
          In the following case all (non-disco) breakpoints are nearly identical:
-         
+
           [==========> |
             [========> |
            [=========> |
           [==========> |
            [=========> |
-        
+
          and here quite variable:
 
           [=========>   |
@@ -466,12 +468,11 @@ class Edge:
            [=========>  |
           [===========> |
            [==========> |
-        
+
         Here we return the dist to the median of each of the values (0,0,0,0,0) for top example, (-1, -1, 0, 2, 2) for bottom
         """
- 
-        medians = (self._origin.position.pos, self._target.position.pos)
 
+        medians = (self._origin.position.pos, self._target.position.pos)
         dists = []
         for i in [0, 1]:
             for key in self._unique_breakpoints[distances_of_discordant_mates][i]:
@@ -492,7 +493,7 @@ class Edge:
             self.add_alignment_key(alignment_key)
 
         def update_pos(pos, i, is_discordant_mates, n):
-            if not pos in self._unique_breakpoints[is_discordant_mates][i]:
+            if pos not in self._unique_breakpoints[is_discordant_mates][i]:
                 self._unique_breakpoints[is_discordant_mates][i][pos] = 0
             self._unique_breakpoints[is_discordant_mates][i][pos] += n
 
@@ -637,7 +638,7 @@ class Graph:
             node2.insert_edge(edge)
 
         edge.add_type(_type, 1)
-        if node1 == edge._origin and _type != JunctionTypes.cigar_splice_junction :  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
+        if node1 == edge._origin and _type != JunctionTypes.cigar_splice_junction:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
             edge.add_break_pos(pos1, pos2, (_type == JunctionTypes.discordant_mates))
 
@@ -736,10 +737,10 @@ class Graph:
         """searches for other junctions in-between edge+insert size:"""
         def pos_to_range(pos):
             if pos.strand == STRAND_REVERSE:
-                #return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE) - 1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR
+                #  return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE) - 1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR
                 return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE) - 1, pos.pos + MAX_ACCEPTABLE_INSERT_SIZE
             else:
-                #return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE) + 1
+                #  return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE) + 1
                 return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE) + 1
 
         pos1, pos2 = edge_to_prune._origin.position, edge_to_prune._target.position
@@ -946,7 +947,8 @@ class SubGraph():
         n = 0
         for edge in self.edges:
             for dist in edge.get_distances_to_breakpoints(False):
-                sq_dists += dist*dist
+                sq_dists += dist ** 2
+                # dist * dist ? math.pow(dist,2)?
                 n += 1
         if n > 0:
             return math.sqrt(sq_dists / float(n))
@@ -955,12 +957,11 @@ class SubGraph():
 
     def get_breakpoint_disco_entropy(self):
         """ Calculates the variance of the breakpoints post merge - low values indicate consistent results"""
-        sq_dists = 0.0
-        n = 0
         as_list = []
+
         for edge in self.edges:
             as_list += edge.get_distances_to_breakpoints(True)
-        
+
         return entropy(list_to_freq_table(as_list))
 
     def __str__(self):
@@ -971,10 +972,6 @@ class SubGraph():
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
 
-        # 2 important variables that may destinguish between contamination and real data
-        # get_breakpoint_stddev()
-        # self.get_breakpoint_disco_entropy()
-
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"
@@ -982,7 +979,8 @@ class SubGraph():
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
             "%i\t%i\t"
-            "%s\t%s\t"  # %.2f\t%.2f\t
+            "%.4f\t%.4f\t"
+            "%.4f\t%.4f\t"
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
                       dist, ("valid" if self.discarded == [] else ','.join(self.discarded)), ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
@@ -990,6 +988,7 @@ class SubGraph():
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
                       self.edges[0].get_entropy_of_alignments(), self.get_overall_entropy(),  # Entropy stats
+                      self.get_breakpoint_stddev(), self.get_breakpoint_disco_entropy(),
                       "&".join([str(edge) for edge in self.edges])))  # Data structure
 
     def get_overall_entropy(self):
@@ -1633,6 +1632,7 @@ class IntronDecomposition:
                 "n-edges"          "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
                 "n-splice-junc-A"  "\t" "n-splice-junc-B"   "\t"
                 "entropy-bp-edge"  "\t" "entropy-all-edges" "\t"
+                "bp-pos-stddev"    "\t" "entropy-disco-bps" "\t"
                 "data-structure"   "\n"
                 "%s" % (''.join([str(subnet) for subnet in ordered])))
 
