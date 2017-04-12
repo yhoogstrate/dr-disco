@@ -1,3 +1,7 @@
+2017-04-12	Youri Hoogstrate	v0.6.0
+	* Changed behavior of pruning: less post-merging steps necessary
+	* Added two extra variables that can be used for classification
+
 2017-04-05	Youri Hoogstrate	v0.5.0
 	* Large improvements in parsing junctions from reads and much better
 	  performance on circRNAs
