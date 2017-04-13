@@ -50,15 +50,34 @@ Running RNA-STAR with fusion settings produces a ``....Chimeric.out.sam`` file, 
 Usage: STAR
 -----------
 
+It is recommended to run STAR with corresponding settings:
 
+```
+STAR --genomeDir ${star_index_dir} \  
+     --readFilesIn ${left_fq_filenames} ${right_fq_filenames} \  
+     --outFileNamePrefix {$prefix} \
+     --outSAMtype BAM SortedByCoordinate \
+     --outSAMstrandField intronMotif \
+     --outFilterIntronMotifs None \
+     --alignIntronMax 200000 \
+     --alignMatesGapMax 200000 \
+     --alignSJDBoverhangMin 10 \
+     --alignEndsType Local \
+     --chimSegmentMin 12 \
+     --chimJunctionOverhangMin 12 \
+     --sjdbGTFfile {$gene_model_gtf} \
+     --sjdbOverhang 100 \
+     --quantMode GeneCounts \
+     --twopass1readsN 18446744073709551615 \
+     --twopassMode Basic
+```
+
+Due to the `chimSegmentMin` and `chimJunctionOverhangMin` settings, STAR shall produce additional output files including `Chimeric.out.sam`. This file needs to be converted to BAM format, e.g. by running `samtools view -bhS Chimeric.out.sam > Chimeric.out.bam`. This generated `ChimericSorted.bam` is the input file for *Dr. Disco*. Note that samtools has changed its commandline interface over time and that the stated command might be slighly different for different versions of samtools. Regardless, the only thin important is to generate a BAM file of the discordant reads sam file (sorting and indices will be taken care of by dr-disco itself).
 
 Usage: dr-disco fix
 -------------------
-If you have as input file `....Chimeric.out.sam`, you should run Dr. Disco as follows:
+The first step of Dr. Disco is fixing the BAM file. Fixing? Is it broken then? It is not in particular broken, but in order to view the file with IGV and get reads properly linked, certain links have to put in place. Also, it is convenient to color the reads by subtype, as the mate and strand are related and discordant mates are usually shifted a bit with respect to the breakpoint. In the fixing steps such annotations are added as read groups. Also, this step ensures proper indexing and sorting. If you have as input file `Chimeric.out.bam`, you can generate the fixed bam file with *Dr. Disco* as follows:
 
-```
-samtools view -bS '....Chimeric.out.sam' > '....Chimeric.out.bam'
-```
 ```
 Usage: dr-disco fix [OPTIONS] OUTPUT_BAM_FILE INPUT_BAM/SAM_FILE
 
@@ -68,19 +87,27 @@ Options:
   --help               Show this message and exit.
 ```
 
-Usage: dr-disco intronic
-------------------------
-To estimate break points at the intronic level, you can proceed with:
+Hence, `dr-disco fix Chimeric.out.fixed.bam Chimeric.out.bam` will do the conversion for you.
+
+Usage: dr-disco detect
+----------------------
+To estimate break points using *Dr. Disco*, you can proceed with:
 
 ```
-export CIRCOS_DIR=~/circos-vxx-xx/
-```
-
-Followed by:
-```
-Usage: dr-disco intronic [OPTIONS] OUTPUT_FILE FUSION_CANDIDATES_INPUT_FILE
-                         BAM_INPUT_FILE
+Usage: dr-disco detect [OPTIONS] OUTPUT_FILE BAM_INPUT_FILE
 
 Options:
-  --help  Show this message and exit.
+  -m, --min-e-score INTEGER  Minimal score to initiate pulling sub-graphs
+                             (larger numbers boost performance but result in
+                             suboptimal results) [default=8]
+  --help                     Show this message and exit.
 ```
+
+Here the `-m` argument controls merging of sub-graphs. If datasets become very large there shall be many subgraphs. However, because this is such a time consuming process, it can be desired to skip some of these.
+Rule of thumb: for every 10.000.000 reads, increase this value with 1. So for 10.000.000-20.000.000 mate pairs choose 1. So for a dataset of 75.000.000 mate pairs, proceed with:
+
+`dr-disco detect -m 7 dr-disco.sample-name.out.txt Chimeric.out.fixed.bam`
+
+
+Currently the results contain many false positives. We're working on understanding the mechanisms behind the noise and we are trying to implement additional background filters.
+
