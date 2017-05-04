@@ -12,6 +12,7 @@ from drdisco.IntronDecomposition import BAMExtract
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
 from drdisco.ChimericAlignment import ChimericAlignmentFixed
+from drdisco.Classify import Classify
 
 """[License: GNU General Public License v3 (GPLv3)]
 
@@ -110,6 +111,15 @@ def CLI_logo_sequence(region, fasta_input_file, offset_negative, offset_positive
     fh_p.write(fh.fetch(_chr, _pos + 1, _pos + offset_positive + 1) + "\n")
     fh_p.close()
     fh.close()
+
+
+@CLI.command(name='classify', short_help='Classifies between true and false positivies, without rerunning a whole dataset.')
+@click.argument('table_input_file', type=click.Path(exists=True))
+@click.argument('table_output_file')
+@click.option('--only-valid', is_flag=True, default=False, help="Only return results marked as 'valid'")
+def CLI_classify(table_input_file, table_output_file, only_valid):
+    cl = Classify(table_input_file)
+    cl.classify(table_output_file, only_valid)
 
 
 if __name__ == '__main__':

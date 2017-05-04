@@ -3,7 +3,7 @@
 # -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
-from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE, MAX_SIZE_CIRCULAR_RNA
+from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MAX_SIZE_CIRCULAR_RNA
 
 import math
 import operator
@@ -884,7 +884,6 @@ class SubGraph():
         self.right_splice_junctions = right_splice_junctions
         self.total_clips = 0
         self.total_score = 0
-        self.discarded = []
 
         self.xonic = 0
 
@@ -975,7 +974,7 @@ class SubGraph():
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"
-            "%s\t%s\t%s\t%s\t"
+            "%s\tunclassified\t%s\t%s\t"
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
             "%i\t%i\t"
@@ -983,7 +982,7 @@ class SubGraph():
             "%.4f\t%.4f\t"
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
-                      dist, ("valid" if self.discarded == [] else ','.join(self.discarded)), ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
+                      dist, ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
@@ -1607,8 +1606,7 @@ class IntronDecomposition:
         fusion_junctions.reindex_sj()
 
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
-        subnets = self.merge_overlapping_subnets(subnets)
-        self.results = self.filter_subnets(subnets)  # Filters based on three rules: entropy, score and background
+        self.results = self.merge_overlapping_subnets(subnets)
 
         for subnet in self.results:
             subnet.classify_intronic_exonic(splice_junctions)
@@ -1793,42 +1791,3 @@ class IntronDecomposition:
 
         log.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(new_subnets)) + " merged subnetwork(s)")
         return new_subnets
-
-    def filter_subnets(self, subnets):
-        log.debug("init")
-        k = 0
-        for subnet in subnets:
-            """Total of 8 reads is minimum, of which 2 must be
-            discordant and the entropy must be above 0.55"""
-
-            entropy = subnet.edges[0].get_entropy_of_alignments()
-            if entropy < MIN_SUBNET_ENTROPY:
-                subnet.discarded.append("entropy=" + str(entropy) + '<' + str(MIN_SUBNET_ENTROPY))
-
-            n_disco = subnet.get_n_discordant_reads() / 2
-            n_split = subnet.get_n_split_reads() / 2
-            n_support = n_disco + n_split
-            n_nodes = sum(subnet.get_n_nodes())
-
-            n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(n_nodes)))
-            if n_disco < n_disco_min:
-                subnet.discarded.append("n_discordant_reads=" + str(n_disco) + "<" + str(n_disco_min))
-
-            n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * n_nodes)
-            n_support_min_new = int(round(pow(1.2 * n_support_min, 0.913)))
-            if n_support < n_support_min_new:
-                subnet.discarded.append("n_support=" + str(n_support) + "<" + str(n_support_min))
-
-            n_disco_max = int(round(35 + (0.55 * n_split)))
-            if n_disco > n_disco_max:
-                subnet.discarded.append("n_disco" + str(n_disco) + ">" + str(n_disco_max))
-
-            n_split_min = int(round((0.52 * n_support) - pow((0.1 * n_support), 1.2) - 2))
-            if n_split < n_split_min:
-                subnet.discarded.append("n_split" + str(n_split) + "<" + str(n_split_min))
-
-            if len(subnet.discarded) > 0:
-                k += 1
-
-        log.info("Filtered " + str(k) + " of the " + str(len(subnets)) + " subnetwork(s)")
-        return subnets

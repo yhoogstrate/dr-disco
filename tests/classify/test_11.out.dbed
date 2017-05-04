@@ -1,0 +1,2 @@
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	genomic-distance	filter-status	circRNA	intronic/exonic	score	soft+hardclips	n-split-reads	n-discordant-reads	n-edges	n-nodes-A	n-nodes-B	n-splice-junc-A	n-splice-junc-B	entropy-bp-edge	entropy-all-edges	bp-pos-stddev	entropy-disco-bps	data-structure
+chr7	151970252	+	chr21	39777764	-	inf	entropy=0.0<0.8,n_discordant_reads=0<1,n_support=1<8	linear	intronic	3	2	1	0	1	1	1	0	0	0.0000	0.0000	0.0000	0.0000	chr7:151970252/151970253(+)->chr21:39777764/39777765(-):(spanning_paired_1_t:1,spanning_paired_2_t:1)
