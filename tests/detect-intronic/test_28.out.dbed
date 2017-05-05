@@ -1,0 +1,3 @@
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	genomic-distance	filter-status	circRNA	intronic/exonic	score	soft+hardclips	n-split-reads	n-discordant-reads	n-edges	n-nodes-A	n-nodes-B	n-splice-junc-A	n-splice-junc-B	entropy-bp-edge	entropy-all-edges	bp-pos-stddev	entropy-disco-bps	data-structure
+chr9	20682162	-	chr9	20748649	-	66487	unclassified	linear	intronic	12	0	0	12	1	1	1	0	0	0.9535	0.9535	0.0000	0.7682	chr9:20682162/20682163(-)->chr9:20748649/20748650(-):(discordant_mates:24)
+chr2	48449065	-	chr9	20682256	-	inf	unclassified	linear	intronic	3	3	1	0	1	1	1	0	0	0.0000	0.0000	0.0000	0.0000	chr2:48449065/48449066(-)->chr9:20682256/20682257(-):(spanning_paired_1:1,spanning_paired_2:1)
