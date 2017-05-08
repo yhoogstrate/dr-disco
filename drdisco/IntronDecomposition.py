@@ -103,12 +103,9 @@ def freq_table_to_list(ft):
         ls = ls + ft[val] * [val]
     return ls
 
-def numpy_lin_regr(ft):
+def lin_regres_from_fq(ft):
     y = sorted(freq_table_to_list(ft))
     x = range(len(y))
-    
-    #print x
-    #print y
     
     fit = scipy.stats.linregress(x, y)
     return fit
@@ -463,7 +460,7 @@ class Edge:
 
         The easiest way to calculate this is based upon the position plus
         the cigar strings. However, if some kind of merge strategy
-        will be added, we may find 'M126' for different positions while
+        will be added, we may find 'M126' for different positions whilepf a;s 
         they have a different meaning. Hence, the combination of the
         position + the CIGAR string would be the unique key we would like
         to use for the fequency table.
@@ -540,12 +537,7 @@ class Edge:
             if _type != JunctionTypes.silent_mate:
                 self.add_type(_type, edge._types[_type])
 
-        print "pre merging:"
-        print self._alignment_counter_positions
         update_ctps(edge)
-        print "post merging:"
-        print self._alignment_counter_positions
-        print
 
     def add_type(self, _type, weight):
         if _type in self._types:
@@ -1026,11 +1018,16 @@ class SubGraph():
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
 
-        #numpy_lin_regr(cpts)
-        print numpy_lin_regr(self.edges[0]._alignment_counter_positions[0])
-        print self.edges[0]._alignment_counter_positions[1]
-        print
+        #lin_regres_from_fq(cpts)
+        lregA = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[0])
+        lregB = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[1])
 
+        if scipy.isnan(lregA.slope):
+            lregA = (0.0, 0.0, 0.0, 1.0, 0.0)
+        
+        if scipy.isnan(lregB.slope):
+            lregB = lregA = (0.0, 0.0, 0.0, 1.0, 0.0)
+        
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"
@@ -1040,6 +1037,9 @@ class SubGraph():
             "%i\t%i\t"
             "%.4f\t%.4f\t"
             "%.4f\t%.4f\t"
+            "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-A
+            "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-B
+            "%.4f\t%.4f\t%.4f\t"
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
                       dist, ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
@@ -1048,6 +1048,11 @@ class SubGraph():
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
                       self.edges[0].get_entropy_of_alignments(), self.get_overall_entropy(),  # Entropy stats
                       self.get_breakpoint_stddev(), self.get_breakpoint_disco_entropy(),
+                      lregA[0], lregA[1], lregA[2], lregA[3], lregA[4],
+                      lregB[0], lregB[1], lregB[2], lregB[3], lregB[4],
+                      1.0 * self.get_n_discordant_reads() / max(self.get_n_split_reads() , 0.1),
+                      1.0 * self.total_clips / self.total_score,
+                      1.0 * ( nodes_a + nodes_b) / len(self.edges),
                       "&".join([str(edge) for edge in self.edges])))  # Data structure
 
     def get_overall_entropy(self):
@@ -1688,12 +1693,15 @@ class IntronDecomposition:
 
         return ("chr-A"            "\t" "pos-A"             "\t" "direction-A"   "\t"
                 "chr-B"            "\t" "pos-B"             "\t" "direction-B"   "\t"
-                "genomic-distance" "\t" "filter-status"     "\t" "circRNA"  "\t" "intronic/exonic"    "\t"
+                "genomic-distance" "\t" "filter-status"     "\t" "circRNA"       "\t" "intronic/exonic"    "\t"
                 "score"            "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
                 "n-edges"          "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
                 "n-splice-junc-A"  "\t" "n-splice-junc-B"   "\t"
                 "entropy-bp-edge"  "\t" "entropy-all-edges" "\t"
                 "bp-pos-stddev"    "\t" "entropy-disco-bps" "\t"
+                "lr-A-slope"       "\t" "lr-A-intercept"    "\t" "lr-A-rvalue"   "\t" "lr-A-pvalue"        "\t" "lr-A-stderr" "\t"
+                "lr-B-slope"       "\t" "lr-B-intercept"    "\t" "lr-B-rvalue"   "\t" "lr-B-pvalue"        "\t" "lr-B-stderr" "\t"
+                "disco/split"      "\t" "clips/score"       "\t" "nodes/edge"    "\t"
                 "data-structure"   "\n"
                 "%s" % (''.join([str(subnet) for subnet in ordered])))
 
