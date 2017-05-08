@@ -11,6 +11,8 @@ import operator
 import pysam
 import HTSeq
 
+import scipy.stats
+
 from drdisco import log
 from .CigarAlignment import cigar_to_cigartuple
 
@@ -95,9 +97,31 @@ def list_to_freq_table(as_list):
         table[val] += 1
     return table
 
+def freq_table_to_list(ft):
+    ls = []
+    for val in ft:
+        ls = ls + ft[val] * [val]
+    return ls
 
-def bam_parse_alignment_offset(cigartuple):
+def numpy_lin_regr(ft):
+    y = sorted(freq_table_to_list(ft))
+    x = range(len(y))
+    
+    #print x
+    #print y
+    
+    fit = scipy.stats.linregress(x, y)
+    return fit
+
+
+def bam_parse_alignment_offset(cigartuple, skip_N = False):
     pos = 0
+    
+    if skip_N:
+        charset = [0, 2]
+    else:
+        charset = [0, 2, 3]
+    
     for chunk in cigartuple:
         """ M	BAM_CMATCH	0
             I	BAM_CINS	1
@@ -110,13 +134,13 @@ def bam_parse_alignment_offset(cigartuple):
             X	BAM_CDIFF	8
             """
 
-        if chunk[0] in [0, 2, 3]:
+        if chunk[0] in charset:
             pos += chunk[1]
 
     return pos
 
 
-def bam_parse_alignment_pos_using_cigar(sa_tag):
+def bam_parse_alignment_pos_using_cigar(sa_tag, skip_N = False):
     """SA tag looks like this:
         ['chr21', 42879876, '85S41M', '3', '-', '1']
         This function calculates the offset relative the the start position
@@ -125,7 +149,7 @@ def bam_parse_alignment_pos_using_cigar(sa_tag):
     pos = sa_tag[1]
     if sa_tag[4] == '+':
         cigartuple = cigar_to_cigartuple(sa_tag[2])
-        pos += bam_parse_alignment_offset(cigartuple)
+        pos += bam_parse_alignment_offset(cigartuple, skip_N = False)
 
     return pos
 
@@ -392,6 +416,7 @@ class Edge:
         self._target = _target
         self._types = {}
         self._unique_alignment_hashes = {}  # Used for determining entropy
+        self._alignment_counter_positions = ({}, {}) 
 
         #  Used for determining entropy / rmsqd:
         self._unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)
@@ -488,14 +513,23 @@ class Edge:
 
     def merge_edge(self, edge):
         """Merges (non splice) edges"""
-
-        for alignment_key in edge._unique_alignment_hashes:
-            self.add_alignment_key(alignment_key)
-
+        
         def update_pos(pos, i, is_discordant_mates, n):
             if pos not in self._unique_breakpoints[is_discordant_mates][i]:
                 self._unique_breakpoints[is_discordant_mates][i][pos] = 0
             self._unique_breakpoints[is_discordant_mates][i][pos] += n
+
+        def update_ctps(edge):
+            for i in [0, 1]:
+                for ctp in edge._alignment_counter_positions[i]:
+                    n = edge._alignment_counter_positions[i][ctp]
+                    if ctp not in self._alignment_counter_positions[i]:
+                        self._alignment_counter_positions[i][ctp] = 0
+                    self._alignment_counter_positions[i][ctp] += n
+
+
+        for alignment_key in edge._unique_alignment_hashes:
+            self.add_alignment_key(alignment_key)
 
         for key in [True, False]:
             for i in [0, 1]:
@@ -505,6 +539,13 @@ class Edge:
         for _type in edge._types:
             if _type != JunctionTypes.silent_mate:
                 self.add_type(_type, edge._types[_type])
+
+        print "pre merging:"
+        print self._alignment_counter_positions
+        update_ctps(edge)
+        print "post merging:"
+        print self._alignment_counter_positions
+        print
 
     def add_type(self, _type, weight):
         if _type in self._types:
@@ -517,6 +558,18 @@ class Edge:
             self._unique_alignment_hashes[alignment_key] += 1
         else:
             self._unique_alignment_hashes[alignment_key] = 1
+
+    def add_ctps(self, ctps):
+        """
+        ctps = (dist1, dist2) << remaining lengths of remaining reads
+        """
+        for i in [0, 1]:
+            ctp = ctps[i]
+            if ctp in self._alignment_counter_positions[i]:
+                self._alignment_counter_positions[i][ctp] += 1
+            else:
+                self._alignment_counter_positions[i][ctp] = 1
+
 
     def add_break_pos(self, pos1, pos2, is_discordant_mates):
         def update_pos(pos, i):
@@ -615,7 +668,7 @@ class Graph:
 
         return None
 
-    def insert_edge(self, pos1, pos2, _type, cigarstrs):
+    def insert_edge(self, pos1, pos2, _type, cigarstrs, ctps):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
@@ -641,6 +694,8 @@ class Graph:
         if node1 == edge._origin and _type != JunctionTypes.cigar_splice_junction:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
             edge.add_break_pos(pos1, pos2, (_type == JunctionTypes.discordant_mates))
+            if ctps != None:
+                edge.add_ctps(ctps)
 
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
@@ -955,7 +1010,7 @@ class SubGraph():
             return 0.0
 
     def get_breakpoint_disco_entropy(self):
-        """ Calculates the variance of the breakpoints post merge - low values indicate consistent results"""
+        """ Calculates the entropy of the breakpoints post merge - low values indicate consistent results"""
         as_list = []
 
         for edge in self.edges:
@@ -970,6 +1025,11 @@ class SubGraph():
         dist = node_a.position.get_dist(node_b.position, False)
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
+
+        #numpy_lin_regr(cpts)
+        print numpy_lin_regr(self.edges[0]._alignment_counter_positions[0])
+        print self.edges[0]._alignment_counter_positions[1]
+        print
 
         return (
             "%s\t%i\t%s\t"
@@ -1385,9 +1445,12 @@ class BAMExtract(object):
                 raise Exception("Unnknown read group: %s", rg)
 
             if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
-                return (pos1, pos2, (read.cigarstring, parsed_SA_tag[2]))
+                return (pos1, pos2, \
+                        (read.cigarstring, parsed_SA_tag[2]), \
+                        (bam_parse_alignment_offset(read.cigar, True), bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]), True))
+                        )
 
-            return (None, None, None)
+            return (None, None, None, None)
 
         log.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
@@ -1401,9 +1464,9 @@ class BAMExtract(object):
             pos1, pos2 = None, None
 
             if JunctionTypeUtils.is_fusion_junction(rg):
-                pos1, pos2, junction = read_to_junction(read, rg, sa[0])
+                pos1, pos2, junction, ctps = read_to_junction(read, rg, sa[0])
                 if pos1 is not None:
-                    fusion_junctions.insert_edge(pos1, pos2, rg, junction)
+                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps)
 
             elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
@@ -1443,9 +1506,9 @@ class BAMExtract(object):
                     if i_pos1 is not None:
                         if internal_edge[2] == JunctionTypes.cigar_splice_junction:
                             # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
-                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None)
+                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None)
                         else:
-                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None)
+                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None)
 
         log.debug("alignment data loaded")
 
