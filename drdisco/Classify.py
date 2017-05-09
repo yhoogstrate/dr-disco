@@ -130,7 +130,7 @@ class Classify:
                         n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * e.n_nodes)
                         n_support_min_new = int(round(pow(1.2 * n_support_min, 0.913)))
                         if e.n_supporting_reads < n_support_min_new:
-                            status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min))  # err msg is wrong, should be 'new'!
+                            status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min_new))
 
                         # @todo subfunc
                         n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
