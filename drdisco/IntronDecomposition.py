@@ -105,6 +105,10 @@ def freq_table_to_list(ft):
 
 def lin_regres_from_fq(ft):
     y = sorted(freq_table_to_list(ft))
+    
+    if(len(y) == 1):
+        y = [y[0], y[0]]
+    
     x = range(len(y))
     
     fit = scipy.stats.linregress(x, y)
@@ -1018,16 +1022,9 @@ class SubGraph():
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
 
-        #lin_regres_from_fq(cpts)
         lregA = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[0])
         lregB = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[1])
 
-        if scipy.isnan(lregA.slope):
-            lregA = (0.0, 0.0, 0.0, 1.0, 0.0)
-        
-        if scipy.isnan(lregB.slope):
-            lregB = lregA = (0.0, 0.0, 0.0, 1.0, 0.0)
-        
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"
