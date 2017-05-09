@@ -97,32 +97,34 @@ def list_to_freq_table(as_list):
         table[val] += 1
     return table
 
+
 def freq_table_to_list(ft):
     ls = []
     for val in ft:
         ls = ls + ft[val] * [val]
     return ls
 
+
 def lin_regres_from_fq(ft):
     y = sorted(freq_table_to_list(ft))
-    
+
     if(len(y) == 1):
         y = [y[0], y[0]]
-    
+
     x = range(len(y))
-    
+
     fit = scipy.stats.linregress(x, y)
     return fit
 
 
-def bam_parse_alignment_offset(cigartuple, skip_N = False):
+def bam_parse_alignment_offset(cigartuple, skip_N=False):
     pos = 0
-    
+
     if skip_N:
         charset = [0, 2]
     else:
         charset = [0, 2, 3]
-    
+
     for chunk in cigartuple:
         """ M	BAM_CMATCH	0
             I	BAM_CINS	1
@@ -141,7 +143,7 @@ def bam_parse_alignment_offset(cigartuple, skip_N = False):
     return pos
 
 
-def bam_parse_alignment_pos_using_cigar(sa_tag, skip_N = False):
+def bam_parse_alignment_pos_using_cigar(sa_tag, skip_N=False):
     """SA tag looks like this:
         ['chr21', 42879876, '85S41M', '3', '-', '1']
         This function calculates the offset relative the the start position
@@ -150,7 +152,7 @@ def bam_parse_alignment_pos_using_cigar(sa_tag, skip_N = False):
     pos = sa_tag[1]
     if sa_tag[4] == '+':
         cigartuple = cigar_to_cigartuple(sa_tag[2])
-        pos += bam_parse_alignment_offset(cigartuple, skip_N = False)
+        pos += bam_parse_alignment_offset(cigartuple, skip_N=False)
 
     return pos
 
@@ -417,7 +419,7 @@ class Edge:
         self._target = _target
         self._types = {}
         self._unique_alignment_hashes = {}  # Used for determining entropy
-        self._alignment_counter_positions = ({}, {}) 
+        self._alignment_counter_positions = ({}, {})
 
         #  Used for determining entropy / rmsqd:
         self._unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)
@@ -464,7 +466,7 @@ class Edge:
 
         The easiest way to calculate this is based upon the position plus
         the cigar strings. However, if some kind of merge strategy
-        will be added, we may find 'M126' for different positions whilepf a;s 
+        will be added, we may find 'M126' for different positions while
         they have a different meaning. Hence, the combination of the
         position + the CIGAR string would be the unique key we would like
         to use for the fequency table.
@@ -514,7 +516,7 @@ class Edge:
 
     def merge_edge(self, edge):
         """Merges (non splice) edges"""
-        
+
         def update_pos(pos, i, is_discordant_mates, n):
             if pos not in self._unique_breakpoints[is_discordant_mates][i]:
                 self._unique_breakpoints[is_discordant_mates][i][pos] = 0
@@ -527,7 +529,6 @@ class Edge:
                     if ctp not in self._alignment_counter_positions[i]:
                         self._alignment_counter_positions[i][ctp] = 0
                     self._alignment_counter_positions[i][ctp] += n
-
 
         for alignment_key in edge._unique_alignment_hashes:
             self.add_alignment_key(alignment_key)
@@ -565,7 +566,6 @@ class Edge:
                 self._alignment_counter_positions[i][ctp] += 1
             else:
                 self._alignment_counter_positions[i][ctp] = 1
-
 
     def add_break_pos(self, pos1, pos2, is_discordant_mates):
         def update_pos(pos, i):
@@ -690,7 +690,7 @@ class Graph:
         if node1 == edge._origin and _type != JunctionTypes.cigar_splice_junction:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
             edge.add_break_pos(pos1, pos2, (_type == JunctionTypes.discordant_mates))
-            if ctps != None:
+            if ctps is not None:
                 edge.add_ctps(ctps)
 
     def reinsert_edges(self, edges):
@@ -1047,9 +1047,9 @@ class SubGraph():
                       self.get_breakpoint_stddev(), self.get_breakpoint_disco_entropy(),
                       lregA[0], lregA[1], lregA[2], lregA[3], lregA[4],
                       lregB[0], lregB[1], lregB[2], lregB[3], lregB[4],
-                      1.0 * self.get_n_discordant_reads() / max(self.get_n_split_reads() , 0.1),
+                      1.0 * self.get_n_discordant_reads() / max(self.get_n_split_reads(), 0.1),
                       1.0 * self.total_clips / self.total_score,
-                      1.0 * ( nodes_a + nodes_b) / len(self.edges),
+                      1.0 * (nodes_a + nodes_b) / len(self.edges),
                       "&".join([str(edge) for edge in self.edges])))  # Data structure
 
     def get_overall_entropy(self):
@@ -1447,10 +1447,7 @@ class BAMExtract(object):
                 raise Exception("Unnknown read group: %s", rg)
 
             if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
-                return (pos1, pos2, \
-                        (read.cigarstring, parsed_SA_tag[2]), \
-                        (bam_parse_alignment_offset(read.cigar, True), bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]), True))
-                        )
+                return (pos1, pos2, (read.cigarstring, parsed_SA_tag[2]), (bam_parse_alignment_offset(read.cigar, True), bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]), True)))
 
             return (None, None, None, None)
 

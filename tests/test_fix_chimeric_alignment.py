@@ -40,6 +40,7 @@ T_TEST_DIR = "tmp/" + TEST_DIR
 if not os.path.exists(T_TEST_DIR):
     os.makedirs(T_TEST_DIR)
 
+
 class TestChimericAlignment(unittest.TestCase):
     def test_01(self):
         input_file = TEST_DIR + "test_terg_01.filtered.bam"

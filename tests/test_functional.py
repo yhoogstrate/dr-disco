@@ -135,7 +135,6 @@ class TestFunctional_detect(unittest.TestCase):
                    input_file_a]
 
         self.assertEqual(subprocess.call(command), 0)
-
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_detect_02(self):
@@ -155,7 +154,6 @@ class TestFunctional_detect(unittest.TestCase):
                    input_file_a]
 
         self.assertEqual(subprocess.call(command), 0)
-
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
@@ -177,14 +175,12 @@ class TestFunctional_classify(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-
         command = ["bin/dr-disco",
                    "classify",
                    input_file,
                    output_file]
 
         self.assertEqual(subprocess.call(command), 0)
-
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_classify_16__only_valid(self):
@@ -195,7 +191,6 @@ class TestFunctional_classify(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-
         command = ["bin/dr-disco",
                    "classify",
                    "--only-valid",
@@ -203,33 +198,7 @@ class TestFunctional_classify(unittest.TestCase):
                    output_file]
 
         self.assertEqual(subprocess.call(command), 0)
-
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
-
-  #def test_16(self):
-        #test_id = '16'
-
-        #input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
-        #test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
-        #output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
-
-        #cl = Classify(input_file)
-        #cl.classify(output_file, False)
-
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-    #def test_16__only_valid(self):
-        #test_id = '16'
-
-        #input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
-        #test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
-        #output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
-
-        #cl = Classify(input_file)
-        #cl.classify(output_file, True)
-
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
 
 
 def main():

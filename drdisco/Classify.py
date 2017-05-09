@@ -105,7 +105,7 @@ class Classify:
         self.input_alignment_file = input_results_file
 
     def classify(self, output_file, only_valid):
-        log.info("Loading " + output_file + "[only_valid=" + {True: 'true', False:'false'}[only_valid] + "]")
+        log.info("Loading " + output_file + "[only_valid=" + {True: 'true', False: 'false'}[only_valid] + "]")
         n = 0
         k = 0
         with open(output_file, 'w') as fh:

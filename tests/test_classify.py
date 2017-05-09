@@ -317,6 +317,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cl.classify(output_file, False)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
     def test_14__only_valid(self):
         test_id = '14'
 
@@ -340,6 +341,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cl.classify(output_file, False)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
     def test_15__only_valid(self):
         test_id = '15'
 
@@ -363,6 +365,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cl.classify(output_file, False)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
     def test_16__only_valid(self):
         test_id = '16'
 
@@ -386,6 +389,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cl.classify(output_file, False)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
     def test_17__only_valid(self):
         test_id = '17'
 
