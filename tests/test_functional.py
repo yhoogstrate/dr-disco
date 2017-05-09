@@ -57,8 +57,8 @@ class TestFunctional_bam_extract(unittest.TestCase):
                    "bam-extract",
                    "chr21:39000000-40000000",
                    "chr5:1-2",
-                   output_file,
-                   input_file]
+                   input_file,
+                   output_file]
 
         self.assertEqual(subprocess.call(command), 0)
 
@@ -93,8 +93,8 @@ class TestFunctional_fix_chimeric(unittest.TestCase):
 
         command = ["bin/dr-disco",
                    "fix",
-                   output_file,
-                   input_file]
+                   input_file,
+                   output_file]
 
         self.assertEqual(subprocess.call(command), 0)
 
@@ -121,37 +121,42 @@ class TestFunctional_detect(unittest.TestCase):
 
     def test_detect_01(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
-        input_file_s = TEST_DIR + "test_01.sam"
-        input_file_a = T_TEST_DIR + "test_01.bam"
 
-        sam_to_fixed_bam(input_file_s, input_file_a)
-        test_file = TEST_DIR + "test_01.out.dbed"
-        output_file = T_TEST_DIR + "test_01.out.dbed"
+        test_id = '01'
+
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
 
         command = ["bin/dr-disco",
                    "detect",
                    "-m", "0",
-                   output_file,
-                   input_file_a]
+                   fixed_bam,
+                   output_file]
 
         self.assertEqual(subprocess.call(command), 0)
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_detect_02(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
-        input_file_s = TEST_DIR + "test_02.sam"
-        input_file_a = T_TEST_DIR + "test_02.bam"
 
-        sam_to_fixed_bam(input_file_s, input_file_a)
+        test_id = '02'
 
-        test_file = TEST_DIR + "test_02.out.dbed"
-        output_file = T_TEST_DIR + "test_02.out.dbed"
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
 
         command = ["bin/dr-disco",
                    "detect",
                    "-m", "0",
-                   output_file,
-                   input_file_a]
+                   fixed_bam,
+                   output_file]
 
         self.assertEqual(subprocess.call(command), 0)
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
