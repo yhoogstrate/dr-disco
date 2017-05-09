@@ -6,6 +6,8 @@ import math
 
 from __init__ import MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE
 
+from drdisco import log
+
 
 """[License: GNU General Public License v3 (GPLv3)]
 
@@ -103,11 +105,15 @@ class Classify:
         self.input_alignment_file = input_results_file
 
     def classify(self, output_file, only_valid):
+        log.info("Loading " + output_file + "[only_valid=" + {True: 'true', False:'false'}[only_valid] + "]")
+        n = 0
+        k = 0
         with open(output_file, 'w') as fh:
             header = True
             with open(self.input_alignment_file, 'r') as fh_in:
                 for line in fh_in:
                     if not header:
+                        n += 1
                         status = []
                         e = Entry(line)
 
@@ -139,6 +145,7 @@ class Classify:
                         if len(status) == 0:
                             e.status = 'valid'
                             fh.write(str(e))
+                            k += 1
                         elif not only_valid:
                             e.status = ','.join(status)
                             fh.write(str(e))
@@ -146,3 +153,5 @@ class Classify:
                     else:
                         fh.write(line)
                         header = False
+
+        log.info("Classified " + str(k) + "/" + str(n) + " as valid")
