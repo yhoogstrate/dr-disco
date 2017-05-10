@@ -91,8 +91,21 @@ class Entry:
         self.n_splice_junc_B = self.line[18]
         self.entropy_bp_edge = float(self.line[19])
         self.entropy_all_edges = float(self.line[20])
-        self.bp_pos_stddev = self.line[21]
+        self.bp_pos_stddev = float(self.line[21])
         self.entropy_disco_bps = self.line[22]
+        self.lr_A_slope = self.line[23]
+        self.lr_A_intercept = self.line[24]
+        self.lr_A_rvalue = self.line[25]
+        self.lr_A_pvalue = self.line[26]
+        self.lr_A_stderr = self.line[27]
+        self.lr_B_slope = self.line[28]
+        self.lr_B_intercept = self.line[29]
+        self.lr_B_rvalue = self.line[30]
+        self.lr_B_pvalue = self.line[31]
+        self.lr_B_stderr = self.line[32]
+        self.disco_split = self.line[33]
+        self.clips_score = self.line[34]
+        self.nodes_edge = float(self.line[35])
 
     def __str__(self):
         line = self.line
@@ -135,12 +148,18 @@ class Classify:
                         # @todo subfunc
                         n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
                         if e.n_discordant_reads > n_disco_max:
-                            status.append("n_disco" + str(e.n_discordant_reads) + ">" + str(n_disco_max))
+                            status.append("n_disco=" + str(e.n_discordant_reads) + ">" + str(n_disco_max))
 
                         # @todo subfunc
                         n_split_min = int(round((0.52 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.2) - 2))
                         if e.n_split_reads < n_split_min:
-                            status.append("n_split" + str(e.n_split_reads) + "<" + str(n_split_min))
+                            status.append("n_split=" + str(e.n_split_reads) + "<" + str(n_split_min))
+                        
+                        # @todo subfunc
+                        slope = 51
+                        bp_pos_stddev_max =  -(slope* e.nodes_edge) + 15 + (2*slope)
+                        if e.bp_pos_stddev > bp_pos_stddev_max:
+                            status.append("bp_pos_stddev=" + str(e.bp_pos_stddev) + ">" + str(bp_pos_stddev_max))
 
                         if len(status) == 0:
                             e.status = 'valid'
