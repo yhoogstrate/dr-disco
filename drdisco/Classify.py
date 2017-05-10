@@ -154,10 +154,10 @@ class Classify:
                         n_split_min = int(round((0.52 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.2) - 2))
                         if e.n_split_reads < n_split_min:
                             status.append("n_split=" + str(e.n_split_reads) + "<" + str(n_split_min))
-                        
+
                         # @todo subfunc
-                        slope = 51
-                        bp_pos_stddev_max =  -(slope* e.nodes_edge) + 15 + (2*slope)
+                        slope = -51
+                        bp_pos_stddev_max = (slope * e.nodes_edge) + 15 + (2 * slope)
                         if e.bp_pos_stddev > bp_pos_stddev_max:
                             status.append("bp_pos_stddev=" + str(e.bp_pos_stddev) + ">" + str(bp_pos_stddev_max))
 
