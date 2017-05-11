@@ -4,7 +4,7 @@
 
 import math
 
-from __init__ import MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE
+from __init__ import MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE
 
 from drdisco import log
 
@@ -140,10 +140,9 @@ class Classify:
                             status.append("n_discordant_reads=" + str(e.n_discordant_reads) + "<" + str(n_disco_min))
 
                         # @todo subfunc
-                        n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * e.n_nodes)
-                        n_support_min_new = int(round(pow(1.2 * n_support_min, 0.913)))
-                        if e.n_supporting_reads < n_support_min_new:
-                            status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min_new))
+                        n_support_min = int(round(pow(4.8 * max(0, e.n_nodes), 0.89)))
+                        if e.n_supporting_reads < n_support_min:
+                            status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min))
 
                         # @todo subfunc
                         # n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
@@ -169,13 +168,12 @@ class Classify:
                             status.append("bp_pos_stddev=" + str(e.bp_pos_stddev) + ">" + str(bp_pos_stddev_max))
 
                         # @todo subfunc
-                        clips_min =(0.19 * e.score) - 25
+                        clips_min = (0.19 * e.score) - 25
                         clips_max = (0.78 * e.score) + 97
                         if e.clips < clips_min:
                             status.append("clips=" + str(e.clips) + "<" + str(clips_min))
                         if e.clips > clips_max:
                             status.append("clips=" + str(e.clips) + ">" + str(clips_max))
-
 
                         if len(status) == 0:
                             e.status = 'valid'
