@@ -1,3 +1,2 @@
-chrA	pos1-s	pos1-e	pos1-d	pos2-s	pos2-e	pos2-d	id	comment
-chr3	131763344	131763345	-	chr3	131978627	131978628	+	p001/test_001_005	shape of real fusion, but recurrent in normals
-chr3	1	131763345	-	chr4	1	231978628	+	nuid
+chr-A	pos-A	direction-A	chr-B	pos-B	direction-B	id	comment
+chr_9_3	131763344	131763345	-	chr3	131978627	131978628	+	p001/test_001_005	shape of real fusion, but recurrent in normals

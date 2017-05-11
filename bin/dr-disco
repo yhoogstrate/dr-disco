@@ -122,12 +122,11 @@ def CLI_logo_sequence(region, fasta_input_file, offset_negative, offset_positive
 def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regions, blacklist_junctions):
     blacklist = Blacklist()
 
-    if blacklist_regions:
-        pass
-        #blacklist.add_regions_from_bed(blacklist_regions)
-
     if blacklist_junctions:
         blacklist.add_junctions_from_file(blacklist_junctions)
+
+    if blacklist_regions:
+        blacklist.add_regions_from_bed(blacklist_regions)
 
     cl = Classify(table_input_file)
     cl.classify(table_output_file, only_valid, blacklist)
