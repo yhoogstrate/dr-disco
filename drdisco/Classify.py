@@ -155,7 +155,7 @@ class Classify:
                             status.append("n_disco=" + str(e.n_discordant_reads) + "<" + str(n_disco_min))
 
                         # @todo subfunc
-                        n_split_min = int(round((0.52 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.2) - 2))
+                        n_split_min = int(round((0.32 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.15) - 4))
                         n_split_max = int(round((0.985 * e.n_supporting_reads) - pow(0.014 * e.n_supporting_reads, 2.20 - ((1 / 15000) * e.n_supporting_reads))))
                         if e.n_split_reads < n_split_min:
                             status.append("n_split=" + str(e.n_split_reads) + "<" + str(n_split_min))
