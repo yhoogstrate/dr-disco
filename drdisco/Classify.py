@@ -78,8 +78,8 @@ class Entry:
 
         self.dist = self.line[6]
         self.status = self.line[7]
-        self.score = self.line[10]
-        self.clips = self.line[11]
+        self.score = int(self.line[10])
+        self.clips = int(self.line[11])
         self.n_split_reads = int(self.line[12])
         self.n_discordant_reads = int(self.line[13])
         self.n_supporting_reads = self.n_split_reads + self.n_discordant_reads
@@ -167,6 +167,15 @@ class Classify:
                         bp_pos_stddev_max = -(slope * e.nodes_edge) + 15 + (2 * slope)
                         if e.bp_pos_stddev > bp_pos_stddev_max:
                             status.append("bp_pos_stddev=" + str(e.bp_pos_stddev) + ">" + str(bp_pos_stddev_max))
+
+                        # @todo subfunc
+                        clips_min =(0.19 * e.score) - 25
+                        clips_max = (0.78 * e.score) + 97
+                        if e.clips < clips_min:
+                            status.append("clips=" + str(e.clips) + "<" + str(clips_min))
+                        if e.clips > clips_max:
+                            status.append("clips=" + str(e.clips) + ">" + str(clips_max))
+
 
                         if len(status) == 0:
                             e.status = 'valid'
