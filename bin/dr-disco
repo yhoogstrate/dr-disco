@@ -12,7 +12,7 @@ from drdisco.IntronDecomposition import BAMExtract
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
 from drdisco.ChimericAlignment import ChimericAlignmentFixed
-from drdisco.Classify import Classify
+from drdisco.Classify import Classify, Blacklist
 
 """[License: GNU General Public License v3 (GPLv3)]
 
@@ -117,9 +117,20 @@ def CLI_logo_sequence(region, fasta_input_file, offset_negative, offset_positive
 @click.argument('table_input_file', type=click.Path(exists=True))
 @click.argument('table_output_file')
 @click.option('--only-valid', is_flag=True, default=False, help="Only return results marked as 'valid'")
-def CLI_classify(table_input_file, table_output_file, only_valid):
+@click.option('--blacklist-regions', help="Blacklist these regions (BED file)")
+@click.option('--blacklist-junctions', help="Blacklist these region-to-region junctions (custom format, see files in ./share/)")
+def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regions, blacklist_junctions):
+    blacklist = Blacklist()
+
+    if blacklist_regions:
+        pass
+        #blacklist.add_regions_from_bed(blacklist_regions)
+
+    if blacklist_junctions:
+        blacklist.add_junctions_from_file(blacklist_junctions)
+
     cl = Classify(table_input_file)
-    cl.classify(table_output_file, only_valid)
+    cl.classify(table_output_file, only_valid, blacklist)
 
 
 if __name__ == '__main__':

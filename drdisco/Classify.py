@@ -6,6 +6,9 @@ import math
 
 from __init__ import MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE
 
+import pysam
+import HTSeq
+
 from drdisco import log
 
 
@@ -34,6 +37,81 @@ from drdisco import log
     You can e-mail me via 'yhoogstrate' at the following webmail domain:
     gmail dot com
 """
+
+
+class Blacklist:
+    """
+    They came... with souls... from the blacklist :)
+    """
+
+    def __init__(self):
+        self.idx_region = HTSeq.GenomicArrayOfSets("auto", stranded=True)
+        self.idx_junctions = HTSeq.GenomicArrayOfSets("auto", stranded=True)
+        self.n = 0
+
+    def add_region(self, _chr, _pos_s, _pos_e, _strands):
+        pass
+
+    def add_junctions_from_file(self, junction_file):
+        log.info("Parsing junction blackist file: " + str(junction_file))
+        header = True
+        with open(junction_file, 'r') as fh:
+            for line in fh:
+                if not header:
+                    params = line.strip().split("\t")
+                    for i in [1,2,5,6]:
+                        params[i] = int(params[i])
+
+                    d1 = params[2] - params[1]
+                    d2 = params[6] - params[5]
+
+                    if d1 < 1 or d2 < 1:
+                        raise ValueError("Too small region (starts are 0-based, ends are 1-based, like BED):\n" + line)
+
+                    if (params[4] < params[0]) or (params[0] == params[4] and params[5] < params[1]):
+                        reg1 = (params[4],params[5],params[6],params[7])
+                        reg2 = (params[0],params[1],params[2],params[3])
+                    else:
+                        reg1 = (params[0],params[1],params[2],params[3])
+                        reg2 = (params[4],params[5],params[6],params[7])
+
+                    if len(params) >= 9:
+                        self.add_junction(reg1, reg2, params[8])
+                    else:
+                        self.add_junction(reg1, reg2, None)
+                else:
+                    header = False
+
+    def add_junction(self, reg1, reg2, id_suffix):
+        uid = str(self.n)
+        if id_suffix:
+            uid += '-' + str(id_suffix)
+        
+        region1 = HTSeq.GenomicInterval(reg1[0], reg1[1], reg1[2], reg1[3])
+        region2 = HTSeq.GenomicInterval(reg2[0], reg2[1], reg2[2], reg2[3])
+
+        self.idx_junctions[region1] += uid
+        self.idx_junctions[region2] += uid
+        self.n += 1
+
+    def is_blacklisted_by_junctions(self, pos1, pos2):
+        if (pos2[0] < pos1[0]) or (pos1[0] == pos2[0] and pos2[1] < pos1[1]):
+            pos3 = pos1
+            pos1 = pos2
+            pos2 = pos3
+        
+        ids1 = set()
+        position = self.idx_junctions[HTSeq.GenomicPosition(pos1[0], pos1[1], pos1[2])]
+        for step in position:
+            ids1.add(step)
+
+        ids2 = set()
+        position = self.idx_junctions[HTSeq.GenomicPosition(pos2[0], pos2[1], pos2[2])]
+        for step in position:
+            ids2.add(step)
+
+        return ids1.intersection(ids2)
+
 
 
 class Entry:
@@ -117,7 +195,7 @@ class Classify:
     def __init__(self, input_results_file):
         self.input_alignment_file = input_results_file
 
-    def classify(self, output_file, only_valid):
+    def classify(self, output_file, only_valid, blacklist):
         log.info("Loading " + output_file + "[only_valid=" + {True: 'true', False: 'false'}[only_valid] + "]")
         n = 0
         k = 0
@@ -174,6 +252,11 @@ class Classify:
                             status.append("clips=" + str(e.clips) + "<" + str(clips_min))
                         if e.clips > clips_max:
                             status.append("clips=" + str(e.clips) + ">" + str(clips_max))
+
+                        # @todo subfunc
+                        blacklisted = blacklist.is_blacklisted_by_junctions((e.chrA, e.posA, e.strandA), (e.chrB, e.posB, e.strandB))
+                        if len(blacklisted) > 0:
+                            status.append("blacklist_junctions=" + ','.join(blacklisted))
 
                         if len(status) == 0:
                             e.status = 'valid'
