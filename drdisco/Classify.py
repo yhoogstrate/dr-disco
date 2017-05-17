@@ -261,11 +261,11 @@ class Classify:
                         e = Entry(line)
 
                         all_entropy_min = -1.0 * (e.score) / (1.2 + e.score) + (1.0 + 0.74)
-                        all_entropy_max = -1.0 * (max(e.score, 171) - 175.0) / (5.0 + max(e.score, 171) - 175.0 ) + (1.0 + 0.965)
+                        all_entropy_max = -1.0 * (max(e.score, 171) - 175.0) / (5.0 + max(e.score, 171) - 175.0) + (1.0 + 0.965)
                         if e.entropy_all_edges < all_entropy_min:
-                            status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(round(all_entropy_min,4)))
+                            status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(round(all_entropy_min, 4)))
                         if e.entropy_all_edges > all_entropy_max:
-                            status.append("entropy=" + str(e.entropy_bp_edge) + '>' + str(round(all_entropy_max,4)))
+                            status.append("entropy=" + str(e.entropy_bp_edge) + '>' + str(round(all_entropy_max, 4)))
 
                         # @todo subfunc
                         n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(e.n_nodes)))

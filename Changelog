@@ -1,3 +1,13 @@
+2017-05-17	Youri Hoogstrate	v0.7.0
+	* Changed CLI interface
+	* Added `dr-disco classify`
+	* Removed classification step from `dr-disco detect` such that
+	  classification can be done without re-running detect completely.
+	* Added blacklist system plus a few known contaminants
+	* Fixed broken nose (dependency)
+	* Adds some extra variables useful for classification
+	* Improved the TP and FP ratio of the filter
+
 2017-04-12	Youri Hoogstrate	v0.6.0
 	* Changed behavior of pruning: less post-merging steps necessary
 	* Added two extra variables that can be used for classification
