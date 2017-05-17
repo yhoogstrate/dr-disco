@@ -3,13 +3,15 @@
 # -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
-from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE, MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE, MAX_SIZE_CIRCULAR_RNA
+from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MAX_SIZE_CIRCULAR_RNA
 
 import math
 import operator
 
 import pysam
 import HTSeq
+
+import scipy.stats
 
 from drdisco import log
 from .CigarAlignment import cigar_to_cigartuple
@@ -96,8 +98,33 @@ def list_to_freq_table(as_list):
     return table
 
 
-def bam_parse_alignment_offset(cigartuple):
+def freq_table_to_list(ft):
+    ls = []
+    for val in ft:
+        ls = ls + ft[val] * [val]
+    return ls
+
+
+def lin_regres_from_fq(ft):
+    y = sorted(freq_table_to_list(ft))
+
+    if(len(y) == 1):
+        y = [y[0], y[0]]
+
+    x = range(len(y))
+
+    fit = scipy.stats.linregress(x, y)
+    return fit
+
+
+def bam_parse_alignment_offset(cigartuple, skip_N=False):
     pos = 0
+
+    if skip_N:
+        charset = [0, 2]
+    else:
+        charset = [0, 2, 3]
+
     for chunk in cigartuple:
         """ M	BAM_CMATCH	0
             I	BAM_CINS	1
@@ -110,13 +137,13 @@ def bam_parse_alignment_offset(cigartuple):
             X	BAM_CDIFF	8
             """
 
-        if chunk[0] in [0, 2, 3]:
+        if chunk[0] in charset:
             pos += chunk[1]
 
     return pos
 
 
-def bam_parse_alignment_pos_using_cigar(sa_tag):
+def bam_parse_alignment_pos_using_cigar(sa_tag, skip_N=False):
     """SA tag looks like this:
         ['chr21', 42879876, '85S41M', '3', '-', '1']
         This function calculates the offset relative the the start position
@@ -125,7 +152,7 @@ def bam_parse_alignment_pos_using_cigar(sa_tag):
     pos = sa_tag[1]
     if sa_tag[4] == '+':
         cigartuple = cigar_to_cigartuple(sa_tag[2])
-        pos += bam_parse_alignment_offset(cigartuple)
+        pos += bam_parse_alignment_offset(cigartuple, skip_N=False)
 
     return pos
 
@@ -392,6 +419,7 @@ class Edge:
         self._target = _target
         self._types = {}
         self._unique_alignment_hashes = {}  # Used for determining entropy
+        self._alignment_counter_positions = ({}, {})
 
         #  Used for determining entropy / rmsqd:
         self._unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)
@@ -489,13 +517,21 @@ class Edge:
     def merge_edge(self, edge):
         """Merges (non splice) edges"""
 
-        for alignment_key in edge._unique_alignment_hashes:
-            self.add_alignment_key(alignment_key)
-
         def update_pos(pos, i, is_discordant_mates, n):
             if pos not in self._unique_breakpoints[is_discordant_mates][i]:
                 self._unique_breakpoints[is_discordant_mates][i][pos] = 0
             self._unique_breakpoints[is_discordant_mates][i][pos] += n
+
+        def update_ctps(edge):
+            for i in [0, 1]:
+                for ctp in edge._alignment_counter_positions[i]:
+                    n = edge._alignment_counter_positions[i][ctp]
+                    if ctp not in self._alignment_counter_positions[i]:
+                        self._alignment_counter_positions[i][ctp] = 0
+                    self._alignment_counter_positions[i][ctp] += n
+
+        for alignment_key in edge._unique_alignment_hashes:
+            self.add_alignment_key(alignment_key)
 
         for key in [True, False]:
             for i in [0, 1]:
@@ -505,6 +541,8 @@ class Edge:
         for _type in edge._types:
             if _type != JunctionTypes.silent_mate:
                 self.add_type(_type, edge._types[_type])
+
+        update_ctps(edge)
 
     def add_type(self, _type, weight):
         if _type in self._types:
@@ -517,6 +555,17 @@ class Edge:
             self._unique_alignment_hashes[alignment_key] += 1
         else:
             self._unique_alignment_hashes[alignment_key] = 1
+
+    def add_ctps(self, ctps):
+        """
+        ctps = (dist1, dist2) << remaining lengths of remaining reads
+        """
+        for i in [0, 1]:
+            ctp = ctps[i]
+            if ctp in self._alignment_counter_positions[i]:
+                self._alignment_counter_positions[i][ctp] += 1
+            else:
+                self._alignment_counter_positions[i][ctp] = 1
 
     def add_break_pos(self, pos1, pos2, is_discordant_mates):
         def update_pos(pos, i):
@@ -615,7 +664,7 @@ class Graph:
 
         return None
 
-    def insert_edge(self, pos1, pos2, _type, cigarstrs):
+    def insert_edge(self, pos1, pos2, _type, cigarstrs, ctps):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
@@ -641,6 +690,8 @@ class Graph:
         if node1 == edge._origin and _type != JunctionTypes.cigar_splice_junction:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
             edge.add_break_pos(pos1, pos2, (_type == JunctionTypes.discordant_mates))
+            if ctps is not None:
+                edge.add_ctps(ctps)
 
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
@@ -884,7 +935,6 @@ class SubGraph():
         self.right_splice_junctions = right_splice_junctions
         self.total_clips = 0
         self.total_score = 0
-        self.discarded = []
 
         self.xonic = 0
 
@@ -956,7 +1006,7 @@ class SubGraph():
             return 0.0
 
     def get_breakpoint_disco_entropy(self):
-        """ Calculates the variance of the breakpoints post merge - low values indicate consistent results"""
+        """ Calculates the entropy of the breakpoints post merge - low values indicate consistent results"""
         as_list = []
 
         for edge in self.edges:
@@ -972,23 +1022,34 @@ class SubGraph():
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
 
+        lregA = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[0])
+        lregB = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[1])
+
         return (
             "%s\t%i\t%s\t"
             "%s\t%i\t%s\t"
-            "%s\t%s\t%s\t%s\t"
+            "%s\tunclassified\t%s\t%s\t"
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
             "%i\t%i\t"
             "%.4f\t%.4f\t"
             "%.4f\t%.4f\t"
+            "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-A
+            "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-B
+            "%.4f\t%.4f\t%.4f\t"
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
-                      dist, ("valid" if self.discarded == [] else ','.join(self.discarded)), ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
+                      dist, ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
                       self.edges[0].get_entropy_of_alignments(), self.get_overall_entropy(),  # Entropy stats
                       self.get_breakpoint_stddev(), self.get_breakpoint_disco_entropy(),
+                      lregA[0], lregA[1], lregA[2], lregA[3], lregA[4],
+                      lregB[0], lregB[1], lregB[2], lregB[3], lregB[4],
+                      1.0 * self.get_n_discordant_reads() / max(self.get_n_split_reads(), 0.1),
+                      1.0 * self.total_clips / self.total_score,
+                      1.0 * (nodes_a + nodes_b) / len(self.edges),
                       "&".join([str(edge) for edge in self.edges])))  # Data structure
 
     def get_overall_entropy(self):
@@ -1386,9 +1447,9 @@ class BAMExtract(object):
                 raise Exception("Unnknown read group: %s", rg)
 
             if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
-                return (pos1, pos2, (read.cigarstring, parsed_SA_tag[2]))
+                return (pos1, pos2, (read.cigarstring, parsed_SA_tag[2]), (bam_parse_alignment_offset(read.cigar, True), bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]), True)))
 
-            return (None, None, None)
+            return (None, None, None, None)
 
         log.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
@@ -1402,9 +1463,9 @@ class BAMExtract(object):
             pos1, pos2 = None, None
 
             if JunctionTypeUtils.is_fusion_junction(rg):
-                pos1, pos2, junction = read_to_junction(read, rg, sa[0])
+                pos1, pos2, junction, ctps = read_to_junction(read, rg, sa[0])
                 if pos1 is not None:
-                    fusion_junctions.insert_edge(pos1, pos2, rg, junction)
+                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps)
 
             elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
@@ -1444,9 +1505,9 @@ class BAMExtract(object):
                     if i_pos1 is not None:
                         if internal_edge[2] == JunctionTypes.cigar_splice_junction:
                             # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
-                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None)
+                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None)
                         else:
-                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None)
+                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None)
 
         log.debug("alignment data loaded")
 
@@ -1607,8 +1668,7 @@ class IntronDecomposition:
         fusion_junctions.reindex_sj()
 
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
-        subnets = self.merge_overlapping_subnets(subnets)
-        self.results = self.filter_subnets(subnets)  # Filters based on three rules: entropy, score and background
+        self.results = self.merge_overlapping_subnets(subnets)
 
         for subnet in self.results:
             subnet.classify_intronic_exonic(splice_junctions)
@@ -1627,12 +1687,15 @@ class IntronDecomposition:
 
         return ("chr-A"            "\t" "pos-A"             "\t" "direction-A"   "\t"
                 "chr-B"            "\t" "pos-B"             "\t" "direction-B"   "\t"
-                "genomic-distance" "\t" "filter-status"     "\t" "circRNA"  "\t" "intronic/exonic"    "\t"
+                "genomic-distance" "\t" "filter-status"     "\t" "circRNA"       "\t" "intronic/exonic"    "\t"
                 "score"            "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
                 "n-edges"          "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
                 "n-splice-junc-A"  "\t" "n-splice-junc-B"   "\t"
                 "entropy-bp-edge"  "\t" "entropy-all-edges" "\t"
                 "bp-pos-stddev"    "\t" "entropy-disco-bps" "\t"
+                "lr-A-slope"       "\t" "lr-A-intercept"    "\t" "lr-A-rvalue"   "\t" "lr-A-pvalue"        "\t" "lr-A-stderr" "\t"
+                "lr-B-slope"       "\t" "lr-B-intercept"    "\t" "lr-B-rvalue"   "\t" "lr-B-pvalue"        "\t" "lr-B-stderr" "\t"
+                "disco/split"      "\t" "clips/score"       "\t" "nodes/edge"    "\t"
                 "data-structure"   "\n"
                 "%s" % (''.join([str(subnet) for subnet in ordered])))
 
@@ -1793,42 +1856,3 @@ class IntronDecomposition:
 
         log.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(new_subnets)) + " merged subnetwork(s)")
         return new_subnets
-
-    def filter_subnets(self, subnets):
-        log.debug("init")
-        k = 0
-        for subnet in subnets:
-            """Total of 8 reads is minimum, of which 2 must be
-            discordant and the entropy must be above 0.55"""
-
-            entropy = subnet.edges[0].get_entropy_of_alignments()
-            if entropy < MIN_SUBNET_ENTROPY:
-                subnet.discarded.append("entropy=" + str(entropy) + '<' + str(MIN_SUBNET_ENTROPY))
-
-            n_disco = subnet.get_n_discordant_reads() / 2
-            n_split = subnet.get_n_split_reads() / 2
-            n_support = n_disco + n_split
-            n_nodes = sum(subnet.get_n_nodes())
-
-            n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(n_nodes)))
-            if n_disco < n_disco_min:
-                subnet.discarded.append("n_discordant_reads=" + str(n_disco) + "<" + str(n_disco_min))
-
-            n_support_min = (MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE * n_nodes)
-            n_support_min_new = int(round(pow(1.2 * n_support_min, 0.913)))
-            if n_support < n_support_min_new:
-                subnet.discarded.append("n_support=" + str(n_support) + "<" + str(n_support_min))
-
-            n_disco_max = int(round(35 + (0.55 * n_split)))
-            if n_disco > n_disco_max:
-                subnet.discarded.append("n_disco" + str(n_disco) + ">" + str(n_disco_max))
-
-            n_split_min = int(round((0.52 * n_support) - pow((0.1 * n_support), 1.2) - 2))
-            if n_split < n_split_min:
-                subnet.discarded.append("n_split" + str(n_split) + "<" + str(n_split_min))
-
-            if len(subnet.discarded) > 0:
-                k += 1
-
-        log.info("Filtered " + str(k) + " of the " + str(len(subnets)) + " subnetwork(s)")
-        return subnets

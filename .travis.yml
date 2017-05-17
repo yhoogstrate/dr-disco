@@ -12,10 +12,13 @@ python:
 #  - "3.5-dev" # 3.5 development branch
 #  - "nightly" # currently points to 3.6-dev
 
+before_install:
+  - sudo apt-get install -qq build-essential gfortran libatlas-base-dev python-pip python-dev
+
 install:
   - sudo pip install flake8
-  - virtualenv -p python2 .venv_pysam_0_9 ; source .venv_pysam_0_9/bin/activate ; pip install pysam==0.9 ; pip install -r requirements.txt ; python setup.py install ; pip install flake8 ; deactivate
-  - virtualenv -p python2 .venv_pysam_0_10 ; source .venv_pysam_0_10/bin/activate ; pip install --use-wheel pysam==0.10 ; pip install -r requirements.txt ; python setup.py install ; pip install flake8 ; deactivate
+  - virtualenv -p python2 .venv_pysam_0_9 ; source .venv_pysam_0_9/bin/activate ; pip install pysam==0.9 ; pip install -r requirements.txt ; python setup.py install ; pip install flake8 nose ; deactivate
+  - virtualenv -p python2 .venv_pysam_0_10 ; source .venv_pysam_0_10/bin/activate ; pip install --use-wheel pysam==0.10 ; pip install -r requirements.txt ; python setup.py install ; pip install flake8 nose ; deactivate
 
 script:
   - source .venv_pysam_0_9/bin/activate && python -c 'import pysam; print (pysam.__version__)' && nosetests -v tests/*.py && deactivate && source .venv_pysam_0_10/bin/activate && python -c 'import pysam; print (pysam.__version__)' && nosetests -v tests/*.py && deactivate

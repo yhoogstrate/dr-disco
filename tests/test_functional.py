@@ -57,8 +57,44 @@ class TestFunctional_bam_extract(unittest.TestCase):
                    "bam-extract",
                    "chr21:39000000-40000000",
                    "chr5:1-2",
-                   output_file,
-                   input_file]
+                   input_file,
+                   output_file]
+
+        self.assertEqual(subprocess.call(command), 0)
+
+        # Bam2Sam
+        fhq = open(output_file_s, "w")
+        fhq.write(pysam.view(output_file))
+        fhq.close()
+
+        if not filecmp.cmp(output_file_s, test_file):
+            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
+
+        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+
+
+class TestFunctional_fix_chimeric(unittest.TestCase):
+    def __get_temp_dirs(self):
+        TEST_DIR = "tests/fix-chimeric/"
+        T_TEST_DIR = "tmp/" + TEST_DIR
+
+        if not os.path.exists(T_TEST_DIR):
+            os.makedirs(T_TEST_DIR)
+
+        return TEST_DIR, T_TEST_DIR
+
+    def test_fix_chimeric_01(self):
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+
+        input_file = TEST_DIR + "test_terg_01.filtered.bam"
+        output_file = T_TEST_DIR + "test_terg_01.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_terg_01.filtered.fixed.sam"
+        test_file = TEST_DIR + "test_terg_01.filtered.fixed.sam"
+
+        command = ["bin/dr-disco",
+                   "fix",
+                   input_file,
+                   output_file]
 
         self.assertEqual(subprocess.call(command), 0)
 
@@ -85,45 +121,88 @@ class TestFunctional_detect(unittest.TestCase):
 
     def test_detect_01(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
-        input_file_s = TEST_DIR + "test_01.sam"
-        input_file_a = T_TEST_DIR + "test_01.bam"
 
-        sam_to_fixed_bam(input_file_s, input_file_a)
-        test_file = TEST_DIR + "test_01.out.dbed"
-        output_file = T_TEST_DIR + "test_01.out.dbed"
+        test_id = '01'
 
-        # ic = IntronDecomposition(input_file_a)
-        # ic.decompose(0)
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
         command = ["bin/dr-disco",
                    "detect",
                    "-m", "0",
-                   output_file,
-                   input_file_a]
+                   fixed_bam,
+                   output_file]
 
         self.assertEqual(subprocess.call(command), 0)
-
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_detect_02(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
-        input_file_s = TEST_DIR + "test_02.sam"
-        input_file_a = T_TEST_DIR + "test_02.bam"
 
-        sam_to_fixed_bam(input_file_s, input_file_a)
+        test_id = '02'
 
-        test_file = TEST_DIR + "test_02.out.dbed"
-        output_file = T_TEST_DIR + "test_02.out.dbed"
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        # ic = IntronDecomposition(input_file_a)
-        # ic.decompose(0)
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
         command = ["bin/dr-disco",
                    "detect",
                    "-m", "0",
-                   output_file,
-                   input_file_a]
+                   fixed_bam,
+                   output_file]
 
         self.assertEqual(subprocess.call(command), 0)
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
+
+class TestFunctional_classify(unittest.TestCase):
+    def __get_temp_dirs(self):
+        TEST_DIR = "tests/classify/"
+        T_TEST_DIR = "tmp/" + TEST_DIR
+
+        if not os.path.exists(T_TEST_DIR):
+            os.makedirs(T_TEST_DIR)
+
+        return TEST_DIR, T_TEST_DIR
+
+    def test_classify_16(self):
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+        test_id = '16'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        command = ["bin/dr-disco",
+                   "classify",
+                   input_file,
+                   output_file]
+
+        self.assertEqual(subprocess.call(command), 0)
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_classify_16__only_valid(self):
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+        test_id = '16'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
+
+        command = ["bin/dr-disco",
+                   "classify",
+                   "--only-valid",
+                   input_file,
+                   output_file]
+
+        self.assertEqual(subprocess.call(command), 0)
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
