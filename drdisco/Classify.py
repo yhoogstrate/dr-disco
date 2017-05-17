@@ -4,7 +4,7 @@
 
 import math
 
-from __init__ import MIN_SUBNET_ENTROPY, MIN_DISCO_PER_SUBNET_PER_NODE
+from __init__ import MIN_DISCO_PER_SUBNET_PER_NODE
 
 import HTSeq
 
@@ -260,9 +260,12 @@ class Classify:
                         status = []
                         e = Entry(line)
 
-                        # @todo subfunc
-                        if e.entropy_bp_edge < MIN_SUBNET_ENTROPY:
-                            status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(MIN_SUBNET_ENTROPY))
+                        all_entropy_min = -1.0 * (e.score) / (1.2 + e.score) + (1.0 + 0.74)
+                        all_entropy_max = -1.0 * (max(e.score, 171) - 175.0) / (5.0 + max(e.score, 171) - 175.0 ) + (1.0 + 0.965)
+                        if e.entropy_all_edges < all_entropy_min:
+                            status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(round(all_entropy_min,4)))
+                        if e.entropy_all_edges > all_entropy_max:
+                            status.append("entropy=" + str(e.entropy_bp_edge) + '>' + str(round(all_entropy_max,4)))
 
                         # @todo subfunc
                         n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(e.n_nodes)))
