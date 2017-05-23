@@ -279,7 +279,7 @@ class Classify:
 
                         # @todo subfunc
                         # n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
-                        n_disco_max = int(round(math.pow(22 * e.n_split_reads, 0.9) + 30))
+                        n_disco_max = int(round(math.pow(22 * e.n_split_reads, 0.9) + 13))
                         n_disco_min = int(round(math.pow(0.0195 * e.n_split_reads, 1.95)))
                         if e.n_discordant_reads > n_disco_max:
                             status.append("n_disco=" + str(e.n_discordant_reads) + ">" + str(n_disco_max))
