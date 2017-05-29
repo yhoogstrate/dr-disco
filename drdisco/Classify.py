@@ -273,7 +273,9 @@ class Classify:
                             status.append("n_discordant_reads=" + str(e.n_discordant_reads) + "<" + str(n_disco_min))
 
                         # @todo subfunc
-                        n_support_min = int(round(pow(4.8 * max(0, e.n_nodes), 0.89)))
+                        n_support_min = (0.12 * pow(max(0, e.n_nodes), 1.7)) + 6.5
+                        n_support_min = int(round(n_support_min))
+
                         if e.n_supporting_reads < n_support_min:
                             status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min))
 
