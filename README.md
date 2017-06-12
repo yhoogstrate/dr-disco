@@ -68,7 +68,7 @@ STAR --genomeDir ${star_index_dir} \
      --sjdbGTFfile {$gene_model_gtf} \
      --sjdbOverhang 100 \
      --quantMode GeneCounts \
-     --twopass1readsN 18446744073709551615 \
+     --twopass1readsN -1 \
      --twopassMode Basic
 ```
 
