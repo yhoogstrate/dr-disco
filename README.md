@@ -33,12 +33,27 @@ The software is available in Bio-Conda and the Galaxy platform under a free and 
 
 Installation
 ------------
+
+Dr. Disco makes use of python2. A typical system wide installation could be achieved as follows:
+
 ```
 git clone https://github.com/yhoogstrate/dr-disco.git
 cd dr-disco
 pip install -r requirements.txt ; # Use pip2 in case you have a py3 system
 python2 setup.py install --user
 ```
+
+However, using virtual environments gives more control over dependencies and local installations may be more convenient. This can be achieved as follows:
+
+```
+git clone https://github.com/yhoogstrate/dr-disco.git
+cd dr-disco
+virtualenv -p python2 .venv
+source .venv/bin/activate
+python setup.py install
+```
+
+Dr. Disco is also available at BioConda but this does not automatically ship with the blacklist files. Also, because of the changes in the built-system of bioconda, this version may be out of sync with the git repo.
 
 [![Bio-Conda installer](https://cdn.rawgit.com/yhoogstrate/dr-disco/master/share/bioconda-badge.svg)](share/bioconda-badge.svg)
 
