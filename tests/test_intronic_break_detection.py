@@ -553,6 +553,25 @@ class TestIntronicBreakDetection(unittest.TestCase):
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_29_mismatch_ratio_and_stddev_b11383(self):
+        test_id = '29'
+
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam)
+
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
+
+        with open(output_file, "w") as fh:
+            ic.export(fh)
+
+        # Test data not checked, should just not throw an exception
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
 
 def main():
     unittest.main()

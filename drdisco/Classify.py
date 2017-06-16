@@ -223,14 +223,14 @@ class Entry:
         self.entropy_all_edges = float(self.line[20])
         self.bp_pos_stddev = float(self.line[21])
         self.entropy_disco_bps = self.line[22]
-        self.lr_A_slope = self.line[23]
+        self.lr_A_slope = float(self.line[23])
         self.lr_A_intercept = self.line[24]
-        self.lr_A_rvalue = self.line[25]
+        self.lr_A_rvalue = float(self.line[25])
         self.lr_A_pvalue = self.line[26]
         self.lr_A_stderr = self.line[27]
-        self.lr_B_slope = self.line[28]
+        self.lr_B_slope = float(self.line[28])
         self.lr_B_intercept = self.line[29]
-        self.lr_B_rvalue = self.line[30]
+        self.lr_B_rvalue = float(self.line[30])
         self.lr_B_pvalue = self.line[31]
         self.lr_B_stderr = self.line[32]
         self.disco_split = self.line[33]
@@ -273,13 +273,15 @@ class Classify:
                             status.append("n_discordant_reads=" + str(e.n_discordant_reads) + "<" + str(n_disco_min))
 
                         # @todo subfunc
-                        n_support_min = int(round(pow(4.8 * max(0, e.n_nodes), 0.89)))
+                        n_support_min = (0.12 * pow(max(0, e.n_nodes), 1.7)) + 6.5
+                        n_support_min = int(round(n_support_min))
+
                         if e.n_supporting_reads < n_support_min:
                             status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min))
 
                         # @todo subfunc
                         # n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
-                        n_disco_max = int(round(math.pow(22 * e.n_split_reads, 0.9) + 30))
+                        n_disco_max = int(round(math.pow(22 * e.n_split_reads, 0.9) + 13))
                         n_disco_min = int(round(math.pow(0.0195 * e.n_split_reads, 1.95)))
                         if e.n_discordant_reads > n_disco_max:
                             status.append("n_disco=" + str(e.n_discordant_reads) + ">" + str(n_disco_max))
@@ -312,6 +314,16 @@ class Classify:
                         blacklisted = blacklist.is_blacklisted((e.chrA, e.posA, e.strandA), (e.chrB, e.posB, e.strandB))
                         if len(blacklisted) > 0:
                             status.append("blacklist=" + '&'.join(blacklisted))
+
+                        # @todo subfunc
+                        log_ratio_slope_max = (3.6 / 2)
+                        log_ratio_rvalue_max = (0.8 / 2)
+                        log_ratio_slope = abs(math.log((e.lr_A_slope + 0.0001) / (e.lr_B_slope + 0.0001)))
+                        log_ratio_rvalue = abs(math.log((e.lr_A_rvalue + 0.0001) / (e.lr_B_rvalue + 0.0001)))
+                        if log_ratio_slope > log_ratio_slope_max:
+                            status.append("log_ratio_slope=" + str(round(log_ratio_slope, 2)) + ">" + str(round(log_ratio_slope_max, 2)))
+                        if log_ratio_rvalue > log_ratio_rvalue_max:
+                            status.append("log_ratio_rvalue=" + str(round(log_ratio_rvalue, 2)) + ">" + str(round(log_ratio_rvalue_max, 2)))
 
                         if len(status) == 0:
                             e.status = 'valid'

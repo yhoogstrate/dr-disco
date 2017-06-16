@@ -1,3 +1,8 @@
+2017-06-16	Youri Hoogstrate	v0.7.1
+	* Allows running `dr-disco fix` in parallel mode (random tmp files)
+	* Classified on slope
+	* Many new entries in blacklists
+
 2017-05-17	Youri Hoogstrate	v0.7.0
 	* Changed CLI interface
 	* Added `dr-disco classify`

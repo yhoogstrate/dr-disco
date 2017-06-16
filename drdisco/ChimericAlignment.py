@@ -4,6 +4,9 @@
 
 import os
 import shutil
+import hashlib
+import random
+import string
 
 import pysam
 
@@ -475,8 +478,15 @@ class ChimericAlignment:
             fh_out.write(a)
 
     def convert(self, bam_file_discordant_fixed, temp_dir):
+        def randstr(n):
+            return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(n))
+
+        h = hashlib.new('sha256')
+        h.update(self.input_alignment_file)
+        uid = h.hexdigest() + randstr(24)
+
         basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
-        basename = temp_dir.rstrip("/") + "/" + basename
+        basename = temp_dir.rstrip("/") + "/" + basename + '-' + uid
 
         # @TODO / consider todo - start straight from sam
         # samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
