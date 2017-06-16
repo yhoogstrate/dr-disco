@@ -7,6 +7,7 @@ import math
 from __init__ import MIN_DISCO_PER_SUBNET_PER_NODE
 
 from drdisco import log
+import HTSeq
 
 
 """[License: GNU General Public License v3 (GPLv3)]
@@ -78,6 +79,8 @@ class DetectOutputEntry:
 
         self.dist = self.line[6]
         self.status = self.line[7]
+        self.circ_lin = self.line[8]
+        self.x_onic = self.line[9]
         self.score = int(self.line[10])
         self.clips = int(self.line[11])
         self.n_split_reads = int(self.line[12])
@@ -225,8 +228,24 @@ class DetectOutput:
         log.info("Classified " + str(k) + "/" + str(n) + " as valid")
 
     def integrate(self, gtf_file, output_table):
+        self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
+
+        intronic_linear = []
+
         log.info("hello")
         for e in self:
+            if e.x_onic == 'intronic' and e.circ_lin == 'linear':
+                intronic_linear.append(e)
+            self.idx[ HTSeq.GenomicPosition(e.chrA,e.posA,e.strandA) ].add(e)
+            self.idx[ HTSeq.GenomicPosition(e.chrB,e.posB,e.strandB) ].add( e)
+
+        for e in intronic_linear:
+            # search for corresponding ones
+            # if:
+            #      i == -, then e = <
+            #      i == +, theb e == >
+            #     
+            
             print e
 
 
