@@ -29,7 +29,8 @@ import os
 import subprocess
 
 
-from drdisco.Classify import Classify, Blacklist
+from drdisco.Classify import Blacklist
+from drdisco.DetectOutput import DetectOutput
 
 
 TEST_DIR = "tests/classify/"
@@ -41,7 +42,7 @@ if not os.path.exists(T_TEST_DIR):
     os.makedirs(T_TEST_DIR)
 
 
-class TestIntronicBreakDetection(unittest.TestCase):
+class TestIDetectOutputCalssification(unittest.TestCase):
     def test_01(self):
         test_id = '01'
 
@@ -49,7 +50,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -61,7 +62,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -73,7 +74,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -85,7 +86,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -97,7 +98,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -109,7 +110,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -121,7 +122,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -133,7 +134,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -145,7 +146,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -157,7 +158,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -169,7 +170,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -181,7 +182,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -193,7 +194,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -205,7 +206,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -217,7 +218,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -229,7 +230,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -241,7 +242,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -253,7 +254,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -265,7 +266,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -277,7 +278,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -289,7 +290,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -301,7 +302,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -313,7 +314,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -325,7 +326,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -337,7 +338,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -349,7 +350,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -361,7 +362,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -373,7 +374,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -385,7 +386,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -397,7 +398,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -409,7 +410,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -421,7 +422,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -433,7 +434,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -445,7 +446,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -457,7 +458,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -469,7 +470,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -481,7 +482,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -493,7 +494,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -505,7 +506,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -517,7 +518,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -529,7 +530,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -541,7 +542,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -553,7 +554,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
@@ -565,7 +566,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
-        cl = Classify(input_file)
+        cl = DetectOutput(input_file)
         cl.classify(output_file, True, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())

@@ -12,7 +12,10 @@ from drdisco.IntronDecomposition import BAMExtract
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
 from drdisco.ChimericAlignment import ChimericAlignmentFixed
-from drdisco.Classify import Classify, Blacklist
+
+from drdisco.Classify import Blacklist
+from drdisco.DetectOutput import DetectOutput
+
 
 """[License: GNU General Public License v3 (GPLv3)]
 
@@ -128,8 +131,27 @@ def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regi
     if blacklist_regions:
         blacklist.add_regions_from_bed(blacklist_regions)
 
+    cl = DetectOutput(table_input_file)
+    cl.classify(table_output_file, only_valid, blacklist)
+
+
+@CLI.command(name='integrate', short_help='Maps junctions back together that are likely to correspond to the same fusion event.')
+@click.argument('table_input_file', type=click.Path(exists=True))
+@click.argument('table_output_file')
+@click.option('--gtf', help="Use gene annotation (GTF file)")
+def CLI_integrate(table_input_file, table_output_file, gtf):
+    """
+    blacklist = Blacklist()
+
+    if blacklist_junctions:
+        blacklist.add_junctions_from_file(blacklist_junctions)
+
+    if blacklist_regions:
+        blacklist.add_regions_from_bed(blacklist_regions)
+
     cl = Classify(table_input_file)
     cl.classify(table_output_file, only_valid, blacklist)
+    """
 
 
 if __name__ == '__main__':
