@@ -70,7 +70,7 @@ def CLI_unfix_chimeric_alignment(temp_dir, input_alignment_file, output_alignmen
 
 
 @CLI.command(name='detect', short_help='Detects and interprets intronic break points')
-@click.option("--min-e-score", "-m", default=8, help="Minimal score to initiate pulling sub-graphs (larger numbers boost performance but result in suboptimal results)")
+@click.option("--min-e-score", "-m", default=8, help="Minimal score to initiate pulling sub-graphs (larger numbers boost performance but result in suboptimal results) [default=8]")
 @click.argument('bam_input_file', type=click.Path(exists=True))
 @click.argument('output_file', type=click.File('w'))
 def CLI_detect_break_points(min_e_score, bam_input_file, output_file):

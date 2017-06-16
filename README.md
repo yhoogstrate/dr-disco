@@ -45,12 +45,16 @@ python2 setup.py install --user
 Usage
 =====
 
-Running RNA-STAR with fusion settings produces a ``....Chimeric.out.sam`` file, containing all discordant reads. This alignment does not properly link mates together because of some incorrect SAM-tags. This tool, `dr-disco fix-chimeric`, is able to solve these issues and allows you to view the discordant reads in IGV in much more detail. Because the tool makes the **disco**rdant alignments **healthy** again, we've named it **Dr. Disco**.
+A `dr-disco` pipeline typically consists of the following steps:
+
+1. *Run STAR* in fusion mode to obtain the Chimeric sam file - By the time of writing we used STAR 2.4.2
+2. *Fix* the Chimeric sam file and prepare it for analysis
+3. *Detect* fusion events and merge junctions corresponding to similar fusion transcripts
+4. *Classify* fusion genes based on statistical parameters (and reference genome specific blacklist)
 
 Usage: STAR
 -----------
-
-It is recommended to run STAR with corresponding settings:
+Running RNA-STAR with fusion settings produces a file: ``<...>.Chimeric.out.sam``. This file contains discordant reads (split and spanning). It is recommended to run STAR with corresponding settings:
 
 ```
 STAR --genomeDir ${star_index_dir} \  
@@ -72,29 +76,35 @@ STAR --genomeDir ${star_index_dir} \
      --twopassMode Basic
 ```
 
-Due to the `chimSegmentMin` and `chimJunctionOverhangMin` settings, STAR shall produce additional output files including `Chimeric.out.sam`. This file needs to be converted to BAM format, e.g. by running `samtools view -bhS Chimeric.out.sam > Chimeric.out.bam`. This generated `ChimericSorted.bam` is the input file for *Dr. Disco*. Note that samtools has changed its commandline interface over time and that the stated command might be slighly different for different versions of samtools. Regardless, the only thin important is to generate a BAM file of the discordant reads sam file (sorting and indices will be taken care of by dr-disco itself).
+Due to the `chimSegmentMin` and `chimJunctionOverhangMin` settings, STAR shall produce the additional output file(s). This file may need to be converted to BAM format, e.g. by running `samtools view -bhS Chimeric.out.sam > Chimeric.out.bam`. This generated `ChimericSorted.bam` can then be used as input file for *Dr. Disco*. Note that samtools has changed its commandline interface over time and that the stated command might be slighly different for different versions of samtools.
 
 Usage: dr-disco fix
 -------------------
-The first step of Dr. Disco is fixing the BAM file. Fixing? Is it broken then? It is not in particular broken, but in order to view the file with IGV and get reads properly linked, certain links have to put in place. Also, it is convenient to color the reads by subtype, as the mate and strand are related and discordant mates are usually shifted a bit with respect to the breakpoint. In the fixing steps such annotations are added as read groups. Also, this step ensures proper indexing and sorting. If you have as input file `Chimeric.out.bam`, you can generate the fixed bam file with *Dr. Disco* as follows:
+The first step of Dr. Disco is fixing the BAM file. Fixing? Is it broken then? It is not in particular broken, but in order to view the file with IGV and get reads properly linked, certain links have to put in place. This alignment as produced by STAR does not properly link mates together because of some missing SAM-tags. In `dr-disco fix` these issues are solved and allow a user to view discordant reads in IGV in more detail and by using the spit-view.
+ 
+Also, it is convenient to color the reads by subtype (split or spanning, and how the direction of the break is), as the mate and strand are related and discordant mates are usually shifted a bit with respect to the breakpoint. In the fixing steps such annotations are added as read groups. Also, this step ensures proper indexing and sorting. If you have as input file `<...>.Chimeric.out.bam`, you can generate the fixed bam file with *Dr. Disco* as follows:
 
 ```
-Usage: dr-disco fix [OPTIONS] OUTPUT_BAM_FILE INPUT_BAM/SAM_FILE
+Usage: dr-disco fix [OPTIONS] INPUT_ALIGNMENT_FILE OUTPUT_ALIGNMENT_FILE
 
 Options:
-  -t, --temp-dir PATH  Pathin which temporary files will be stored (default:
-                       /tmp)
+  -t, --temp-dir PATH  Path in which temp files are stored (default: /tmp)
   --help               Show this message and exit.
 ```
 
-Hence, `dr-disco fix Chimeric.out.fixed.bam Chimeric.out.bam` will do the conversion for you.
+Here the INPUT_ALIGNMENT_FILE will be `<...>.Chimeric.out.bam` and OUTPUT_ALIGNMENT_FILE will be `<...>.Chimeric.fixed.bam`.
+Hence, you can generate the fixed bam-file with:
+
+```
+dr-disco fix '<...>.Chimeric.out.bam' 'sample.fixed.bam'
+```
 
 Usage: dr-disco detect
 ----------------------
-To estimate break points using *Dr. Disco*, you can proceed with:
+To estimate breakpoints using *Dr. Disco*, you can proceed with:
 
 ```
-Usage: dr-disco detect [OPTIONS] OUTPUT_FILE BAM_INPUT_FILE
+Usage: dr-disco detect [OPTIONS] BAM_INPUT_FILE OUTPUT_FILE
 
 Options:
   -m, --min-e-score INTEGER  Minimal score to initiate pulling sub-graphs
@@ -103,11 +113,36 @@ Options:
   --help                     Show this message and exit.
 ```
 
-Here the `-m` argument controls merging of sub-graphs. If datasets become very large there shall be many subgraphs. However, because this is such a time consuming process, it can be desired to skip some of these.
-Rule of thumb: for every 10.000.000 reads, increase this value with 1. So for 10.000.000-20.000.000 mate pairs choose 1. So for a dataset of 75.000.000 mate pairs, proceed with:
+Here the `-m` argument controls the level of merging sub-graphs. If datasets become very large there shall be many subgraphs. However, because this is such a time consuming process, it can be desired to skip some of them. Rule of thumb: for every 10.000.000 reads, increase this value with 1. So for 10.000.000-20.000.000 mate pairs choose 1. So for a dataset of 75.000.000 mate pairs, proceed with:
 
-`dr-disco detect -m 7 dr-disco.sample-name.out.txt Chimeric.out.fixed.bam`
+`dr-disco detect -m 7 'sample.fixed.bam' dr-disco.sample-name.all.txt`
 
 
-Currently the results contain many false positives. We're working on understanding the mechanisms behind the noise and we are trying to implement additional background filters.
+Usage: dr-disco classify
+------------------------
+The results from `dr-disco detect` contain many false positives. These may be derived from many different types of issues, like homolpolymeric sequences in the reference genome, rRNA, multimaps and optimal chimeric alignments just by chance. Most of these issues are recognisable by patterns imprinted in some variables in the output table. Then `dr-disco classify` filters the results and you can proceed with:
+
+```
+Usage: dr-disco classify [OPTIONS] TABLE_INPUT_FILE TABLE_OUTPUT_FILE
+
+Options:
+  --only-valid                Only return results marked as 'valid'
+  --blacklist-regions TEXT    Blacklist these regions (BED file)
+  --blacklist-junctions TEXT  Blacklist these region-to-region junctions
+                              (custom format, see files in ./share/)
+  --help                      Show this message and exit.
+```
+
+After analysing our results after classification there were some positives that were systemetically recurrent, but also visual inspection suggested them to be true. These are often new exons or new genes (and marked as discordant probably due to non canonical splice junctions) or mistakes in the reference genome. Hence, as they are in terms of data exactly identical to fusion genes, these can not be filtered out. Therefore we added the option to blacklist certain regions or junctions. There is an important difference between them as a blacklist region prohibits any fusion to be within a certain region while a blacklist junction prohibits a fusion where the one break is in one region and the other break in the other. We have added quite some of these regions to the blacklist. In particular the blacklist for hg38 is rather complete. The blacklist files for hg19 and hh38 can be found here: [./share/](https://github.com/yhoogstrate/dr-disco/tree/master/share).
+
+It may be inconvenient to include the results that are classified as false. By using `--only-valid` the results are restricted to only those classified positive. Hence, a typical way of using `dr-disco classify` for a hg38 reference genome would be:
+
+```
+dr-disco classify \
+    --only-valid \
+    --blacklist-regions "$dr_disco_dir/share/blacklist-regions.hg38.bed" \
+    --blacklist-junctions "$dr_disco_dir/blacklist-junctions.hg38.txt" \
+    dr-disco.sample-name.all.txt \
+    dr-disco.sample-name.filtered.txt
+```
 
