@@ -2,9 +2,6 @@
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
-import math
-
-from __init__ import MIN_DISCO_PER_SUBNET_PER_NODE
 
 import HTSeq
 
