@@ -257,7 +257,6 @@ class DetectOutput:
                     else:
                         pos1 = pos[1]
                         pos2 = pos[1] + 200000
-                    print pos, ' -- ' , (pos[0], pos1, pos2, pos[2])
                     
                     for step in self.idx[HTSeq.GenomicInterval(pos[0], pos1, pos2, pos[2])].steps():
                         for e2 in step[1]:
@@ -269,12 +268,19 @@ class DetectOutput:
                                 
                                 results[e2] += 1
 
-                
-                print
-                print
-                print " --- "
+                top_result = (None, 9999999999999)
                 for r in results:
-                    print '  ',results[r],': ',r
+                    if results[r] >= 2:
+                        d1 = (r.posA - e.posA)
+                        d2 = (r.posB - e.posB)
+                        sq_d = math.sqrt(pow(d1, 2) + pow(d2, 2))
+                        
+                        shared_score = max(e.score, r.score) - min(e.score, r.score)
+                        penalty = 1.0 * sq_d / shared_score
+                        print penalty
+                        if penalty < top_result[1]:
+                            top_result = (r, penalty)
+
 
                 # search for corresponding ones
                 # if:
