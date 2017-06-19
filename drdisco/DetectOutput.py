@@ -228,24 +228,60 @@ class DetectOutput:
         log.info("Classified " + str(k) + "/" + str(n) + " as valid")
 
     def integrate(self, gtf_file, output_table):
-        self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
+        with open(output_table, 'w') as fh_out:
+            self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
 
-        intronic_linear = []
+            intronic_linear = []
 
-        log.info("hello")
-        for e in self:
-            if e.x_onic == 'intronic' and e.circ_lin == 'linear':
-                intronic_linear.append(e)
-            self.idx[ HTSeq.GenomicPosition(e.chrA,e.posA,e.strandA) ].add(e)
-            self.idx[ HTSeq.GenomicPosition(e.chrB,e.posB,e.strandB) ].add( e)
+            for e in self:
+                if e.x_onic == 'intronic' and e.circ_lin == 'linear':
+                    intronic_linear.append(e)
 
-        for e in intronic_linear:
-            # search for corresponding ones
-            # if:
-            #      i == -, then e = <
-            #      i == +, theb e == >
-            #     
-            
-            print e
+                def insert(pos, e):
+                    #position_accession = HTSeq.GenomicPosition(pos[0], pos[1], pos[2])
+                    position_accession = HTSeq.GenomicInterval(pos[0], pos[1], pos[1]+1, pos[2])
+                    position = self.idx[position_accession]
+                    position += e
+
+                insert( (e.chrA, e.posA, e.strandA) ,  e)
+                insert( (e.chrB, e.posB, e.strandB) ,  e)
+
+            for e in intronic_linear:
+                results = {}
+                positions = [(e.chrA,e.posA,e.strandA), (e.chrB,e.posB,e.strandB)]
+
+                for pos in positions:
+                    if pos[2] == '-':
+                        pos1 = pos[1] - 200000
+                        pos2 = pos[1]
+                    else:
+                        pos1 = pos[1]
+                        pos2 = pos[1] + 200000
+                    print pos, ' -- ' , (pos[0], pos1, pos2, pos[2])
+                    
+                    for step in self.idx[HTSeq.GenomicInterval(pos[0], pos1, pos2, pos[2])].steps():
+                        for e2 in step[1]:
+                            if e != e2:
+                                print "  ",str(e2)[0:60]
+                                
+                                if e2 not in results:
+                                    results[e2] = 0
+                                
+                                results[e2] += 1
+
+                
+                print
+                print
+                print " --- "
+                for r in results:
+                    print '  ',results[r],': ',r
+
+                # search for corresponding ones
+                # if:
+                #      i == -, then e = <
+                #      i == +, theb e == >
+                #     
+                
+                print e
 
 
