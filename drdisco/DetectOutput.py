@@ -119,6 +119,7 @@ class DetectOutputEntry:
 class DetectOutput:
     def __init__(self, input_results_file):
         self.input_alignment_file = input_results_file
+        self.header = self.get_header()
 
     def get_header(self):
         with open(self.input_alignment_file, 'r') as fh_in:
@@ -229,6 +230,7 @@ class DetectOutput:
 
     def integrate(self, gtf_file, output_table):
         with open(output_table, 'w') as fh_out:
+            fh_out.write("shared-id\t" + self.header)
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
 
             intronic_linear = []
@@ -246,6 +248,7 @@ class DetectOutput:
                 insert( (e.chrA, e.posA, e.strandA) ,  e)
                 insert( (e.chrB, e.posB, e.strandB) ,  e)
 
+            i = 1
             for e in intronic_linear:
                 results = {}
                 positions = [(e.chrA,e.posA,e.strandA), (e.chrB,e.posB,e.strandB)]
@@ -261,8 +264,6 @@ class DetectOutput:
                     for step in self.idx[HTSeq.GenomicInterval(pos[0], pos1, pos2, pos[2])].steps():
                         for e2 in step[1]:
                             if e != e2:
-                                print "  ",str(e2)[0:60]
-                                
                                 if e2 not in results:
                                     results[e2] = 0
                                 
@@ -277,17 +278,13 @@ class DetectOutput:
                         
                         shared_score = max(e.score, r.score) - min(e.score, r.score)
                         penalty = 1.0 * sq_d / shared_score
-                        print penalty
                         if penalty < top_result[1]:
                             top_result = (r, penalty)
 
+                if top_result[0]:
+                    #print(str(i)+"\t"+str(e))
+                    #print(str(i)+"\t"+str(top_result[0]))
+                    fh_out.write(str(i)+"\t"+str(e))
+                    fh_out.write(str(i)+"\t"+str(top_result[0]))
 
-                # search for corresponding ones
-                # if:
-                #      i == -, then e = <
-                #      i == +, theb e == >
-                #     
-                
-                print e
-
-
+                    i += 1
