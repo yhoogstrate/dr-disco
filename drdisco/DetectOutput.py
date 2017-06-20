@@ -145,7 +145,7 @@ class DetectOutput:
             fh.write(self.get_header())
 
             for e in self:
-                if type(e) == type("  "):
+                if isinstance(e, basestring):
                     fh.write(e)
                 else:
                     status = []
@@ -224,34 +224,45 @@ class DetectOutput:
                         e.status = ','.join(status)
                         fh.write(str(e))
 
-
-
         log.info("Classified " + str(k) + "/" + str(n) + " as valid")
 
     def integrate(self, gtf_file, output_table):
+        def insert_in_index(index, entries, score):
+            if score not in index:
+                index[score] = {}
+
+            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')'
+            index[score][key] = entries
+
         with open(output_table, 'w') as fh_out:
             fh_out.write("shared-id\t" + self.header)
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
 
             intronic_linear = []
+            remainder = []
 
+            # Find 'duplicates' or fusions that belong to each other
             for e in self:
                 if e.x_onic == 'intronic' and e.circ_lin == 'linear':
                     intronic_linear.append(e)
+                else:
+                    remainder.append(e)
 
                 def insert(pos, e):
-                    #position_accession = HTSeq.GenomicPosition(pos[0], pos[1], pos[2])
-                    position_accession = HTSeq.GenomicInterval(pos[0], pos[1], pos[1]+1, pos[2])
+                    # position_accession = HTSeq.GenomicPosition(pos[0], pos[1], pos[2])
+                    position_accession = HTSeq.GenomicInterval(pos[0], pos[1], pos[1] + 1, pos[2])
                     position = self.idx[position_accession]
                     position += e
 
-                insert( (e.chrA, e.posA, e.strandA) ,  e)
-                insert( (e.chrB, e.posB, e.strandB) ,  e)
+                insert((e.chrA, e.posA, e.strandA), e)
+                insert((e.chrB, e.posB, e.strandB), e)
 
-            i = 1
+            # Reorder
+            idx2 = {}
+
             for e in intronic_linear:
                 results = {}
-                positions = [(e.chrA,e.posA,e.strandA), (e.chrB,e.posB,e.strandB)]
+                positions = [(e.chrA, e.posA, e.strandA), (e.chrB, e.posB, e.strandB)]
 
                 for pos in positions:
                     if pos[2] == '-':
@@ -260,13 +271,13 @@ class DetectOutput:
                     else:
                         pos1 = pos[1]
                         pos2 = pos[1] + 200000
-                    
+
                     for step in self.idx[HTSeq.GenomicInterval(pos[0], pos1, pos2, pos[2])].steps():
                         for e2 in step[1]:
                             if e != e2:
                                 if e2 not in results:
                                     results[e2] = 0
-                                
+
                                 results[e2] += 1
 
                 top_result = (None, 9999999999999)
@@ -275,16 +286,31 @@ class DetectOutput:
                         d1 = (r.posA - e.posA)
                         d2 = (r.posB - e.posB)
                         sq_d = math.sqrt(pow(d1, 2) + pow(d2, 2))
-                        
+
                         shared_score = max(e.score, r.score) - min(e.score, r.score)
                         penalty = 1.0 * sq_d / shared_score
                         if penalty < top_result[1]:
                             top_result = (r, penalty)
 
                 if top_result[0]:
-                    #print(str(i)+"\t"+str(e))
-                    #print(str(i)+"\t"+str(top_result[0]))
-                    fh_out.write(str(i)+"\t"+str(e))
-                    fh_out.write(str(i)+"\t"+str(top_result[0]))
+                    insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score)
+                else:
+                    insert_in_index(idx2, [e], e.score)
 
-                    i += 1
+            for e in remainder:
+                insert_in_index(idx2, [e], e.score)
+
+            # Generate output
+            i = 1
+            exported = set([])
+            for score in sorted(idx2.keys(), reverse=True):
+                for key in sorted(idx2[score].keys()):
+                    added = 0
+                    for entry in idx2[score][key]:
+                        if entry not in exported:
+                            fh_out.write(str(i) + "\t" + str(entry))
+                            exported.add(entry)
+                            added += 1
+
+                    if added > 0:
+                        i += 1

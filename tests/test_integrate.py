@@ -42,20 +42,6 @@ if not os.path.exists(T_TEST_DIR):
 
 
 class TestIntronicBreakDetection(unittest.TestCase):
-    def test_01_s027(self):
-        test_id = 'terg_s027'
-
-        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
-        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
-        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
-
-        gtf_file = None
-
-        cl = DetectOutput(input_file)
-        cl.integrate(gtf_file, output_file)
-
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
     def test_02_s041(self):
         test_id = 'terg_s041'
 
@@ -68,7 +54,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cl = DetectOutput(input_file)
         cl.integrate(gtf_file, output_file)
 
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
 def main():
