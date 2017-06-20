@@ -46,13 +46,12 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_id = 'terg_s041'
 
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        gtf_file = TEST_DIR + "test_" + test_id + ".in.gtf"
         test_file = TEST_DIR + "test_" + test_id + ".out.txt"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
 
-        gtf_file = None
-
         cl = DetectOutput(input_file)
-        cl.integrate(gtf_file, output_file)
+        cl.integrate(output_file, gtf_file)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
