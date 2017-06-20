@@ -425,6 +425,9 @@ class Edge:
         self._unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)
                                     False: ({}, {})}  # other types: (origin, target)
 
+        # (first op pair in posA, first of pair in posB) - to determine acceptor/donor
+        self.first_of_pair = (0, 0)
+
     def get_entropy_of_alignments(self):
         """Entropy is an important metric / propery of an edge
         The assumption is that all reads should be 'different', i.e.
