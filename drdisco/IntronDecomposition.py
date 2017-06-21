@@ -977,6 +977,7 @@ class SubGraph():
 
         self.calc_clips()
         self.calc_scores()
+        self.calc_acceptor_donor()
 
         self.reorder_edges()
 
@@ -1018,6 +1019,23 @@ class SubGraph():
             self.total_score += edge.get_scores()
 
         return self.total_score
+
+    def calc_acceptor_donor(self):
+        self.posA_acceptor = 0
+        self.posA_donor = 0
+        self.posB_acceptor = 0
+        self.posB_donor = 0
+
+        for edge in self.edges:
+            for key in edge.acceptor_donor:
+                if key == 'pos-A':
+                    self.posA_acceptor += edge.acceptor_donor[key][0]
+                    self.posA_donor += edge.acceptor_donor[key][1]
+                elif key == 'pos-B':
+                    self.posB_acceptor += edge.acceptor_donor[key][0]
+                    self.posB_donor += edge.acceptor_donor[key][1]
+                else:
+                    raise Exception("error")
 
     def classify_intronic_exonic(self, splice_junctions):
         for pos in [self.edges[0]._origin.position, self.edges[0]._target.position]:
@@ -1064,7 +1082,9 @@ class SubGraph():
 
         return (
             "%s\t%i\t%s\t"
+            "%i\t%i\t"
             "%s\t%i\t%s\t"
+            "%i\t%i\t"
             "%s\tunclassified\t%s\t%s\t"
             "%i\t%i\t%i\t%i\t"
             "%i\t%i\t%i\t"
@@ -1075,7 +1095,9 @@ class SubGraph():
             "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-B
             "%.4f\t%.4f\t%.4f\t"
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
+                      self.posA_acceptor, self.posA_donor,
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
+                      self.posB_acceptor, self.posB_donor,
                       dist, ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
@@ -1763,7 +1785,9 @@ class IntronDecomposition:
         ordered = [subnet[0] for subnet in sorted(ordered, key=operator.itemgetter(1, 2), reverse=True)]
 
         return ("chr-A"            "\t" "pos-A"             "\t" "direction-A"   "\t"
+                "pos-A-acceptor"   "\t" "pos-A-donor"       "\t"
                 "chr-B"            "\t" "pos-B"             "\t" "direction-B"   "\t"
+                "pos-A-acceptor"   "\t" "pos-A-donor"       "\t"
                 "genomic-distance" "\t" "filter-status"     "\t" "circRNA"       "\t" "intronic/exonic"    "\t"
                 "score"            "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
                 "n-edges"          "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"

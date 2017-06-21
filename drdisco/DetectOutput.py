@@ -47,69 +47,62 @@ class DetectOutputEntry:
             0. chr-A
             1. pos-A
             2. direction-A
-            3. chr-B
-            4. pos-B
-            5. direction-B
-            6. genomic-distance
-            7. filter-status
-            8. circRNA
-            9. intronic/exonic
-            10. score
-            11. soft+hardclips
-            12. n-split-reads
-            13. n-discordant-reads
-            14. n-edges
-            15. n-nodes-A
-            16. n-nodes-B
-            17. n-splice-junc-A
-            18. n-splice-junc-B
-            19. entropy-bp-edge
-            20. entropy-all-edges
-            21. bp-pos-stddev
-            22. entropy-disco-bps
-            23. data-structure
+            3. n-acceptor A
+            4. n-donor A
+            5. chr-B
+            6. n-acceptor B
+            7. n-donor B
+            8. pos-B
+            9. direction-B
+            10. genomic-distance
+            11. filter-status
+            12. circRNA
+            13. intronic/exonic
+            14. score
         """
         self.chrA = self.line[0]
         self.posA = int(self.line[1])
         self.strandA = self.line[2]
-
-        self.chrB = self.line[3]
-        self.posB = int(self.line[4])
-        self.strandB = self.line[5]
-
-        self.dist = self.line[6]
-        self.status = self.line[7]
-        self.circ_lin = self.line[8]
-        self.x_onic = self.line[9]
-        self.score = int(self.line[10])
-        self.clips = int(self.line[11])
-        self.n_split_reads = int(self.line[12])
-        self.n_discordant_reads = int(self.line[13])
+        self.acceptorA = self.line[3]
+        self.donorA = self.line[4]
+        self.chrB = self.line[5]
+        self.posB = int(self.line[6])
+        self.strandB = self.line[7]
+        self.acceptorA = self.line[8]
+        self.donorA = self.line[9]
+        self.dist = self.line[10]
+        self.status = self.line[11]
+        self.circ_lin = self.line[12]
+        self.x_onic = self.line[13]
+        self.score = int(self.line[14])
+        self.clips = int(self.line[15])
+        self.n_split_reads = int(self.line[16])
+        self.n_discordant_reads = int(self.line[17])
         self.n_supporting_reads = self.n_split_reads + self.n_discordant_reads
-        self.n_edges = self.line[14]
-        self.n_nodes_A = int(self.line[15])
-        self.n_nodes_B = int(self.line[16])
+        self.n_edges = self.line[18]
+        self.n_nodes_A = int(self.line[19])
+        self.n_nodes_B = int(self.line[20])
         self.n_nodes = self.n_nodes_A + self.n_nodes_B
-        self.n_splice_junc_A = self.line[17]
-        self.n_splice_junc_B = self.line[18]
-        self.entropy_bp_edge = float(self.line[19])
-        self.entropy_all_edges = float(self.line[20])
-        self.bp_pos_stddev = float(self.line[21])
-        self.entropy_disco_bps = self.line[22]
-        self.lr_A_slope = float(self.line[23])
-        self.lr_A_intercept = self.line[24]
-        self.lr_A_rvalue = float(self.line[25])
-        self.lr_A_pvalue = self.line[26]
-        self.lr_A_stderr = self.line[27]
-        self.lr_B_slope = float(self.line[28])
-        self.lr_B_intercept = self.line[29]
-        self.lr_B_rvalue = float(self.line[30])
-        self.lr_B_pvalue = self.line[31]
-        self.lr_B_stderr = self.line[32]
-        self.disco_split = self.line[33]
-        self.clips_score = self.line[34]
-        self.nodes_edge = float(self.line[35])
-        self.structure = self.line[36]
+        self.n_splice_junc_A = self.line[21]
+        self.n_splice_junc_B = self.line[22]
+        self.entropy_bp_edge = float(self.line[23])
+        self.entropy_all_edges = float(self.line[24])
+        self.bp_pos_stddev = float(self.line[25])
+        self.entropy_disco_bps = self.line[26]
+        self.lr_A_slope = float(self.line[27])
+        self.lr_A_intercept = self.line[28]
+        self.lr_A_rvalue = float(self.line[29])
+        self.lr_A_pvalue = self.line[30]
+        self.lr_A_stderr = self.line[31]
+        self.lr_B_slope = float(self.line[32])
+        self.lr_B_intercept = self.line[33]
+        self.lr_B_rvalue = float(self.line[34])
+        self.lr_B_pvalue = self.line[35]
+        self.lr_B_stderr = self.line[36]
+        self.disco_split = self.line[37]
+        self.clips_score = self.line[38]
+        self.nodes_edge = float(self.line[39])
+        self.structure = self.line[40]
 
     def get_donors_acceptors(self, gene_tree):
         def structure_to_acceptor_donor_order():
