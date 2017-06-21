@@ -532,6 +532,14 @@ class Edge:
                         self._alignment_counter_positions[i][ctp] = 0
                     self._alignment_counter_positions[i][ctp] += n
 
+        def update_acceptor_donor(edge):
+            for key in edge.acceptor_donor:
+                if key not in self.acceptor_donor:
+                    self.acceptor_donor[key] = edge.acceptor_donor[key]
+                else:
+                    self.acceptor_donor[key][0] += edge.acceptor_donor[key][0]
+                    self.acceptor_donor[key][1] += edge.acceptor_donor[key][1]
+
         for alignment_key in edge._unique_alignment_hashes:
             self.add_alignment_key(alignment_key)
 
@@ -545,6 +553,7 @@ class Edge:
                 self.add_type(_type, edge._types[_type])
 
         update_ctps(edge)
+        update_acceptor_donor(edge)
 
     def add_type(self, _type, weight):
         if _type in self._types:
@@ -696,14 +705,26 @@ class Graph:
                 edge.add_ctps(ctps)
 
         if acceptor != None:
-            pos_key = str(acceptor)
+            if str(acceptor) == str(edge._origin.position):
+                pos_key = 'pos-A'
+            elif str(acceptor) == str(edge._target.position):
+                pos_key = 'pos-B'
+            else:
+                raise Exception("invalid acceptor position")
+                
             if pos_key not in edge.acceptor_donor:
                 edge.acceptor_donor[pos_key] = [1, 0] # acceptor score, donor score
             else:
                 edge.acceptor_donor[pos_key][0] += 1
 
         if donor != None:
-            pos_key = str(donor)
+            if str(donor) == str(edge._origin.position):
+                pos_key = 'pos-A'
+            elif str(donor) == str(edge._target.position):
+                pos_key = 'pos-B'
+            else:
+                raise Exception("invalid acceptor position")
+
             if pos_key not in edge.acceptor_donor:
                 edge.acceptor_donor[pos_key] = [0, 1] # acceptor score, donor score
             else:
