@@ -8,6 +8,7 @@ from __init__ import MIN_DISCO_PER_SUBNET_PER_NODE
 
 from drdisco import log
 import HTSeq
+import pysam
 
 
 """[License: GNU General Public License v3 (GPLv3)]
@@ -104,35 +105,40 @@ class DetectOutputEntry:
         self.nodes_edge = float(self.line[39])
         self.structure = self.line[40]
 
-    def get_donors_acceptors(self, gene_tree):
-        def structure_to_acceptor_donor_order():
-            idx = {}
-            for a in self.structure.split('&'):
-                for b in a.split(':', 3)[3].strip('()').split(','):
-                    c = b.split(':')
-                    c[0] = c[0].replace('_1', '_[12]').replace('_2', '_[12]')
-                    if c[0] != 'discordant_mates':
-                        if c[0] not in idx:
-                            idx[c[0]] = 0
+    def get_donors_acceptors(self, gtf_file):
+        idx = {}
+        for a in self.structure.split('&'):
+            for b in a.split(':', 3)[3].strip('()').split(','):
+                c = b.split(':')
+                c[0] = c[0].replace('_1', '_[12]').replace('_2', '_[12]')
+                if c[0] != 'discordant_mates':
+                    if c[0] not in idx:
+                        idx[c[0]] = 0
 
-                        idx[c[0]] += int(c[1])
+                    idx[c[0]] += int(c[1])
 
-            print idx
+        def pos_to_gene_str(pos_chr, pos_pos):
+            pos = HTSeq.GenomicInterval(pos_chr , pos_pos, pos_pos + 1, "." )
+            genes = set([])
 
-            """
-                sp[12] ratio: 184 / (184 + 5)
-                sp[12]_t ratio: 5 / (184 + 5)
+            for step in gtf_file[pos]:
+                genes = genes.union(step)
 
-                resulting fusion:
+            genes_str = ','.join(sorted(list(genes)))
+            if not genes:
+                return pos_chr + ':' + str(pos_pos)
+            else:
+                return genes_str
+        
+        genesA = pos_to_gene_str(self.chrA, self.posA)
+        genesB = pos_to_gene_str(self.chrB, self.posB)
 
-                <<2 + <<1
-            """
-
-            return (), ()
-
-        acceptor_pos, donor_pos = structure_to_acceptor_donor_order()
-
-        return ['TMPRSS2'], ['ERG']
+        if self.donorA < self.acceptorA:
+            return genesA + '->' + genesB
+        elif self.donorA > self.acceptorA:
+            return genesB + '->' + genesA
+        else:
+            return genesB + '<->' + genesA
 
     def __str__(self):
         line = self.line
@@ -261,6 +267,16 @@ class DetectOutput:
         with open(output_table, 'w') as fh_out:
             fh_out.write("shared-id\tfusion\t" + self.header)
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
+            
+            gtf_file = HTSeq.GFF_Reader( gtf_file, end_included=True )
+            gene_annotation = HTSeq.GenomicArrayOfSets("auto", stranded=False)
+            for feature in gtf_file:
+                if feature.type == "gene":
+                    if 'gene_name' in feature.attr:
+                        name = feature.attr['gene_name']
+                    else:
+                        name = feature.name
+                    gene_annotation[ feature.iv ] += name
 
             intronic_linear = []
             remainder = []
@@ -324,6 +340,8 @@ class DetectOutput:
             for e in remainder:
                 insert_in_index(idx2, [e], e.score)
 
+            print
+
             # Generate output
             i = 1
             exported = set([])
@@ -332,9 +350,10 @@ class DetectOutput:
                     added = 0
                     for entry in idx2[score][key]:
                         if entry not in exported:
-                            donors, acceptors = entry.get_donors_acceptors(None)
+                            
+                            acceptors_donors = entry.get_donors_acceptors(gene_annotation)
 
-                            fh_out.write(str(i) + "\t" + ','.join(donors) + '->' + ','.join(acceptors) + "\t" + str(entry))
+                            fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + str(entry))
                             exported.add(entry)
                             added += 1
 
