@@ -8,7 +8,6 @@ from __init__ import MIN_DISCO_PER_SUBNET_PER_NODE
 
 from drdisco import log
 import HTSeq
-import pysam
 
 
 """[License: GNU General Public License v3 (GPLv3)]
@@ -118,7 +117,7 @@ class DetectOutputEntry:
                     idx[c[0]] += int(c[1])
 
         def pos_to_gene_str(pos_chr, pos_pos):
-            pos = HTSeq.GenomicInterval(pos_chr , pos_pos, pos_pos + 1, "." )
+            pos = HTSeq.GenomicInterval(pos_chr, pos_pos, pos_pos + 1, ".")
             genes = set([])
 
             for step in gtf_file[pos]:
@@ -129,7 +128,7 @@ class DetectOutputEntry:
                 return pos_chr + ':' + str(pos_pos)
             else:
                 return genes_str
-        
+
         genesA = pos_to_gene_str(self.chrA, self.posA)
         genesB = pos_to_gene_str(self.chrB, self.posB)
 
@@ -267,8 +266,8 @@ class DetectOutput:
         with open(output_table, 'w') as fh_out:
             fh_out.write("shared-id\tfusion\t" + self.header)
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
-            
-            gtf_file = HTSeq.GFF_Reader( gtf_file, end_included=True )
+
+            gtf_file = HTSeq.GFF_Reader(gtf_file, end_included=True)
             gene_annotation = HTSeq.GenomicArrayOfSets("auto", stranded=False)
             for feature in gtf_file:
                 if feature.type == "gene":
@@ -276,7 +275,7 @@ class DetectOutput:
                         name = feature.attr['gene_name']
                     else:
                         name = feature.name
-                    gene_annotation[ feature.iv ] += name
+                    gene_annotation[feature.iv] += name
 
             intronic_linear = []
             remainder = []
@@ -340,8 +339,6 @@ class DetectOutput:
             for e in remainder:
                 insert_in_index(idx2, [e], e.score)
 
-            print
-
             # Generate output
             i = 1
             exported = set([])
@@ -350,7 +347,6 @@ class DetectOutput:
                     added = 0
                     for entry in idx2[score][key]:
                         if entry not in exported:
-                            
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + str(entry))

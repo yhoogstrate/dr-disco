@@ -1,3 +1,9 @@
+2017-06-22	Youri Hoogstrate	v0.8.0
+	* Adds `dr-disco integrate` to find genomic breaks and exon-to-
+	  exon fused splice junctions that belong to the same event
+	* Adds donor acceptor calculation
+	* Adds possibility to add gene names by adding a GTF file
+
 2017-06-16	Youri Hoogstrate	v0.7.1
 	* Allows running `dr-disco fix` in parallel mode (random tmp files)
 	* Classified on slope
