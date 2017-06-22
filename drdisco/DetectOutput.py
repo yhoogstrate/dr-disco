@@ -141,7 +141,7 @@ class DetectOutputEntry:
 
     def __str__(self):
         line = self.line
-        line[7] = self.status
+        line[11] = self.status
         return "\t".join(line) + "\n"
 
 
