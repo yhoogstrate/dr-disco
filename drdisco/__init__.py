@@ -24,7 +24,7 @@
     You can contact me via the github repository at the following url:
     <https://github.com/yhoogstrate/dr-disco>
 
-    You can e-mail me via 'yhoogstrate' at the following webmail domain:
+    You can e-mail me via 'y.hoogstrate' at the following webmail domain:
     gmail dot com
 """
 
