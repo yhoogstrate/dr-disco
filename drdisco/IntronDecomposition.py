@@ -704,20 +704,20 @@ class Graph:
             if ctps is not None:
                 edge.add_ctps(ctps)
 
-        if acceptor != None:
+        if acceptor is not None:
             if str(acceptor) == str(edge._origin.position):
                 pos_key = 'pos-A'
             elif str(acceptor) == str(edge._target.position):
                 pos_key = 'pos-B'
             else:
                 raise Exception("invalid acceptor position")
-                
+
             if pos_key not in edge.acceptor_donor:
-                edge.acceptor_donor[pos_key] = [1, 0] # acceptor score, donor score
+                edge.acceptor_donor[pos_key] = [1, 0]  # acceptor score, donor score
             else:
                 edge.acceptor_donor[pos_key][0] += 1
 
-        if donor != None:
+        if donor is not None:
             if str(donor) == str(edge._origin.position):
                 pos_key = 'pos-A'
             elif str(donor) == str(edge._target.position):
@@ -726,7 +726,7 @@ class Graph:
                 raise Exception("invalid acceptor position")
 
             if pos_key not in edge.acceptor_donor:
-                edge.acceptor_donor[pos_key] = [0, 1] # acceptor score, donor score
+                edge.acceptor_donor[pos_key] = [0, 1]  # acceptor score, donor score
             else:
                 edge.acceptor_donor[pos_key][1] += 1
 
@@ -1536,17 +1536,15 @@ class BAMExtract(object):
                 raise Exception("Unnknown read group: %s", rg)
 
             if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
-                return (
-                            pos1, pos2,
-                            (read.cigarstring, parsed_SA_tag[2]),
-                            (
-                                bam_parse_alignment_offset(read.cigar, True),
-                                bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]), True)
-                            ),
-                            acceptor,
-                            donor
+                return (pos1, pos2,
+                        (read.cigarstring, parsed_SA_tag[2]),
+                        (
+                            bam_parse_alignment_offset(read.cigar, True),
+                            bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]), True)
+                        ),
+                        acceptor,
+                        donor
                         )
-                            
 
             return (None, None, None, None, None, None)
 

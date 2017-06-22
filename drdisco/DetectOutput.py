@@ -108,15 +108,15 @@ class DetectOutputEntry:
         def structure_to_acceptor_donor_order():
             idx = {}
             for a in self.structure.split('&'):
-                for b in a.split(':',3)[3].strip('()').split(','):
+                for b in a.split(':', 3)[3].strip('()').split(','):
                     c = b.split(':')
-                    c[0] = c[0].replace('_1','_[12]').replace('_2','_[12]')
+                    c[0] = c[0].replace('_1', '_[12]').replace('_2', '_[12]')
                     if c[0] != 'discordant_mates':
                         if c[0] not in idx:
                             idx[c[0]] = 0
-                        
+
                         idx[c[0]] += int(c[1])
-            
+
             print idx
 
             """
@@ -127,17 +127,12 @@ class DetectOutputEntry:
 
                 <<2 + <<1
             """
-            
+
             return (), ()
 
         acceptor_pos, donor_pos = structure_to_acceptor_donor_order()
 
-        #if ratio_highest == spanning_paired_12:
-        #   acceptor = (self.chrB, self.posB, self.strandB)
-        #   donor = (self.chrA, self.posA, self.strandA)
-
         return ['TMPRSS2'], ['ERG']
-
 
     def __str__(self):
         line = self.line
@@ -339,7 +334,7 @@ class DetectOutput:
                         if entry not in exported:
                             donors, acceptors = entry.get_donors_acceptors(None)
 
-                            fh_out.write(str(i) + "\t" + ','.join(donors)+'->'+','.join(acceptors) + "\t" + str(entry))
+                            fh_out.write(str(i) + "\t" + ','.join(donors) + '->' + ','.join(acceptors) + "\t" + str(entry))
                             exported.add(entry)
                             added += 1
 
