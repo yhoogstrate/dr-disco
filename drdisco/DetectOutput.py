@@ -352,7 +352,6 @@ class DetectOutput:
                     added = 0
                     for entry in idx2[score][key]:
                         if entry not in exported:
-                            
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + str(entry))

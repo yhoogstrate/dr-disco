@@ -242,7 +242,6 @@ class TestFunctional_integrate(unittest.TestCase):
         test_id = 'terg_s041_b'
 
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
-        gtf_file = TEST_DIR + "test_" + test_id + ".in.gtf"
         test_file = TEST_DIR + "test_" + test_id + ".out.txt"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
 
