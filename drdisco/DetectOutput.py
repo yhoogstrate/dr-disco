@@ -316,7 +316,7 @@ class DetectOutput:
                         pos1 = pos[1]
                         pos2 = pos[1] + 200000
 
-                    for step in self.idx[HTSeq.GenomicInterval(pos[0], pos1, pos2, pos[2])].steps():
+                    for step in self.idx[HTSeq.GenomicInterval(pos[0], max(0, pos1), pos2, pos[2])].steps():
                         for e2 in step[1]:
                             if e != e2:
                                 if e2 not in results:
