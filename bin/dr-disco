@@ -140,19 +140,11 @@ def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regi
 @click.argument('table_output_file')
 @click.option('--gtf', help="Use gene annotation (GTF file)")
 def CLI_integrate(table_input_file, table_output_file, gtf):
-    """
-    blacklist = Blacklist()
-
-    if blacklist_junctions:
-        blacklist.add_junctions_from_file(blacklist_junctions)
-
-    if blacklist_regions:
-        blacklist.add_regions_from_bed(blacklist_regions)
-
-    cl = Classify(table_input_file)
-    cl.classify(table_output_file, only_valid, blacklist)
-    """
-
+    cl = DetectOutput(table_input_file)
+    if gtf:
+        cl.integrate(table_output_file, str(gtf))
+    else:
+        cl.integrate(table_output_file, None)
 
 if __name__ == '__main__':
     main()
