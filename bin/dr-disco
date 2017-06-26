@@ -146,5 +146,6 @@ def CLI_integrate(table_input_file, table_output_file, gtf):
     else:
         cl.integrate(table_output_file, None)
 
+
 if __name__ == '__main__':
     main()
