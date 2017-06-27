@@ -331,7 +331,7 @@ class DetectOutput:
                         d2 = (r.posB - e.posB)
                         sq_d = math.sqrt(pow(d1, 2) + pow(d2, 2))
 
-                        shared_score =  math.sqrt((pow(e.score, 2) + pow(r.score, 2)) * 0.5)
+                        shared_score = math.sqrt((pow(e.score, 2) + pow(r.score, 2)) * 0.5)
                         penalty = 1.0 * sq_d / shared_score
                         if penalty < top_result[1]:
                             top_result = (r, penalty)
