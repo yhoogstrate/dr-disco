@@ -267,15 +267,20 @@ class DetectOutput:
             fh_out.write("shared-id\tfusion\t" + self.header)
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
 
-            gtf_file = HTSeq.GFF_Reader(gtf_file, end_included=True)
             gene_annotation = HTSeq.GenomicArrayOfSets("auto", stranded=False)
-            for feature in gtf_file:
-                if feature.type == "gene":
-                    if 'gene_name' in feature.attr:
-                        name = feature.attr['gene_name']
-                    else:
-                        name = feature.name
-                    gene_annotation[feature.iv] += name
+            if gtf_file:
+                gtf_file = HTSeq.GFF_Reader(gtf_file, end_included=True)
+                for feature in gtf_file:
+                    if feature.type == "gene":
+                        if 'gene_name' in feature.attr:
+                            name = feature.attr['gene_name']
+                        elif 'Name' in feature.attr:
+                            name = feature.attr['Name']
+                        elif 'gene' in feature.attr:
+                            name = feature.attr['gene']
+                        else:
+                            name = feature.name
+                        gene_annotation[feature.iv] += name
 
             intronic_linear = []
             remainder = []
@@ -311,7 +316,7 @@ class DetectOutput:
                         pos1 = pos[1]
                         pos2 = pos[1] + 200000
 
-                    for step in self.idx[HTSeq.GenomicInterval(pos[0], pos1, pos2, pos[2])].steps():
+                    for step in self.idx[HTSeq.GenomicInterval(pos[0], max(0, pos1), pos2, pos[2])].steps():
                         for e2 in step[1]:
                             if e != e2:
                                 if e2 not in results:

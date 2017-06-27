@@ -55,6 +55,32 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_02_s041_nocrash(self):
+        test_id = 'terg_s041_b'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        gtf_file = TEST_DIR + "example_refseq.gff"
+        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
+
+        cl = DetectOutput(input_file)
+        cl.integrate(output_file, gtf_file)
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_02_s041_no_gtf(self):
+        test_id = 'terg_s041_b'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        gtf_file = None
+        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
+
+        cl = DetectOutput(input_file)
+        cl.integrate(output_file, gtf_file)
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
 
 def main():
     unittest.main()

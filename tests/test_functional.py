@@ -206,6 +206,55 @@ class TestFunctional_classify(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
+class TestFunctional_integrate(unittest.TestCase):
+    def __get_temp_dirs(self):
+        TEST_DIR = "tests/integrate/"
+        T_TEST_DIR = "tmp/" + TEST_DIR
+
+        if not os.path.exists(T_TEST_DIR):
+            os.makedirs(T_TEST_DIR)
+
+        return TEST_DIR, T_TEST_DIR
+
+    def test_02_s041(self):
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+
+        test_id = 'terg_s041'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        gtf_file = TEST_DIR + "test_" + test_id + ".in.gtf"
+        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
+
+        command = ["bin/dr-disco",
+                   "integrate",
+                   "--gtf", gtf_file,
+                   input_file,
+                   output_file]
+
+        self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_02_s041_no_gtf(self):
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+
+        test_id = 'terg_s041_b'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
+
+        command = ["bin/dr-disco",
+                   "integrate",
+                   input_file,
+                   output_file]
+
+        self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+
 def main():
     unittest.main()
 
