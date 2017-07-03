@@ -154,6 +154,7 @@ class DetectOutput:
         with open(self.input_alignment_file, 'r') as fh_in:
             for line in fh_in:
                 return line
+        raise Exception("Invalid file: " + str(self.input_alignment_file))
 
     def __iter__(self):
         header = True
