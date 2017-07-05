@@ -4,8 +4,6 @@
 
 import math
 
-from __init__ import MIN_DISCO_PER_SUBNET_PER_NODE
-
 from drdisco import log
 import HTSeq
 
@@ -189,7 +187,7 @@ class DetectOutput:
                         status.append("entropy=" + str(e.entropy_bp_edge) + '>' + str(round(all_entropy_max, 4)))
 
                     # @todo subfunc
-                    n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(e.n_nodes)))
+                    n_disco_min = int(round(pow(((e.n_nodes - 2) * 0.22), 1.7)))
                     if e.n_discordant_reads < n_disco_min:
                         status.append("n_discordant_reads=" + str(e.n_discordant_reads) + "<" + str(n_disco_min))
 
