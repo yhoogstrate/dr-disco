@@ -181,7 +181,7 @@ class DetectOutput:
                     status = []
                     n += 1
 
-                    all_entropy_min = -1.0 * (e.score) / (1.2 + e.score) + (1.0 + 0.74)
+                    all_entropy_min = 0.72 + (math.atan((e.score - 150) * 0.0115) * 0.025)
                     all_entropy_max = -1.0 * (max(e.score, 171) - 175.0) / (5.0 + max(e.score, 171) - 175.0) + (1.0 + 0.965)
                     if e.entropy_all_edges < all_entropy_min:
                         status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(round(all_entropy_min, 4)))
