@@ -34,14 +34,8 @@ The software is available in Bio-Conda and the Galaxy platform under a free and 
 Installation
 ------------
 
-Dr. Disco makes use of python2. A typical system wide installation could be achieved as follows:
-
-```
-git clone https://github.com/yhoogstrate/dr-disco.git
-cd dr-disco
-pip install -r requirements.txt ; # Use pip2 in case you have a py3 system
-python2 setup.py install --user
-```
+Local contained installation (recommended)
+==========================================
 
 However, using virtual environments gives more control over dependencies and local installations may be more convenient. This can be achieved as follows:
 
@@ -52,6 +46,30 @@ virtualenv -p python2 .venv
 source .venv/bin/activate
 python setup.py install
 ```
+
+Local installation
+==================
+
+Dr. Disco makes use of python2. A typical system wide installation could be achieved as follows:
+
+```
+git clone https://github.com/yhoogstrate/dr-disco.git
+cd dr-disco
+pip install -r requirements.txt ; # Use pip2 in case you have a py3 system
+python2 setup.py install --user
+```
+
+System installation
+===================
+```
+git clone https://github.com/yhoogstrate/dr-disco.git
+cd dr-disco
+sudo pip install -r requirements.txt ; # Use pip2 in case you have a py3 system
+sudo python2 setup.py install --user
+```
+
+Pre-compiled
+============
 
 Dr. Disco is also available at BioConda but this does not automatically ship with the blacklist files. Also, because of the changes in the built-system of bioconda, this version may be out of sync with the git repo.
 
@@ -66,9 +84,20 @@ A `dr-disco` pipeline typically consists of the following steps:
 2. *Fix* the Chimeric sam file and prepare it for analysis
 3. *Detect* fusion events and merge junctions corresponding to similar fusion transcripts
 4. *Classify* fusion genes based on statistical parameters (and reference genome specific blacklist)
+5. *Integrate* integrates results from the same genomic event and annotates gene names
+
+CHECK READ ORIENTATION FIRST
+----------------------------
+STAR does not seem to be able to appropriately determine Chimeric reads if the orientation of the mates is not default. Hence, before running STAR, make sure whether the strand orientation is `FR` (_R1: forward, _R2: _reverse). If this is not the case, you can use **fastx_reverse_complement** (http://hannonlab.cshl.edu/fastx_toolkit/) to convert to the appropriate strands.
+
+ - For *forward*, *reverse* (default) you can proceed with the original _R1 and _R2
+ - For *forward*, *forward* you need to use the original _R1 and create and use the reverse complement of _R2.
+ - For *reverse*, *forward* you need to create and use the reverse complement of _R1 and o_R2.
+ - For *reverse*, *reverse* you need to create and use the reverse complement of _R1 and the original of _R2 (but I am not aware of such data...).
 
 Usage: STAR
 -----------
+
 Running RNA-STAR with fusion settings produces a file: ``<...>.Chimeric.out.sam``. This file contains discordant reads (split and spanning). It is recommended to run STAR with corresponding settings:
 
 ```
@@ -125,7 +154,6 @@ Options:
   -m, --min-e-score INTEGER  Minimal score to initiate pulling sub-graphs
                              (larger numbers boost performance but result in
                              suboptimal results) [default=8]
-  --help                     Show this message and exit.
 ```
 
 Here the `-m` argument controls the level of merging sub-graphs. If datasets become very large there shall be many subgraphs. However, because this is such a time consuming process, it can be desired to skip some of them. Rule of thumb: for every 10.000.000 reads, increase this value with 1. So for 10.000.000-20.000.000 mate pairs choose 1. So for a dataset of 75.000.000 mate pairs, proceed with:
@@ -145,7 +173,6 @@ Options:
   --blacklist-regions TEXT    Blacklist these regions (BED file)
   --blacklist-junctions TEXT  Blacklist these region-to-region junctions
                               (custom format, see files in ./share/)
-  --help                      Show this message and exit.
 ```
 
 After analysing our results after classification there were some positives that were systemetically recurrent, but also visual inspection suggested them to be true. These are often new exons or new genes (and marked as discordant probably due to non canonical splice junctions) or mistakes in the reference genome. Hence, as they are in terms of data exactly identical to fusion genes, these can not be filtered out. Therefore we added the option to blacklist certain regions or junctions. There is an important difference between them as a blacklist region prohibits any fusion to be within a certain region while a blacklist junction prohibits a fusion where the one break is in one region and the other break in the other. We have added quite some of these regions to the blacklist. In particular the blacklist for hg38 is rather complete. The blacklist files for hg19 and hh38 can be found here: [./share/](https://github.com/yhoogstrate/dr-disco/tree/master/share).
@@ -161,3 +188,23 @@ dr-disco classify \
     dr-disco.sample-name.filtered.txt
 ```
 
+Usage: dr-disco integrate
+-------------------------
+
+The results of Dr. Disco classify can be integrated into fusion genes by running `dr-disco integrate`. The corresponding GTF file should contain gene annotations that correspond to the used reference genome.
+
+```
+Usage: dr-disco integrate [OPTIONS] TABLE_INPUT_FILE TABLE_OUTPUT_FILE
+
+Options:
+  --gtf TEXT  Use gene annotation (GTF file)
+```
+
+Hence, we could proceed with:
+
+```
+dr-disco integrate \
+    --gtf ENSEMBL 'GRCh38_latest_genomic.gff' \
+    dr-disco.sample-name.filtered.txt \
+    dr-disco.sample-name.integrated.txt
+```
