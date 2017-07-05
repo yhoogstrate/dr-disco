@@ -194,7 +194,7 @@ class DetectOutput:
                         status.append("n_discordant_reads=" + str(e.n_discordant_reads) + "<" + str(n_disco_min))
 
                     # @todo subfunc
-                    n_support_min = (0.12 * pow(max(0, e.n_nodes), 1.7)) + 6.5
+                    n_support_min = (0.215 * pow(max(0, e.n_nodes) - 1.0, 1.59)) + 6.5
                     n_support_min = int(round(n_support_min))
 
                     if e.n_supporting_reads < n_support_min:
