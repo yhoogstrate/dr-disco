@@ -1,3 +1,6 @@
+2017-07-05	Youri Hoogstrate	v0.8.2
+	* Changed another filter, reduces the amount of false negatives
+
 2017-07-05	Youri Hoogstrate	v0.8.1
 	* Looser settings and new shape for entropy filter
 

@@ -4,8 +4,6 @@
 
 import math
 
-from __init__ import MIN_DISCO_PER_SUBNET_PER_NODE
-
 from drdisco import log
 import HTSeq
 
@@ -181,7 +179,7 @@ class DetectOutput:
                     status = []
                     n += 1
 
-                    all_entropy_min = 0.72 + (math.atan((e.score - 150) * 0.0115) * 0.025)
+                    all_entropy_min = 0.705 + (math.atan((e.score - 150) * 0.005) * 0.035)
                     all_entropy_max = -1.0 * (max(e.score, 171) - 175.0) / (5.0 + max(e.score, 171) - 175.0) + (1.0 + 0.965)
                     if e.entropy_all_edges < all_entropy_min:
                         status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(round(all_entropy_min, 4)))
@@ -189,12 +187,12 @@ class DetectOutput:
                         status.append("entropy=" + str(e.entropy_bp_edge) + '>' + str(round(all_entropy_max, 4)))
 
                     # @todo subfunc
-                    n_disco_min = MIN_DISCO_PER_SUBNET_PER_NODE * int(round(math.sqrt(e.n_nodes)))
+                    n_disco_min = int(round(pow(((e.n_nodes - 2) * 0.22), 1.7)))
                     if e.n_discordant_reads < n_disco_min:
                         status.append("n_discordant_reads=" + str(e.n_discordant_reads) + "<" + str(n_disco_min))
 
                     # @todo subfunc
-                    n_support_min = (0.12 * pow(max(0, e.n_nodes), 1.7)) + 6.5
+                    n_support_min = (0.215 * pow(max(0, e.n_nodes) - 1.0, 1.59)) + 6.5
                     n_support_min = int(round(n_support_min))
 
                     if e.n_supporting_reads < n_support_min:
