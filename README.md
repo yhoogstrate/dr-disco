@@ -1,41 +1,26 @@
-Dr. Disco
-=========
+# Dr. Disco
 
-Detection exon-to-exon and genomic breakpoints in RNA-Seq data
---------------------------------------------------------------
+### Detecting exon-to-exon and genomic breakpoints in RNA-Seq data
 
 [![Build Status](https://travis-ci.org/yhoogstrate/dr-disco.svg?branch=master)](https://travis-ci.org/yhoogstrate/dr-disco)
  
  - Free software: GNU General Public License v3 (GPLv3)
 
-Introduction
-------------
+## Introduction
 
 Fusion genes are often driver events in several types of cancer, generally detected with DNA-sequencing (DNA-seq) and more recently with RNA-sequencing (RNA-seq).
 In classical RNA-seq experiments, mRNA is extracted by targeting their poly-A tails, or reverse transcribed using oligo-dT primers. 
-Multiple studies have shown that fusion transcripts can be successfully detected in such data, but the location of the DNA break remains often undetected because the majority of the breaks are in introns and data lacks intronic sequencing reads.
+Multiple studies have shown that fusion transcripts can be successfully detected in such data, but the location of the DNA break remains often undetected because the majority of the breaks are in introns and poly-A RNA-seq data lacks intronic sequencing reads.
 By reverse transcribing rRNA-depleted RNA using random hexamer priming, the RNA library will also include pre-mRNA, covering introns in subsequent alignments.
 
-Here we introduce a computational method for detecting intron-to-intron breaks, corresponding to DNA breaks, on top of exon-to-exon splice junctions of fusion genes, using RNA-seq data only.
-To detect genomic breakpoints, intronic and exonic data are kept separated in a graph and further analysed, with software package  *Dr. Disco*.
+Here we propose a computational method for detecting intron-to-intron breaks, corresponding to DNA breaks, on top of exon-to-exon splice junctions of fusion genes, using RNA-seq data only.
+To detect genomic breakpoints, intronic and exonic data are kept separated in a graph and further analysed.
 The analyses of the graph has built-in solutions for sequencing fragments rather than entire transcripts, for sequencing only the fragments' ends and for multiple exon-to-exon boundaries on top of genomic breaks.
 Unlike most RNA-seq fusion gene detection software, it is not restricted to exons or gene annotations, allowing detection of novel splice junctions, fusions to non-gene regions and fusions of non-polyadenylated transcripts.
 
-In this study its relevance is demonstrated by generating a map of TMPRSS2-ERG breakpoints in a cohort of 50 prostate cancer samples, by using only RNA-seq data.
-TMPRSS2-ERG was predicted in 30 of the 50 patients, of which 28 were found to have intron-to-intron boundaries.
-A map shows in both genes a region enriched with breakpoints, suggesting preference for genomic recombinations in these sub regions.
-In one intron in ERG, most breakpoints are found only in the first part, a transcription factor binding site rich region.
-On top of the advantages RNA-seq has, like detecting splicing patterns and expression profiles, random primed RNA-seq data allows to detect genomic breakpoints.
-Apart from detecting genomic breaks of fusion genes, the software also predicted multiple deletions within a single intron of TMPRSS2.
-Because such deletions do not affect the mRNA, they will not be detected in poly-A RNA-seq data.
-To support downstream analysis and allow integration with workflow management systems, the software makes use of community standard file formats and is therefore also compatible with genome browsers to allow data visualization.
-The software is available in Bio-Conda and the Galaxy platform under a free and open software license.
+## Installation
 
-Installation
-------------
-
-Local contained installation (recommended)
-==========================================
+### Local contained installation (recommended)
 
 However, using virtual environments gives more control over dependencies and local installations may be more convenient. This can be achieved as follows:
 
@@ -47,8 +32,7 @@ source .venv/bin/activate
 python setup.py install
 ```
 
-Local installation
-==================
+### Local installation
 
 Dr. Disco makes use of python2. A typical system wide installation could be achieved as follows:
 
@@ -59,8 +43,8 @@ pip install -r requirements.txt ; # Use pip2 in case you have a py3 system
 python2 setup.py install --user
 ```
 
-System installation
-===================
+### System installation
+
 ```
 git clone https://github.com/yhoogstrate/dr-disco.git
 cd dr-disco
@@ -68,15 +52,13 @@ sudo pip install -r requirements.txt ; # Use pip2 in case you have a py3 system
 sudo python2 setup.py install --user
 ```
 
-Pre-compiled
-============
+### Pre-compiled
 
 Dr. Disco is also available at BioConda but this does not automatically ship with the blacklist files. Also, because of the changes in the built-system of bioconda, this version may be out of sync with the git repo.
 
 [![Bio-Conda installer](https://cdn.rawgit.com/yhoogstrate/dr-disco/master/share/bioconda-badge.svg)](share/bioconda-badge.svg)
 
-Usage
-=====
+### Usage
 
 A `dr-disco` pipeline typically consists of the following steps:
 
@@ -86,8 +68,7 @@ A `dr-disco` pipeline typically consists of the following steps:
 4. *Classify* fusion genes based on statistical parameters (and reference genome specific blacklist)
 5. *Integrate* integrates results from the same genomic event and annotates gene names
 
-CHECK READ ORIENTATION FIRST
-----------------------------
+#### Check mate pair orentation first
 STAR does not seem to be able to appropriately determine Chimeric reads if the orientation of the mates is not default. Hence, before running STAR, make sure whether the strand orientation is `FR` (_R1: forward, _R2: _reverse). If this is not the case, you can use **fastx_reverse_complement** (http://hannonlab.cshl.edu/fastx_toolkit/) to convert to the appropriate strands.
 
  - For *forward*, *reverse* (default) you can proceed with the original _R1 and _R2
@@ -95,8 +76,7 @@ STAR does not seem to be able to appropriately determine Chimeric reads if the o
  - For *reverse*, *forward* you need to create and use the reverse complement of _R1 and o_R2.
  - For *reverse*, *reverse* you need to create and use the reverse complement of _R1 and the original of _R2 (but I am not aware of such data...).
 
-Usage: STAR
------------
+### Step 1: STAR
 
 Running RNA-STAR with fusion settings produces a file: ``<...>.Chimeric.out.sam``. This file contains discordant reads (split and spanning). It is recommended to run STAR with corresponding settings:
 
@@ -122,11 +102,9 @@ STAR --genomeDir ${star_index_dir} \
 
 Due to the `chimSegmentMin` and `chimJunctionOverhangMin` settings, STAR shall produce the additional output file(s). This file may need to be converted to BAM format, e.g. by running `samtools view -bhS Chimeric.out.sam > Chimeric.out.bam`. This generated `ChimericSorted.bam` can then be used as input file for *Dr. Disco*. Note that samtools has changed its commandline interface over time and that the stated command might be slighly different for different versions of samtools.
 
-Usage: dr-disco fix
--------------------
-The first step of Dr. Disco is fixing the BAM file. Fixing? Is it broken then? It is not in particular broken, but in order to view the file with IGV and get reads properly linked, certain links have to put in place. This alignment as produced by STAR does not properly link mates together because of some missing SAM-tags. In `dr-disco fix` these issues are solved and allow a user to view discordant reads in IGV in more detail and by using the spit-view.
- 
-Also, it is convenient to color the reads by subtype (split or spanning, and how the direction of the break is), as the mate and strand are related and discordant mates are usually shifted a bit with respect to the breakpoint. In the fixing steps such annotations are added as read groups. Also, this step ensures proper indexing and sorting. If you have as input file `<...>.Chimeric.out.bam`, you can generate the fixed bam file with *Dr. Disco* as follows:
+### Step 2: dr-disco fix
+
+The first step of Dr. Disco is fixing the BAM file. Altohugh fixing implies it is broken, the alignment provided by STAR is incompatible with the IGV split view and misses the 'SA:' sam flag. In `dr-disco fix` this is solved and allows a user to view discordant reads in IGV in more detail and by using the spit-view. For the split view it may be convenient to color the reads by subtype (split or spanning, and how the direction of the break is), as the mate and strand are related and discordant mates are usually shifted a bit with respect to the breakpoint. In the fixing steps such annotations are added as read groups. Also, this step ensures proper indexing and sorting. If you have as input file `<...>.Chimeric.out.bam`, you can generate the fixed bam file with *Dr. Disco* as follows:
 
 ```
 Usage: dr-disco fix [OPTIONS] INPUT_ALIGNMENT_FILE OUTPUT_ALIGNMENT_FILE
@@ -143,8 +121,8 @@ Hence, you can generate the fixed bam-file with:
 dr-disco fix '<...>.Chimeric.out.bam' 'sample.fixed.bam'
 ```
 
-Usage: dr-disco detect
-----------------------
+### Step 3: dr-disco detect
+
 To estimate breakpoints using *Dr. Disco*, you can proceed with:
 
 ```
@@ -161,8 +139,8 @@ Here the `-m` argument controls the level of merging sub-graphs. If datasets bec
 `dr-disco detect -m 7 'sample.fixed.bam' dr-disco.sample-name.all.txt`
 
 
-Usage: dr-disco classify
-------------------------
+### Step 4: dr-disco classify
+
 The results from `dr-disco detect` contain many false positives. These may be derived from many different types of issues, like homolpolymeric sequences in the reference genome, rRNA, multimaps and optimal chimeric alignments just by chance. Most of these issues are recognisable by patterns imprinted in some variables in the output table. Then `dr-disco classify` filters the results and you can proceed with:
 
 ```
@@ -188,8 +166,7 @@ dr-disco classify \
     dr-disco.sample-name.filtered.txt
 ```
 
-Usage: dr-disco integrate
--------------------------
+### Step 5: dr-disco integrate
 
 The results of Dr. Disco classify can be integrated into fusion genes by running `dr-disco integrate`. The corresponding GTF file should contain gene annotations that correspond to the used reference genome.
 
