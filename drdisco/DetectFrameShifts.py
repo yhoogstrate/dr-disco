@@ -2,9 +2,7 @@
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
-import math
 
-from drdisco import log
 import HTSeq
 
 
@@ -38,10 +36,10 @@ import HTSeq
 class DetectFrameShifts:
     def __init__(self, gtf_file):
         self.gtf_file = gtf_file
-        
+
         self.gene_annotation_from = HTSeq.GenomicArrayOfSets("auto", stranded=True)
         self.gene_annotation_to = HTSeq.GenomicArrayOfSets("auto", stranded=True)
-        
+
         self.index_gtf()
 
     def index_gtf(self):
@@ -54,7 +52,7 @@ class DetectFrameShifts:
             - transcript_id attribute
             - transcript_version attribute
             - exon_number attribute
-        
+
         Such gtf files are provided by Ensembl
         """
         def index_gtf_transcripts(gtf_file_entries, transcript_id):
@@ -69,7 +67,7 @@ class DetectFrameShifts:
             for feature in gtf_file_entries:
                 exon_number = int(feature.attr['exon_number'])
                 if exon_number in exon_index:
-                    raise Exception("Error in GTF file - same exon id multiple times included: "+transcript_id+" - exon number: "+str(exon_number))
+                    raise Exception("Error in GTF file - same exon id multiple times included: " + transcript_id + " - exon number: " + str(exon_number))
                 else:
                     exon_index[exon_number] = feature
 
@@ -82,65 +80,63 @@ class DetectFrameShifts:
 
                 if nxt:
                     if feature.iv.strand == '+':
-                        itv_from = HTSeq.GenomicInterval(previous.iv.chrom,previous.iv.end,previous.iv.end + 1,previous.iv.strand)
-                        itv_to = HTSeq.GenomicInterval(feature.iv.chrom,feature.iv.start,feature.iv.start + 1,feature.iv.strand)
-                    
+                        itv_from = HTSeq.GenomicInterval(previous.iv.chrom, previous.iv.end, previous.iv.end + 1, previous.iv.strand)
+                        itv_to = HTSeq.GenomicInterval(feature.iv.chrom, feature.iv.start, feature.iv.start + 1, feature.iv.strand)
+
                     elif feature.iv.strand == '-':
-                        itv_from = HTSeq.GenomicInterval(previous.iv.chrom,previous.iv.start,previous.iv.start + 1,previous.iv.strand)
-                        itv_to = HTSeq.GenomicInterval(feature.iv.chrom,feature.iv.end,feature.iv.end + 1,feature.iv.strand)
-                    
+                        itv_from = HTSeq.GenomicInterval(previous.iv.chrom, previous.iv.start, previous.iv.start + 1, previous.iv.strand)
+                        itv_to = HTSeq.GenomicInterval(feature.iv.chrom, feature.iv.end, feature.iv.end + 1, feature.iv.strand)
+
                     self.gene_annotation_from[itv_from] += (transcript_id, int(prev))
                     self.gene_annotation_to[itv_to] += (transcript_id, int(nxt))
-                
+
                 prev = str(off1)
                 nxt = str(off2)
                 previous = feature
-                
+
                 cumulative_offset = off1
-                
+
                 i += 1
 
-        
         def load_gtf_per_transcript():
             transcript_idx = {}
             gtf_file = HTSeq.GFF_Reader(self.gtf_file, end_included=True)
-            
+
             for feature in gtf_file:
                 if feature.type == 'CDS':
-                    transcript_id = feature.attr['gene_name']+'('+feature.attr['transcript_id']+'.'+feature.attr['transcript_version']+')'+'-'+feature.source
-                    
-                    if not transcript_id in transcript_idx:
+                    transcript_id = feature.attr['gene_name'] + '(' + feature.attr['transcript_id'] + '.' + feature.attr['transcript_version'] + ')-' + feature.source
+
+                    if transcript_id not in transcript_idx:
                         transcript_idx[transcript_id] = []
                     transcript_idx[transcript_id].append(feature)
-            
+
             return transcript_idx
-        
+
         transcript_idx = load_gtf_per_transcript()
         for transcript_uid in sorted(transcript_idx.keys()):
             index_gtf_transcripts(transcript_idx[transcript_uid], transcript_uid)
 
-    def evaluate(self, _from, _to, offset = 0):
+    def evaluate(self, _from, _to, offset):
         """
         Offset may be convenient because STAR sometimes has problems aligning/clipping the first 2 bases after an exon
         Values of 4 and larger do not make sense.
         """
         from_l = []
         to_l = []
-        
+
         for step in self.gene_annotation_from[HTSeq.GenomicInterval(_from[0], max(0, _from[1] - offset), _from[1] + offset + 1, _from[2])].steps():
             for entry in step[1]:
                 from_l.append(entry)
-        
+
         for step in self.gene_annotation_to[HTSeq.GenomicInterval(_to[0], max(0, _to[1] - offset), _to[1] + offset + 1, _to[2])].steps():
             for entry in step[1]:
                 to_l.append(entry)
-        
+
         results = {0: [], 1: [], 2: []}
-        
+
         for from_l_i in from_l:
             for to_l_i in to_l:
                 frame_shift = ((from_l_i[1] + to_l_i[1]) % 3)
                 results[frame_shift].append((from_l_i, to_l_i))
-        
-        return results
 
+        return results

@@ -59,21 +59,23 @@ class DetectOutputEntry:
             13. intronic/exonic
             14. score
         """
+
         self.chrA = self.line[0]
         self.posA = int(self.line[1])
         self.strandA = self.line[2]
-        
+
         self.acceptorA = int(self.line[3])
         self.donorA = int(self.line[4])
-        
+
         self.chrB = self.line[5]
         self.posB = int(self.line[6])
         self.strandB = self.line[7]
-        
+
         self.acceptorB = int(self.line[8])
         self.donorB = int(self.line[9])
-        
+
         self.dist = self.line[10]
+
         self.status = self.line[11]
         self.circ_lin = self.line[12]
         self.x_onic = self.line[13]
@@ -95,6 +97,7 @@ class DetectOutputEntry:
         self.lr_A_slope = float(self.line[27])
         self.lr_A_intercept = self.line[28]
         self.lr_A_rvalue = float(self.line[29])
+
         self.lr_A_pvalue = self.line[30]
         self.lr_A_stderr = self.line[31]
         self.lr_B_slope = float(self.line[32])
@@ -106,11 +109,9 @@ class DetectOutputEntry:
         self.clips_score = self.line[38]
         self.nodes_edge = float(self.line[39])
         self.structure = self.line[40]
-        
+
         inv = {'-': '+', '+': '-'}
         if self.acceptorA > self.donorA:
-            # TMPRSS2 ERG DNA: - + 
-            # TMPRSS2 ERG RNA: - -
             self.RNAstrandA = self.strandA
             self.RNAstrandB = inv[self.strandB]
         elif self.donorA < self.acceptorA:
@@ -120,7 +121,6 @@ class DetectOutputEntry:
             self.RNAstrandA = '.'
             self.RNAstrandB = '.'
 
-        
         self.frameshift_0 = ''
         self.frameshift_1 = ''
         self.frameshift_2 = ''
@@ -176,7 +176,6 @@ class DetectOutput:
             for line in fh_in:
                 return line
         raise Exception("Invalid file: " + str(self.input_alignment_file))
-
 
     def __iter__(self):
         header = True
@@ -287,14 +286,18 @@ class DetectOutput:
             index[score][key] = entries
 
         with open(output_table, 'w') as fh_out:
-            fh_out.write("shared-id\tfusion\t" + self.header)
+            header = self.header.split("\t")
+            header = "\t".join(header[:-1] + ['frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
+
+            fh_out.write("shared-id\tfusion\t" + header)
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
             gene_annotation = HTSeq.GenomicArrayOfSets("auto", stranded=False)
             dfs = None
-            
+
             if gtf_file:
                 dfs = DetectFrameShifts(gtf_file)
                 gtf_file = HTSeq.GFF_Reader(gtf_file, end_included=True)
+
                 for feature in gtf_file:
                     if feature.type == "gene":
                         if 'gene_name' in feature.attr:
@@ -312,15 +315,16 @@ class DetectOutput:
 
             # Find 'duplicates' or fusions that belong to each other
             for e in self:
-                #print e
-                #print (e.chrA,e.posA,e.RNAstrandA),(e.chrB,e.posB,e.RNAstrandB)
-                
-                #if dfs and e.RNAstrandA != '.' and e.RNAstrandB:
-                    #print 'dna', (e.chrA,e.posA,e.strandA),(e.chrB,e.posB,e.strandB)
-                    #print 'rna', (e.chrA,e.posA,e.RNAstrandA),(e.chrB,e.posB,e.RNAstrandB)
-                    #print dfs.evaluate((e.chrA,e.posA,e.RNAstrandA), (e.chrB,e.posB,e.RNAstrandB))
-                    #print
-                
+                if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
+                    if e.donorA > e.donorB:
+                        frame_shifts = dfs.evaluate((e.chrA, e.posA, e.RNAstrandA), (e.chrB, e.posB, e.RNAstrandB), 2)
+                    else:
+                        frame_shifts = dfs.evaluate((e.chrB, e.posB, e.RNAstrandB), (e.chrA, e.posA, e.RNAstrandA), 2)
+
+                    e.frameshift_0 = ','.join(sorted([x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]))
+                    e.frameshift_1 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]))
+                    e.frameshift_2 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]))
+
                 if e.x_onic == 'intronic' and e.circ_lin == 'linear':
                     intronic_linear.append(e)
                 else:
@@ -387,8 +391,9 @@ class DetectOutput:
                     for entry in idx2[score][key]:
                         if entry not in exported:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
+                            line = entry.line[:-1] + [entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-1:]
 
-                            fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + str(entry))
+                            fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line))
                             exported.add(entry)
                             added += 1
 
