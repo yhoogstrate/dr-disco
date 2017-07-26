@@ -5,6 +5,7 @@
 import math
 
 from drdisco import log
+from drdisco.DetectFrameShifts import DetectFrameShifts
 import HTSeq
 
 
@@ -61,13 +62,17 @@ class DetectOutputEntry:
         self.chrA = self.line[0]
         self.posA = int(self.line[1])
         self.strandA = self.line[2]
-        self.acceptorA = self.line[3]
-        self.donorA = self.line[4]
+        
+        self.acceptorA = int(self.line[3])
+        self.donorA = int(self.line[4])
+        
         self.chrB = self.line[5]
         self.posB = int(self.line[6])
         self.strandB = self.line[7]
-        self.acceptorA = self.line[8]
-        self.donorA = self.line[9]
+        
+        self.acceptorB = int(self.line[8])
+        self.donorB = int(self.line[9])
+        
         self.dist = self.line[10]
         self.status = self.line[11]
         self.circ_lin = self.line[12]
@@ -101,6 +106,24 @@ class DetectOutputEntry:
         self.clips_score = self.line[38]
         self.nodes_edge = float(self.line[39])
         self.structure = self.line[40]
+        
+        inv = {'-': '+', '+': '-'}
+        if self.acceptorA > self.donorA:
+            # TMPRSS2 ERG DNA: - + 
+            # TMPRSS2 ERG RNA: - -
+            self.RNAstrandA = self.strandA
+            self.RNAstrandB = inv[self.strandB]
+        elif self.donorA < self.acceptorA:
+            self.RNAstrandA = inv[self.strandA]
+            self.RNAstrandB = self.strandB
+        else:
+            self.RNAstrandA = '.'
+            self.RNAstrandB = '.'
+
+        
+        self.frameshift_0 = ''
+        self.frameshift_1 = ''
+        self.frameshift_2 = ''
 
     def get_donors_acceptors(self, gtf_file):
         idx = {}
@@ -265,9 +288,11 @@ class DetectOutput:
         with open(output_table, 'w') as fh_out:
             fh_out.write("shared-id\tfusion\t" + self.header)
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
-
             gene_annotation = HTSeq.GenomicArrayOfSets("auto", stranded=False)
+            dfs = None
+            
             if gtf_file:
+                dfs = DetectFrameShifts(gtf_file)
                 gtf_file = HTSeq.GFF_Reader(gtf_file, end_included=True)
                 for feature in gtf_file:
                     if feature.type == "gene":
@@ -286,6 +311,15 @@ class DetectOutput:
 
             # Find 'duplicates' or fusions that belong to each other
             for e in self:
+                #print e
+                #print (e.chrA,e.posA,e.RNAstrandA),(e.chrB,e.posB,e.RNAstrandB)
+                
+                #if dfs and e.RNAstrandA != '.' and e.RNAstrandB:
+                    #print 'dna', (e.chrA,e.posA,e.strandA),(e.chrB,e.posB,e.strandB)
+                    #print 'rna', (e.chrA,e.posA,e.RNAstrandA),(e.chrB,e.posB,e.RNAstrandB)
+                    #print dfs.evaluate((e.chrA,e.posA,e.RNAstrandA), (e.chrB,e.posB,e.RNAstrandB))
+                    #print
+                
                 if e.x_onic == 'intronic' and e.circ_lin == 'linear':
                     intronic_linear.append(e)
                 else:
