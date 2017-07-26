@@ -45,7 +45,7 @@ class TestFrameShiftPrediction(unittest.TestCase):
         gtf_file = TEST_DIR + 'frameshift_example.gtf'
 
         dfs = DetectFrameShifts(gtf_file)
-        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1])
+        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
         self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 0))]")
         self.assertEqual(len(frameshift_annotation[1]), 0)
         self.assertEqual(len(frameshift_annotation[2]), 0)
@@ -55,7 +55,7 @@ class TestFrameShiftPrediction(unittest.TestCase):
         gtf_file = TEST_DIR + 'frameshift_example.gtf'
 
         dfs = DetectFrameShifts(gtf_file)
-        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1])
+        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
         self.assertEqual(len(frameshift_annotation[0]), 0)
         self.assertEqual(len(frameshift_annotation[1]), 0)
         self.assertEqual(str(frameshift_annotation[2]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
@@ -65,7 +65,7 @@ class TestFrameShiftPrediction(unittest.TestCase):
         gtf_file = TEST_DIR + 'frameshift_example.gtf'
 
         dfs = DetectFrameShifts(gtf_file)
-        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1])
+        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
         self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 1), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
         self.assertEqual(len(frameshift_annotation[1]), 0)
         self.assertEqual(len(frameshift_annotation[2]), 0)
