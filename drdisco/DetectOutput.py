@@ -153,7 +153,7 @@ class DetectOutputEntry:
         genesA = pos_to_gene_str(self.chrA, self.posA)
         genesB = pos_to_gene_str(self.chrB, self.posB)
 
-        if self.donorA < self.acceptorA:
+        if self.donorA > self.acceptorA:
             return genesA + '->' + genesB
         elif self.donorA > self.acceptorA:
             return genesB + '->' + genesA
@@ -176,6 +176,7 @@ class DetectOutput:
             for line in fh_in:
                 return line
         raise Exception("Invalid file: " + str(self.input_alignment_file))
+
 
     def __iter__(self):
         header = True
