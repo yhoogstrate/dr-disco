@@ -153,9 +153,9 @@ class DetectOutputEntry:
         genesA = pos_to_gene_str(self.chrA, self.posA)
         genesB = pos_to_gene_str(self.chrB, self.posB)
 
-        if self.donorA > self.acceptorA:
+        if self.donorA > self.donorB:
             return genesA + '->' + genesB
-        elif self.donorA > self.acceptorA:
+        elif self.donorB > self.donorA:
             return genesB + '->' + genesA
         else:
             return genesB + '<->' + genesA
