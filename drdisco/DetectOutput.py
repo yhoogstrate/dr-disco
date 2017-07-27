@@ -412,7 +412,7 @@ class DetectOutput:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
                             line = entry.line[:-1] + [entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-1:]
 
-                            fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line))
+                            fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line) + "\n")
                             exported.add(entry)
                             added += 1
 
