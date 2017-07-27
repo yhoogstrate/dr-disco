@@ -138,7 +138,12 @@ class DetectOutputEntry:
                     idx[c[0]] += int(c[1])
 
         def pos_to_gene_str(pos_chr, pos_pos):
-            pos = HTSeq.GenomicInterval(pos_chr, pos_pos, pos_pos + 1, ".")
+            if pos_chr[0:3] == 'chr':
+                chrom = pos_chr[3:]
+            else:
+                chrom = pos_chr
+
+            pos = HTSeq.GenomicInterval(chrom, pos_pos, pos_pos + 1, ".")
             genes = set([])
 
             for step in gtf_file[pos]:
@@ -308,6 +313,10 @@ class DetectOutput:
                             name = feature.attr['gene']
                         else:
                             name = feature.name
+
+                        if feature.iv.chrom[0:3] == 'chr':
+                            feature.iv.chrom = feature.iv.chrom[3:]
+
                         gene_annotation[feature.iv] += name
 
             intronic_linear = []
@@ -317,9 +326,9 @@ class DetectOutput:
             for e in self:
                 if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
                     if e.donorA > e.donorB:
-                        frame_shifts = dfs.evaluate((e.chrA, e.posA, e.RNAstrandA), (e.chrB, e.posB, e.RNAstrandB), 2)
+                        frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
                     else:
-                        frame_shifts = dfs.evaluate((e.chrB, e.posB, e.RNAstrandB), (e.chrA, e.posA, e.RNAstrandA), 2)
+                        frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
 
                     e.frameshift_0 = ','.join(sorted([x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]))
                     e.frameshift_1 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]))
@@ -331,8 +340,13 @@ class DetectOutput:
                     remainder.append(e)
 
                 def insert(pos, e):
+                    if pos[0][0:3] == 'chr':
+                        chrom = pos[0][3:]
+                    else:
+                        chrom = pos[0]
+
                     # position_accession = HTSeq.GenomicPosition(pos[0], pos[1], pos[2])
-                    position_accession = HTSeq.GenomicInterval(pos[0], pos[1], pos[1] + 1, pos[2])
+                    position_accession = HTSeq.GenomicInterval(chrom, pos[1], pos[1] + 1, pos[2])
                     position = self.idx[position_accession]
                     position += e
 
@@ -354,7 +368,12 @@ class DetectOutput:
                         pos1 = pos[1]
                         pos2 = pos[1] + 200000
 
-                    for step in self.idx[HTSeq.GenomicInterval(pos[0], max(0, pos1), pos2, pos[2])].steps():
+                    if pos[0][0:3] == 'chr':
+                        chrom = pos[0][3:]
+                    else:
+                        chrom = pos[0]
+
+                    for step in self.idx[HTSeq.GenomicInterval(chrom, max(0, pos1), pos2, pos[2])].steps():
                         for e2 in step[1]:
                             if e != e2:
                                 if e2 not in results:

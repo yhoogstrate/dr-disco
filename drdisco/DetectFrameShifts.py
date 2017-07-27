@@ -78,14 +78,19 @@ class DetectFrameShifts:
                 off1 = length % 3
                 off2 = -length % 3
 
+                if feature.iv.chrom[0:3] == 'chr':
+                    chrom = feature.iv.chrom[3:]
+                else:
+                    chrom = feature.iv.chrom
+
                 if nxt:
                     if feature.iv.strand == '+':
-                        itv_from = HTSeq.GenomicInterval(previous.iv.chrom, previous.iv.end, previous.iv.end + 1, previous.iv.strand)
-                        itv_to = HTSeq.GenomicInterval(feature.iv.chrom, feature.iv.start, feature.iv.start + 1, feature.iv.strand)
+                        itv_from = HTSeq.GenomicInterval(chrom, previous.iv.end, previous.iv.end + 1, previous.iv.strand)
+                        itv_to = HTSeq.GenomicInterval(chrom, feature.iv.start, feature.iv.start + 1, feature.iv.strand)
 
                     elif feature.iv.strand == '-':
-                        itv_from = HTSeq.GenomicInterval(previous.iv.chrom, previous.iv.start, previous.iv.start + 1, previous.iv.strand)
-                        itv_to = HTSeq.GenomicInterval(feature.iv.chrom, feature.iv.end, feature.iv.end + 1, feature.iv.strand)
+                        itv_from = HTSeq.GenomicInterval(chrom, previous.iv.start, previous.iv.start + 1, previous.iv.strand)
+                        itv_to = HTSeq.GenomicInterval(chrom, feature.iv.end, feature.iv.end + 1, feature.iv.strand)
 
                     self.gene_annotation_from[itv_from] += (transcript_id, int(prev))
                     self.gene_annotation_to[itv_to] += (transcript_id, int(nxt))
@@ -123,6 +128,12 @@ class DetectFrameShifts:
         """
         from_l = []
         to_l = []
+
+        if _from[0][0:3] == 'chr':
+            _from[0] = _from[0][3:]
+
+        if _to[0][0:3] == 'chr':
+            _to[0] = _to[0][3:]
 
         for step in self.gene_annotation_from[HTSeq.GenomicInterval(_from[0], max(0, _from[1] - offset), _from[1] + offset + 1, _from[2])].steps():
             for entry in step[1]:

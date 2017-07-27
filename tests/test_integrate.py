@@ -46,14 +46,15 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_id = 'terg_s041'
 
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
-        gtf_file = TEST_DIR + "test_" + test_id + ".in.gtf"
+        gtf_files = [TEST_DIR + "test_" + test_id + ".in.gtf", TEST_DIR + "test_" + test_id + ".in.no_chr_prefix.gtf"]
         test_file = TEST_DIR + "test_" + test_id + ".out.txt"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
 
-        cl = DetectOutput(input_file)
-        cl.integrate(output_file, gtf_file)
+        for gtf_file in gtf_files:
+            cl = DetectOutput(input_file)
+            cl.integrate(output_file, gtf_file)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_02_s041_nocrash(self):
         test_id = 'terg_s041_b'

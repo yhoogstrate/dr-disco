@@ -41,34 +41,40 @@ if not os.path.exists(T_TEST_DIR):
 
 class TestFrameShiftPrediction(unittest.TestCase):
     def test_01(self):  # example of in-frame fusion - strands are RNA strand
-        fusion = ('chr1', 1035203, '+'), ('chr1', 999610, '-')  # (from), (to)  and strands are at RNA level!
-        gtf_file = TEST_DIR + 'frameshift_example.gtf'
+        fusions = [(['chr1', 1035203, '+'], ['chr1', 999610, '-']), (['1', 1035203, '+'], ['1', 999610, '-'])]  # strands are at RNA level, and gene order is DONOR, ACCEPTOR
+        gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
 
-        dfs = DetectFrameShifts(gtf_file)
-        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
-        self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 0))]")
-        self.assertEqual(len(frameshift_annotation[1]), 0)
-        self.assertEqual(len(frameshift_annotation[2]), 0)
+        for fusion in fusions:
+            for gtf_file in gtf_files:
+                dfs = DetectFrameShifts(gtf_file)
+                frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+                self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 0))]")
+                self.assertEqual(len(frameshift_annotation[1]), 0)
+                self.assertEqual(len(frameshift_annotation[2]), 0)
 
     def test_02(self):  # 0, +2
-        fusion = ('chr1', 1035203, '+'), ('chr1', 999020, '-')  # (from), (to)  and strands are at RNA level!
-        gtf_file = TEST_DIR + 'frameshift_example.gtf'
+        fusions = [(['chr1', 1035203, '+'], ['chr1', 999020, '-']), (['1', 1035203, '+'], ['1', 999020, '-'])]  # (from), (to)  and strands are at RNA level!
+        gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
 
-        dfs = DetectFrameShifts(gtf_file)
-        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
-        self.assertEqual(len(frameshift_annotation[0]), 0)
-        self.assertEqual(len(frameshift_annotation[1]), 0)
-        self.assertEqual(str(frameshift_annotation[2]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
+        for fusion in fusions:
+            for gtf_file in gtf_files:
+                dfs = DetectFrameShifts(gtf_file)
+                frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+                self.assertEqual(len(frameshift_annotation[0]), 0)
+                self.assertEqual(len(frameshift_annotation[1]), 0)
+                self.assertEqual(str(frameshift_annotation[2]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
 
     def test_03(self):  # +1, +2 -> 0
-        fusion = ('chr1', 1040604, '+'), ('chr1', 999020, '-')
-        gtf_file = TEST_DIR + 'frameshift_example.gtf'
+        fusions = [(['chr1', 1040604, '+'], ['chr1', 999020, '-']), (['1', 1040604, '+'], ['1', 999020, '-'])]
+        gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
 
-        dfs = DetectFrameShifts(gtf_file)
-        frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
-        self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 1), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
-        self.assertEqual(len(frameshift_annotation[1]), 0)
-        self.assertEqual(len(frameshift_annotation[2]), 0)
+        for fusion in fusions:
+            for gtf_file in gtf_files:
+                dfs = DetectFrameShifts(gtf_file)
+                frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+                self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 1), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
+                self.assertEqual(len(frameshift_annotation[1]), 0)
+                self.assertEqual(len(frameshift_annotation[2]), 0)
 
 
 def main():
