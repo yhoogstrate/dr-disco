@@ -1,3 +1,7 @@
+2017-07-26	Youri Hoogstrate	v0.9.0
+	* Support for frame shift detection in Integrate function
+	* Some bugfixes in integrate
+
 2017-07-05	Youri Hoogstrate	v0.8.2
 	* Changed another filter, reduces the amount of false negatives
 

@@ -1785,7 +1785,7 @@ class IntronDecomposition:
         return ("chr-A"            "\t" "pos-A"             "\t" "direction-A"   "\t"
                 "pos-A-acceptor"   "\t" "pos-A-donor"       "\t"
                 "chr-B"            "\t" "pos-B"             "\t" "direction-B"   "\t"
-                "pos-A-acceptor"   "\t" "pos-A-donor"       "\t"
+                "pos-B-acceptor"   "\t" "pos-B-donor"       "\t"
                 "genomic-distance" "\t" "filter-status"     "\t" "circRNA"       "\t" "intronic/exonic"    "\t"
                 "score"            "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
                 "n-edges"          "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
