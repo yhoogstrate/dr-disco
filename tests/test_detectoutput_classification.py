@@ -44,32 +44,6 @@ if not os.path.exists(T_TEST_DIR):
 
 
 class TestIDetectOutputCalssification(unittest.TestCase):
-    """
-    def test_01(self):
-        test_id = '01'
-
-        input_file_a = D_TEST_DIR + "test_" + test_id + ".sam"
-        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
-        unclassified_table =  T_TEST_DIR + "test_" + test_id + ".interim.dbed"
-
-        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
-        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
-
-        sam_to_fixed_bam(input_file_a, fixed_bam)
-
-        ic = IntronDecomposition(fixed_bam)
-        ic.decompose(0)
-
-        fh = open(unclassified_table, "w")
-        ic.export(fh)
-        fh.close()
-
-        cl = DetectOutput(unclassified_table)
-        cl.classify(output_file, False, Blacklist())
-
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-    """
-
     def test_01(self):
         test_id = '01'
 
@@ -598,6 +572,22 @@ class TestIDetectOutputCalssification(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_blacklists(self):# only test if they don't crash - do not test actual output
+        test_id = '01'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        blacklists = [Blacklist(), Blacklist(), Blacklist(), Blacklist()]
+        blacklists[0].add_junctions_from_file('share/blacklist-junctions.hg19.txt')
+        blacklists[1].add_junctions_from_file('share/blacklist-junctions.hg38.txt')
+        blacklists[2].add_regions_from_bed('share/blacklist-regions.hg19.bed')
+        blacklists[3].add_regions_from_bed('share/blacklist-regions.hg38.bed')
+
+        for blacklist in blacklists:
+            cl = DetectOutput(input_file)
+            cl.classify(output_file, False, blacklist)
 
 def main():
     unittest.main()

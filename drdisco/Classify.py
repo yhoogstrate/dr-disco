@@ -99,7 +99,7 @@ class Blacklist:
                         d2 = params[6] - params[5]
 
                         if d1 < 1 or d2 < 1:
-                            raise ValueError("Too small region (starts are 0-based, ends are 1-based, like BED):\n" + line)
+                            raise ValueError("Too small junction (starts are 0-based, ends are 1-based, like BED):\n" + line)
 
                         if (params[4] < params[0]) or (params[0] == params[4] and params[5] < params[1]):
                             reg1 = (params[4], params[5], params[6], params[7])
