@@ -572,11 +572,10 @@ class TestIDetectOutputCalssification(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_blacklists(self):# only test if they don't crash - do not test actual output
+    def test_blacklists(self):  # only test if they don't crash - do not test actual output
         test_id = '01'
 
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
-        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         blacklists = [Blacklist(), Blacklist(), Blacklist(), Blacklist()]
@@ -588,6 +587,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         for blacklist in blacklists:
             cl = DetectOutput(input_file)
             cl.classify(output_file, False, blacklist)
+
 
 def main():
     unittest.main()
