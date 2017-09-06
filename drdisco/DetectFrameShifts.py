@@ -233,5 +233,4 @@ class DetectFrameShifts:
                 frame_shift = ((from_l_i[1] + to_l_i[1]) % 3)
                 results[frame_shift].append((from_l_i, to_l_i))
 
-        print results
         return results
