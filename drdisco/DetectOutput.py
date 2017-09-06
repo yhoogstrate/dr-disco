@@ -325,14 +325,37 @@ class DetectOutput:
             # Find 'duplicates' or fusions that belong to each other
             for e in self:
                 if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
+                    done_breaks = set([])
+                    
                     if e.donorA > e.donorB:
                         frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
                     else:
                         frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
-
+                    
+                    done_breaks.add(e.chrA+':'+ str(e.posA)+'/'+str(e.posA+1)+ '(' + e.strandA +')->'+ e.chrB+':'+ str(e.posB)+'/'+str(e.posB+1)+'('+ e.strandB +')')
+                    
                     e.frameshift_0 = ','.join(sorted([x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]))
                     e.frameshift_1 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]))
                     e.frameshift_2 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]))
+
+                    for additional_breaks in e.structure.split('&'):
+                        params = additional_breaks.split(':(')
+                        n_split_reads = sum([int(x.split(':')[1]) for x in params[1].rstrip(')').split(',') if x.split(':')[0] != 'discordant_mates'])
+                        
+                        posAB = params[0].split(':')
+                        posA, posB = int(posAB[1].split('/')[0]), int(posAB[2].split('/')[0])
+                        
+                        if params[0] not in done_breaks and n_split_reads > 0:
+                            if e.donorA > e.donorB:
+                                frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
+                            else:
+                                frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+                            
+                            e.frameshift_0 += ','.join(sorted([x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]))
+                            e.frameshift_1 += ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]))
+                            e.frameshift_2 += ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]))
+
+                        done_breaks.add(params[0])
 
                 if e.x_onic == 'intronic' and e.circ_lin == 'linear':
                     intronic_linear.append(e)
