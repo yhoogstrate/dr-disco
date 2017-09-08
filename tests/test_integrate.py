@@ -42,7 +42,7 @@ if not os.path.exists(T_TEST_DIR):
 
 
 class TestIntronicBreakDetection(unittest.TestCase):
-    def test_02_s041(self):
+    def test_s041(self):
         test_id = 'terg_s041'
 
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
@@ -56,7 +56,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
             self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_02_s041_nocrash(self):
+    def test_s041_nocrash(self):
         test_id = 'terg_s041_b'
 
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
@@ -69,7 +69,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-    def test_02_s041_no_gtf(self):
+    def test_s041_no_gtf(self):
         test_id = 'terg_s041_b'
 
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
@@ -81,6 +81,23 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cl.integrate(output_file, gtf_file)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_in_frame_non_hybrid_protein(self):
+        test_id = 'in_frame_non_hybrid_protein'
+        # Transcript ID's necessary:
+        # - TMPRSS2: ENST00000424093
+        # - ERG: ENST00000398910
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        gtf_files = [TEST_DIR + "test_" + test_id + ".gtf"]
+        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
+
+        for gtf_file in gtf_files:
+            cl = DetectOutput(input_file)
+            cl.integrate(output_file, gtf_file)
+
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
 def main():
