@@ -4,6 +4,7 @@
 
 
 import HTSeq
+from drdisco import log
 
 
 """[License: GNU General Public License v3 (GPLv3)]
@@ -37,6 +38,16 @@ class DetectFrameShifts:
     def __init__(self, gtf_file):
         self.gtf_file = gtf_file
 
+        # fgd = full gene dysregulation (junction falls before coding sequences in both genes)
+        # valid:
+        # ===    ====        |     ====    ==[::]   CDS starts in middle of 2nd exon in acceptor gene: (from) pre-coding -> (to) pre-coding
+        # ===    ====        |     ==[::]           CDS starts in middle of 1st exon in acceptor gene: (from) pre-coding -> (to) pre-coding
+        # ===    ====        |     ====    [::::]   CDS starts at start of 2nd exon in acceptor gene:  (from) pre-coding -> (to) first coding
+        # ===    ====        |     [::::]           CDS starts at start of 1st exon in acceptor gene:  (from) pre-coding -> (to) first coding
+
+        self.gene_annotation_from_fgd = HTSeq.GenomicArrayOfSets("auto", stranded=True)
+        self.gene_annotation_to_fgd = HTSeq.GenomicArrayOfSets("auto", stranded=True)
+
         self.gene_annotation_from = HTSeq.GenomicArrayOfSets("auto", stranded=True)
         self.gene_annotation_to = HTSeq.GenomicArrayOfSets("auto", stranded=True)
 
@@ -55,77 +66,131 @@ class DetectFrameShifts:
 
         Such gtf files are provided by Ensembl
         """
-        def index_gtf_transcripts(gtf_file_entries, transcript_id):
-            cumulative_offset = 0
-            i = 0
-            nxt = False
-            prev = False
-            previous = False
-
-            # @todo move into load function
-            exon_index = {}
-            for feature in gtf_file_entries:
-                exon_number = int(feature.attr['exon_number'])
-                if exon_number in exon_index:
-                    raise Exception("Error in GTF file - same exon id multiple times included: " + transcript_id + " - exon number: " + str(exon_number))
-                else:
-                    exon_index[exon_number] = feature
-
-            for exon_number in sorted(exon_index.keys()):
-                feature = exon_index[exon_number]
-
-                length = (feature.iv.end) - feature.iv.start + cumulative_offset
-                off1 = length % 3
-                off2 = -length % 3
-
-                if feature.iv.chrom[0:3] == 'chr':
-                    chrom = feature.iv.chrom[3:]
-                else:
-                    chrom = feature.iv.chrom
-
-                if nxt:
-                    if feature.iv.strand == '+':
-                        itv_from = HTSeq.GenomicInterval(chrom, previous.iv.end, previous.iv.end + 1, previous.iv.strand)
-                        itv_to = HTSeq.GenomicInterval(chrom, feature.iv.start, feature.iv.start + 1, feature.iv.strand)
-
-                    elif feature.iv.strand == '-':
-                        itv_from = HTSeq.GenomicInterval(chrom, previous.iv.start, previous.iv.start + 1, previous.iv.strand)
-                        itv_to = HTSeq.GenomicInterval(chrom, feature.iv.end, feature.iv.end + 1, feature.iv.strand)
-
-                    self.gene_annotation_from[itv_from] += (transcript_id, int(prev))
-                    self.gene_annotation_to[itv_to] += (transcript_id, int(nxt))
-
-                prev = str(off1)
-                nxt = str(off2)
-                previous = feature
-
-                cumulative_offset = off1
-
-                i += 1
 
         def load_gtf_per_transcript():
             transcript_idx = {}
             gtf_file = HTSeq.GFF_Reader(self.gtf_file, end_included=True)
 
             for feature in gtf_file:
-                if feature.type == 'CDS':
-                    transcript_id = feature.attr['gene_name'] + '(' + feature.attr['transcript_id'] + '.' + feature.attr['transcript_version'] + ')-' + feature.source
+                gtf_type = feature.type.lower()
+                if gtf_type in ['cds', 'exon']:
+                    try:
+                        transcript_id = feature.attr['gene_name'] + '(' + feature.attr['transcript_id'] + '.' + feature.attr['transcript_version'] + ')-' + feature.source
 
-                    if transcript_id not in transcript_idx:
-                        transcript_idx[transcript_id] = []
-                    transcript_idx[transcript_id].append(feature)
+                        if transcript_id not in transcript_idx:
+                            transcript_idx[transcript_id] = {}
+
+                        exon_number = int(feature.attr['exon_number'])
+                        if exon_number not in transcript_idx[transcript_id]:
+                            transcript_idx[transcript_id][exon_number] = {'exon': None, 'cds': None}
+
+                        if gtf_type in ['exon', 'cds']:
+                            transcript_idx[transcript_id][exon_number][gtf_type] = feature
+
+                    except KeyError:
+                        log.warn("Warning: GTF file misses certain attributes (gene_name, transcript_id or transcript_version) and is therefore skipping the frameshift detection.")
+                        # there is no GFF_Reader.close() so break it dirty:
+                        break
 
             return transcript_idx
 
+        def insert_transcript_idx(transcript_idx):
+            def clean_chrom(chrom):
+                if chrom[0:3] == 'chr':
+                    return chrom[3:]
+                else:
+                    return chrom
+
+            def calc_from(feature):
+                if feature.iv.strand == '+':
+                    return HTSeq.GenomicInterval(clean_chrom(feature.iv.chrom), feature.iv.end, feature.iv.end + 1, feature.iv.strand)
+                elif feature.iv.strand == '-':
+                    return HTSeq.GenomicInterval(clean_chrom(feature.iv.chrom), feature.iv.start, feature.iv.start + 1, feature.iv.strand)
+
+            def calc_to(feature):
+                if feature.iv.strand == '+':
+                    return HTSeq.GenomicInterval(clean_chrom(feature.iv.chrom), feature.iv.start, feature.iv.start + 1, feature.iv.strand)
+                elif feature.iv.strand == '-':
+                    return HTSeq.GenomicInterval(clean_chrom(feature.iv.chrom), feature.iv.end, feature.iv.end + 1, feature.iv.strand)
+
+            """
+            @todo change to:
+
+            for exon in exons:
+                if there is a CDS with similar exon-id:
+
+                    if there is no stop codon or this exon id is the last exon id:
+                        last_coding_exon = exon_id
+
+                    if there is a start_codon with the same exon-id:
+                        first_coding_exon = exon_id
+
+
+                    - see if this is pre-coding
+                        - add to pre-coding 'from' idx
+                        - add to pre-coding 'to' list - als je naar dit exon fuseert moet transcriptie nog starten
+                    - see if this is first coding exon
+                        - add to normal 'from' list
+                        - add to pre-coding 'to' list
+                    - see if this is an inbetween coding exon
+                        - add to normal 'from' list
+                        - add to normal 'to' list
+                    - see if this is the last coding exon
+                        - add to normal 'to' list
+                    """
+            for transcript_id in transcript_idx:
+                coding = "pre"
+
+                cumulative_offset = 0
+                exon_ids = sorted(transcript_idx[transcript_id].keys())
+
+                for e in exon_ids:
+                    exon = transcript_idx[transcript_id][e]
+
+                    if coding == "pre":
+                        if exon['cds'] is None:  # - pre coding
+                            # distances are not relevant
+                            self.gene_annotation_to_fgd[calc_to(exon['exon'])] += (transcript_id)
+                            self.gene_annotation_from_fgd[calc_from(exon['exon'])] += (transcript_id)
+                        else:  # - first coding
+                            length = (exon['cds'].iv.end - exon['cds'].iv.start) + cumulative_offset
+
+                            off1 = length % 3
+                            off2 = -length % 3
+
+                            self.gene_annotation_from[calc_from(exon['exon'])] += (transcript_id, off1)
+                            self.gene_annotation_to_fgd[calc_to(exon['exon'])] += (transcript_id)
+
+                            cumulative_offset = off1
+                            coding = True
+                    elif coding is True:
+                        if e == exon_ids[-1] or transcript_idx[transcript_id][e + 1]['cds'] is None:  # - last coding
+                            self.gene_annotation_to[calc_to(exon['exon'])] += (transcript_id, off2)
+
+                            coding = "post"
+                        else:  # - middle coding
+                            self.gene_annotation_to[calc_to(exon['exon'])] += (transcript_id, off2)
+
+                            length = (exon['cds'].iv.end - exon['cds'].iv.start) + cumulative_offset
+                            off1 = length % 3
+                            off2 = -length % 3
+
+                            self.gene_annotation_from[calc_from(exon['exon'])] += (transcript_id, off1)
+
+                            cumulative_offset = off1
+                    #  else: # - post coding
+
         transcript_idx = load_gtf_per_transcript()
-        for transcript_uid in sorted(transcript_idx.keys()):
-            index_gtf_transcripts(transcript_idx[transcript_uid], transcript_uid)
+        insert_transcript_idx(transcript_idx)
 
     def evaluate(self, _from, _to, offset):
         """
         Offset may be convenient because STAR sometimes has problems aligning/clipping the first 2 bases after an exon
         Values of 4 and larger do not make sense.
         """
+        from_l_fgd = []
+        to_l_fgd = []
+
         from_l = []
         to_l = []
 
@@ -135,6 +200,17 @@ class DetectFrameShifts:
         if _to[0][0:3] == 'chr':
             _to[0] = _to[0][3:]
 
+        # These are ends of the exons in which translation was not (yet?) started
+        # A full gene disregulation is found when in the next gene a start_codon-containing exon is found
+        # these still need to be implemented
+        for step in self.gene_annotation_from_fgd[HTSeq.GenomicInterval(_from[0], max(0, _from[1] - offset), _from[1] + offset + 1, _from[2])].steps():
+            for entry in step[1]:
+                from_l_fgd.append(entry)
+
+        for step in self.gene_annotation_to_fgd[HTSeq.GenomicInterval(_to[0], max(0, _to[1] - offset), _to[1] + offset + 1, _to[2])].steps():
+            for entry in step[1]:
+                to_l_fgd.append(entry)
+
         for step in self.gene_annotation_from[HTSeq.GenomicInterval(_from[0], max(0, _from[1] - offset), _from[1] + offset + 1, _from[2])].steps():
             for entry in step[1]:
                 from_l.append(entry)
@@ -143,7 +219,11 @@ class DetectFrameShifts:
             for entry in step[1]:
                 to_l.append(entry)
 
-        results = {0: [], 1: [], 2: []}
+        results = {0: [], 1: [], 2: [], 'fgd': []}
+
+        for from_l_i in from_l_fgd:
+            for to_l_i in to_l_fgd:
+                results['fgd'].append((from_l_i, to_l_i))
 
         for from_l_i in from_l:
             for to_l_i in to_l:

@@ -121,6 +121,7 @@ class DetectOutputEntry:
             self.RNAstrandA = '.'
             self.RNAstrandB = '.'
 
+        self.fgd = ''
         self.frameshift_0 = ''
         self.frameshift_1 = ''
         self.frameshift_2 = ''
@@ -292,7 +293,7 @@ class DetectOutput:
 
         with open(output_table, 'w') as fh_out:
             header = self.header.split("\t")
-            header = "\t".join(header[:-1] + ['frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
+            header = "\t".join(header[:-1] + ['full-gene-disregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
 
             fh_out.write("shared-id\tfusion\t" + header)
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
@@ -325,14 +326,44 @@ class DetectOutput:
             # Find 'duplicates' or fusions that belong to each other
             for e in self:
                 if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
+                    done_breaks = set([])
+
                     if e.donorA > e.donorB:
                         frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
                     else:
                         frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
 
-                    e.frameshift_0 = ','.join(sorted([x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]))
-                    e.frameshift_1 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]))
-                    e.frameshift_2 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]))
+                    done_breaks.add(e.chrA + ':' + str(e.posA) + '/' + str(e.posA + 1) + '(' + e.strandA + ')->' + e.chrB + ':' + str(e.posB) + '/' + str(e.posB + 1) + '(' + e.strandB + ')')
+
+                    fgd = [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
+                    frameshifts_0 = [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
+                    frameshifts_1 = [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]
+                    frameshifts_2 = [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
+
+                    for additional_breaks in e.structure.split('&'):
+                        params = additional_breaks.split(':(')
+                        n_split_reads = sum([int(x.split(':')[1]) for x in params[1].rstrip(')').split(',') if x.split(':')[0] != 'discordant_mates'])
+
+                        posAB = params[0].split(':')
+                        posA, posB = int(posAB[1].split('/')[0]), int(posAB[2].split('/')[0])
+
+                        if params[0] not in done_breaks and n_split_reads > 0:
+                            if e.donorA > e.donorB:
+                                frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
+                            else:
+                                frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+
+                            fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
+                            frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
+                            frameshifts_1 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]
+                            frameshifts_2 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
+
+                        done_breaks.add(params[0])
+
+                    e.fgd = ','.join(sorted(list(set(fgd))))
+                    e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
+                    e.frameshift_1 = ','.join(sorted(list(set(frameshifts_1))))
+                    e.frameshift_2 = ','.join(sorted(list(set(frameshifts_2))))
 
                 if e.x_onic == 'intronic' and e.circ_lin == 'linear':
                     intronic_linear.append(e)
@@ -410,7 +441,7 @@ class DetectOutput:
                     for entry in idx2[score][key]:
                         if entry not in exported:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
-                            line = entry.line[:-1] + [entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-1:]
+                            line = entry.line[:-1] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-1:]
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line) + "\n")
                             exported.add(entry)
