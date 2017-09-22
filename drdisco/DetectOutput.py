@@ -277,6 +277,12 @@ class DetectOutput:
                     if log_ratio_rvalue > log_ratio_rvalue_max:
                         status.append("log_ratio_rvalue=" + str(round(log_ratio_rvalue, 2)) + ">" + str(round(log_ratio_rvalue_max, 2)))
 
+                    # @todo subfunc
+                    log_value_max = -(1.0 / 2000) * e.score - 3.95
+                    log_value = math.log((float(e.mismatches) + 0.0000001) / float(e.alignment_score))
+                    if log_value >= log_value_max:
+                        status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
+
                     if len(status) == 0:
                         e.status = 'valid'
                         fh.write(str(e))
