@@ -1,3 +1,6 @@
+2017-10-22	Youri Hoogstrate	v0.11.0
+	* Added way to use mismatches + alignment score for classification
+
 2017-09-08	Youri Hoogstrate	v0.10.0
 	* Improved frameshift detection by looking for all split junctions
 	  the data structure
