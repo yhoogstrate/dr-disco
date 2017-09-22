@@ -302,7 +302,7 @@ class Node:
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t[" + str(id(edge)) + "][m:"+str(edge.n_matches)+",mm:"+str(edge.n_mismatches)+"] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
+                out += "\n\t[" + str(id(edge)) + "][m:" + str(edge.n_matches) + ",mm:" + str(edge.n_mismatches) + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
 
         if a > 0:
             return out + "\n\t-> soft /hard clips: " + str(self.clips) + "\n"
@@ -1034,7 +1034,6 @@ class SubGraph():
 
         return (m, mm)
 
-
     def calc_scores(self):
         self.total_score = 0
         for edge in self.edges:
@@ -1102,7 +1101,7 @@ class SubGraph():
         lregA = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[0])
         lregB = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[1])
         m_mm = self.calc_m_mm()
-        
+
         return (
             "%s\t%i\t%s\t"
             "%i\t%i\t"
@@ -1124,7 +1123,7 @@ class SubGraph():
                       self.posB_acceptor, self.posB_donor,
                       dist, ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
-                      m_mm[0], m_mm[1], 
+                      m_mm[0], m_mm[1],
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
                       self.edges[0].get_entropy_of_alignments(), self.get_overall_entropy(),  # Entropy stats
@@ -1629,7 +1628,7 @@ class BAMExtract(object):
                             # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
                             splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)
                         else:
-                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)# By insertion tags in cigar string
+                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)  # By insertion tags in cigar string
 
         log.debug("alignment data loaded")
 
@@ -1780,14 +1779,14 @@ class IntronDecomposition:
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
 
-        #fusion_junctions.print_chain()
+        # fusion_junctions.print_chain()
 
         thicker_edges = fusion_junctions.prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
         fusion_junctions.rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions
 
         fusion_junctions.reinsert_edges(thicker_edges)  # @todo move function into statuc function in this class
 
-        #fusion_junctions.print_chain()
+        # fusion_junctions.print_chain()
 
         fusion_junctions.reindex_sj()
 
