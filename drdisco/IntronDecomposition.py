@@ -544,7 +544,7 @@ class Edge:
                     self.acceptor_donor[key][1] += edge.acceptor_donor[key][1]
 
         def update_matches_mismatches(edge):
-            self.n_mismatches += self.n_mismatches
+            self.n_mismatches += edge.n_mismatches
             self.n_matches += edge.n_matches
 
         for alignment_key in edge._unique_alignment_hashes:
@@ -1030,7 +1030,7 @@ class SubGraph():
 
         for edge in self.edges:
             m += edge.n_matches
-            mm += edge.n_mismatches 
+            mm += edge.n_mismatches
 
         return (m, mm)
 
