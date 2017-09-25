@@ -84,31 +84,35 @@ class DetectOutputEntry:
         self.n_split_reads = int(self.line[16])
         self.n_discordant_reads = int(self.line[17])
         self.n_supporting_reads = self.n_split_reads + self.n_discordant_reads
-        self.n_edges = self.line[18]
-        self.n_nodes_A = int(self.line[19])
-        self.n_nodes_B = int(self.line[20])
-        self.n_nodes = self.n_nodes_A + self.n_nodes_B
-        self.n_splice_junc_A = self.line[21]
-        self.n_splice_junc_B = self.line[22]
-        self.entropy_bp_edge = float(self.line[23])
-        self.entropy_all_edges = float(self.line[24])
-        self.bp_pos_stddev = float(self.line[25])
-        self.entropy_disco_bps = self.line[26]
-        self.lr_A_slope = float(self.line[27])
-        self.lr_A_intercept = self.line[28]
-        self.lr_A_rvalue = float(self.line[29])
 
-        self.lr_A_pvalue = self.line[30]
-        self.lr_A_stderr = self.line[31]
-        self.lr_B_slope = float(self.line[32])
-        self.lr_B_intercept = self.line[33]
-        self.lr_B_rvalue = float(self.line[34])
-        self.lr_B_pvalue = self.line[35]
-        self.lr_B_stderr = self.line[36]
-        self.disco_split = self.line[37]
-        self.clips_score = self.line[38]
-        self.nodes_edge = float(self.line[39])
-        self.structure = self.line[40]
+        self.alignment_score = int(self.line[18])
+        self.mismatches = int(self.line[19])
+
+        self.n_edges = self.line[20]
+        self.n_nodes_A = int(self.line[21])
+        self.n_nodes_B = int(self.line[22])
+        self.n_nodes = self.n_nodes_A + self.n_nodes_B
+        self.n_splice_junc_A = self.line[23]
+        self.n_splice_junc_B = self.line[24]
+        self.entropy_bp_edge = float(self.line[25])
+        self.entropy_all_edges = float(self.line[26])
+        self.bp_pos_stddev = float(self.line[27])
+        self.entropy_disco_bps = self.line[28]
+        self.lr_A_slope = float(self.line[29])
+        self.lr_A_intercept = self.line[30]
+        self.lr_A_rvalue = float(self.line[31])
+
+        self.lr_A_pvalue = self.line[32]
+        self.lr_A_stderr = self.line[33]
+        self.lr_B_slope = float(self.line[34])
+        self.lr_B_intercept = self.line[35]
+        self.lr_B_rvalue = float(self.line[36])
+        self.lr_B_pvalue = self.line[37]
+        self.lr_B_stderr = self.line[38]
+        self.disco_split = self.line[39]
+        self.clips_score = self.line[40]
+        self.nodes_edge = float(self.line[41])
+        self.structure = self.line[42]
 
         inv = {'-': '+', '+': '-'}
         if self.acceptorA > self.donorA:
@@ -272,6 +276,12 @@ class DetectOutput:
                         status.append("log_ratio_slope=" + str(round(log_ratio_slope, 2)) + ">" + str(round(log_ratio_slope_max, 2)))
                     if log_ratio_rvalue > log_ratio_rvalue_max:
                         status.append("log_ratio_rvalue=" + str(round(log_ratio_rvalue, 2)) + ">" + str(round(log_ratio_rvalue_max, 2)))
+
+                    # @todo subfunc
+                    log_value_max = -(1.0 / 2000) * e.score - 3.95
+                    log_value = math.log((float(e.mismatches) + 0.0000001) / float(e.alignment_score))
+                    if log_value >= log_value_max:
+                        status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
 
                     if len(status) == 0:
                         e.status = 'valid'

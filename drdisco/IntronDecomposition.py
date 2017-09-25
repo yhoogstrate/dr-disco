@@ -302,7 +302,7 @@ class Node:
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t[" + str(id(edge)) + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
+                out += "\n\t[" + str(id(edge)) + "][m:" + str(edge.n_matches) + ",mm:" + str(edge.n_mismatches) + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
 
         if a > 0:
             return out + "\n\t-> soft /hard clips: " + str(self.clips) + "\n"
@@ -427,6 +427,9 @@ class Edge:
 
         self.acceptor_donor = {}
 
+        self.n_mismatches = 0
+        self.n_matches = 0
+
     def get_entropy_of_alignments(self):
         """Entropy is an important metric / propery of an edge
         The assumption is that all reads should be 'different', i.e.
@@ -540,6 +543,10 @@ class Edge:
                     self.acceptor_donor[key][0] += edge.acceptor_donor[key][0]
                     self.acceptor_donor[key][1] += edge.acceptor_donor[key][1]
 
+        def update_matches_mismatches(edge):
+            self.n_mismatches += edge.n_mismatches
+            self.n_matches += edge.n_matches
+
         for alignment_key in edge._unique_alignment_hashes:
             self.add_alignment_key(alignment_key)
 
@@ -554,6 +561,7 @@ class Edge:
 
         update_ctps(edge)
         update_acceptor_donor(edge)
+        update_matches_mismatches(edge)
 
     def add_type(self, _type, weight):
         if _type in self._types:
@@ -675,7 +683,7 @@ class Graph:
 
         return None
 
-    def insert_edge(self, pos1, pos2, _type, cigarstrs, ctps, acceptor, donor):
+    def insert_edge(self, pos1, pos2, _type, cigarstrs, ctps, acceptor, donor, n_mismatches, n_matches):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
@@ -696,6 +704,9 @@ class Graph:
             edge = Edge(node1, node2)
             node1.insert_edge(edge)
             node2.insert_edge(edge)
+
+        edge.n_mismatches += n_mismatches
+        edge.n_matches += n_matches
 
         edge.add_type(_type, 1)
         if node1 == edge._origin and _type != JunctionTypes.cigar_splice_junction:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
@@ -1013,6 +1024,16 @@ class SubGraph():
         self.total_clips = clips
         return self.total_clips
 
+    def calc_m_mm(self):
+        m = 0
+        mm = 0
+
+        for edge in self.edges:
+            m += edge.n_matches
+            mm += edge.n_mismatches
+
+        return (m, mm)
+
     def calc_scores(self):
         self.total_score = 0
         for edge in self.edges:
@@ -1079,6 +1100,7 @@ class SubGraph():
 
         lregA = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[0])
         lregB = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[1])
+        m_mm = self.calc_m_mm()
 
         return (
             "%s\t%i\t%s\t"
@@ -1087,6 +1109,7 @@ class SubGraph():
             "%i\t%i\t"
             "%s\tunclassified\t%s\t%s\t"
             "%i\t%i\t%i\t%i\t"
+            "%i\t%i\t"
             "%i\t%i\t%i\t"
             "%i\t%i\t"
             "%.4f\t%.4f\t"
@@ -1100,6 +1123,7 @@ class SubGraph():
                       self.posB_acceptor, self.posB_donor,
                       dist, ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
+                      m_mm[0], m_mm[1],
                       len(self.edges), nodes_a, nodes_b,  # Edges and nodes stats
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
                       self.edges[0].get_entropy_of_alignments(), self.get_overall_entropy(),  # Entropy stats
@@ -1562,7 +1586,7 @@ class BAMExtract(object):
             if JunctionTypeUtils.is_fusion_junction(rg):
                 pos1, pos2, junction, ctps, acceptor, donor = read_to_junction(read, rg, sa[0])
                 if pos1 is not None:
-                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor)
+                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), read.get_tag('AS'))
 
             elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
@@ -1602,9 +1626,9 @@ class BAMExtract(object):
                     if i_pos1 is not None:
                         if internal_edge[2] == JunctionTypes.cigar_splice_junction:
                             # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
-                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None)
+                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)
                         else:
-                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None)
+                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)  # By insertion tags in cigar string
 
         log.debug("alignment data loaded")
 
@@ -1762,6 +1786,8 @@ class IntronDecomposition:
 
         fusion_junctions.reinsert_edges(thicker_edges)  # @todo move function into statuc function in this class
 
+        # fusion_junctions.print_chain()
+
         fusion_junctions.reindex_sj()
 
         subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
@@ -1788,6 +1814,7 @@ class IntronDecomposition:
                 "pos-B-acceptor"   "\t" "pos-B-donor"       "\t"
                 "genomic-distance" "\t" "filter-status"     "\t" "circRNA"       "\t" "intronic/exonic"    "\t"
                 "score"            "\t" "soft+hardclips"    "\t" "n-split-reads" "\t" "n-discordant-reads" "\t"
+                "alignment-score"  "\t" "mismatches"        "\t"
                 "n-edges"          "\t" "n-nodes-A"         "\t" "n-nodes-B"     "\t"
                 "n-splice-junc-A"  "\t" "n-splice-junc-B"   "\t"
                 "entropy-bp-edge"  "\t" "entropy-all-edges" "\t"
