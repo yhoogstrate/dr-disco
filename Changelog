@@ -1,3 +1,6 @@
+2017-10-26	Youri Hoogstrate	v0.11.1
+	* Added many junctions to the blacklist (based on repeat regions)
+
 2017-10-22	Youri Hoogstrate	v0.11.0
 	* Added way to use mismatches + alignment score for classification
 
