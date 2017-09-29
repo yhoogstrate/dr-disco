@@ -290,7 +290,7 @@ class DetectOutput:
                     lr_a = e.lr_A_pvalue * e.lr_A_intercept
                     lr_b = e.lr_A_pvalue * e.lr_B_intercept
                     #lr_symmetry_max = e.score / (6.0 + (0.11*e.score)) + 11.5
-                    lr_symmetry_max = (e.score) / (0.11 + (0.0246*(e.score))) + 41
+                    lr_symmetry_max = -e.score / (0.11 + (0.0246*(e.score))) + 41
                     n_lr_symmetry = pow(pow(lr_a, 2) + pow(lr_b, 2), 0.5)
                     if n_lr_symmetry >= lr_symmetry_max:
                         status.append("n_lr_symmetry=" + str(round(n_lr_symmetry, 2)) + ">=" + str(round(lr_symmetry_max,2)))
