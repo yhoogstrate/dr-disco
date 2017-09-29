@@ -98,20 +98,22 @@ class DetectOutputEntry:
         self.entropy_all_edges = float(self.line[26])
         self.bp_pos_stddev = float(self.line[27])
         self.entropy_disco_bps = self.line[28]
-        self.lr_A_slope = float(self.line[29])
-        self.lr_A_intercept = self.line[30]
-        self.lr_A_rvalue = float(self.line[31])
 
-        self.lr_A_pvalue = self.line[32]
+        self.lr_A_slope = float(self.line[29])
+        self.lr_A_intercept = float(self.line[30])
+        self.lr_A_rvalue = float(self.line[31])
+        self.lr_A_pvalue = float(self.line[32])
         self.lr_A_stderr = self.line[33]
+
         self.lr_B_slope = float(self.line[34])
-        self.lr_B_intercept = self.line[35]
+        self.lr_B_intercept = float(self.line[35])
         self.lr_B_rvalue = float(self.line[36])
-        self.lr_B_pvalue = self.line[37]
+        self.lr_B_pvalue = float(self.line[37])
         self.lr_B_stderr = self.line[38]
-        self.disco_split = self.line[39]
-        self.clips_score = self.line[40]
-        self.nodes_edge = float(self.line[41])
+
+        self.disco_split = self.line[39]  # ratio1
+        self.clips_score = self.line[40]  # ratio2
+        self.nodes_edge = float(self.line[41])  # ratio3 -> 1.0 * (nodes_a + nodes_b) / len(self.edges)
         self.structure = self.line[42]
 
         inv = {'-': '+', '+': '-'}
@@ -227,7 +229,6 @@ class DetectOutput:
                     # @todo subfunc
                     n_support_min = (0.215 * pow(max(0, e.n_nodes) - 1.0, 1.59)) + 6.5
                     n_support_min = int(round(n_support_min))
-
                     if e.n_supporting_reads < n_support_min:
                         status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min))
 
@@ -256,7 +257,7 @@ class DetectOutput:
 
                     # @todo subfunc
                     clips_min = (0.19 * e.score) - 25
-                    clips_max = (0.78 * e.score) + 97
+                    clips_max = (0.84 * e.score) + 90
                     if e.clips < clips_min:
                         status.append("clips=" + str(e.clips) + "<" + str(clips_min))
                     if e.clips > clips_max:
@@ -282,6 +283,14 @@ class DetectOutput:
                     log_value = math.log((float(e.mismatches) + 0.0000001) / float(e.alignment_score))
                     if log_value >= log_value_max:
                         status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
+
+                    # @todo subfunc
+                    lr_a = e.lr_A_pvalue * e.lr_A_intercept
+                    lr_b = e.lr_A_pvalue * e.lr_B_intercept
+                    lr_symmetry_max = -e.score / (0.11 + (0.0246 * (e.score))) + 41
+                    n_lr_symmetry = pow(pow(lr_a, 2) + pow(lr_b, 2), 0.5)
+                    if n_lr_symmetry >= lr_symmetry_max:
+                        status.append("n_lr_symmetry=" + str(round(n_lr_symmetry, 2)) + ">=" + str(round(lr_symmetry_max, 2)))
 
                     if len(status) == 0:
                         e.status = 'valid'
