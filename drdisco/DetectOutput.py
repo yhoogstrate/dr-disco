@@ -111,9 +111,9 @@ class DetectOutputEntry:
         self.lr_B_pvalue = float(self.line[37])
         self.lr_B_stderr = self.line[38]
 
-        self.disco_split = self.line[39] # ratio1
-        self.clips_score = self.line[40] # ratio2
-        self.nodes_edge = float(self.line[41]) # ratio3 -> 1.0 * (nodes_a + nodes_b) / len(self.edges)
+        self.disco_split = self.line[39]  # ratio1
+        self.clips_score = self.line[40]  # ratio2
+        self.nodes_edge = float(self.line[41])  # ratio3 -> 1.0 * (nodes_a + nodes_b) / len(self.edges)
         self.structure = self.line[42]
 
         inv = {'-': '+', '+': '-'}
@@ -288,9 +288,9 @@ class DetectOutput:
                     magnitude = 9.6
                     lr_a = e.lr_A_pvalue * e.lr_A_intercept
                     lr_b = e.lr_A_pvalue * e.lr_B_intercept
-                    n_lr_symmetry = pow(pow(lr_a, 2) + pow(lr_b, 2),0.5)
+                    n_lr_symmetry = pow(pow(lr_a, 2) + pow(lr_b, 2), 0.5)
                     if n_lr_symmetry >= magnitude:
-                        status.append("n_lr_symmetry="+str(round(n_lr_symmetry,2)) + ">=" + str(magnitude))
+                        status.append("n_lr_symmetry=" + str(round(n_lr_symmetry, 2)) + ">=" + str(magnitude))
 
                     if len(status) == 0:
                         e.status = 'valid'
