@@ -285,12 +285,14 @@ class DetectOutput:
                         status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
 
                     # @todo subfunc
-                    magnitude = 9.6
+                    #magnitude = 9.6
+                    #if n_lr_symmetry >= magnitude:
                     lr_a = e.lr_A_pvalue * e.lr_A_intercept
                     lr_b = e.lr_A_pvalue * e.lr_B_intercept
+                    lr_symmetry_max = e.score / (6.0 + (0.11*e.score)) + 11.5
                     n_lr_symmetry = pow(pow(lr_a, 2) + pow(lr_b, 2), 0.5)
-                    if n_lr_symmetry >= magnitude:
-                        status.append("n_lr_symmetry=" + str(round(n_lr_symmetry, 2)) + ">=" + str(magnitude))
+                    if n_lr_symmetry >= lr_symmetry_max:
+                        status.append("n_lr_symmetry=" + str(round(n_lr_symmetry, 2)) + ">=" + str(round(lr_symmetry_max,2)))
 
                     if len(status) == 0:
                         e.status = 'valid'
