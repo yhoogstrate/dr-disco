@@ -1,3 +1,7 @@
+2017-10-27	Youri Hoogstrate	v0.12.1
+	* Added more regions and junctions to blacklist
+	* Works around a STAR bug (assigning negative AS values)
+
 2017-10-27	Youri Hoogstrate	v0.12.0
 	* Added new classification variable focussing on fusions
 	  with low number of reads
