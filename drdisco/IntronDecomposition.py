@@ -1586,7 +1586,12 @@ class BAMExtract(object):
             if JunctionTypeUtils.is_fusion_junction(rg):
                 pos1, pos2, junction, ctps, acceptor, donor = read_to_junction(read, rg, sa[0])
                 if pos1 is not None:
-                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), read.get_tag('AS'))
+                    alignment_score = read.get_tag('AS')
+                    # It happens that STAR assigns incorrenct alignment scores like -2147483577
+                    # If this happens we set it to 12 as some kind of wild guess
+                    if alignment_score < 0:
+                        alignment_score = 12
+                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score)
 
             elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
