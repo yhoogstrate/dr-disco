@@ -213,7 +213,7 @@ class DetectOutput:
                     fh.write(e)
                 else:
                     def classify_intronic_exonic():
-                        n_edges_max = int(round(0.0035 * e.score + 3.5, 0))
+                        n_edges_max = int(round(0.00575 * e.score + 5.75, 0))
 
                         if e.n_edges >= n_edges_max:
                             e.x_onic = 'exonic'
