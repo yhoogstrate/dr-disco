@@ -3,7 +3,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 """
-Dr. Disco - testing classification of intronic and exonic
+Dr. Disco - testing fix-chimeric
 
 [License: GNU General Public License v3 (GPLv3)]
 
@@ -22,20 +22,19 @@ Dr. Disco - testing classification of intronic and exonic
  along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
-from drdisco.IntronDecomposition import IntronDecomposition
 
 import unittest
-import subprocess
 import filecmp
 import os
-import pysam
-from drdisco.ChimericAlignment import ChimericAlignment
+import subprocess
+
+from drdisco.Classify import Blacklist
+from drdisco.DetectOutput import DetectOutput
+
 from utils import *
 
 
-subprocess.call(["bash", "tests/rm_bai_files.sh"])
-
-TEST_DIR = "tests/as-star-bug/"
+TEST_DIR = "tests/intronic-exonic-classification/"
 T_TEST_DIR = "tmp/" + TEST_DIR
 
 
@@ -44,23 +43,16 @@ if not os.path.exists(T_TEST_DIR):
     os.makedirs(T_TEST_DIR)
 
 
-class TestNegativeAlignmentScoreBugByStar(unittest.TestCase):
+class TestIDetectOutputCalssification(unittest.TestCase):
     def test_01(self):
         test_id = '01'
 
-        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
-        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
-
-        ic = IntronDecomposition(fixed_bam)
-        ic.decompose(0)
-
-        fh = open(output_file, "w")
-        ic.export(fh)
-        fh.close()
+        cl = DetectOutput(input_file)
+        cl.classify(output_file, False, Blacklist())
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
