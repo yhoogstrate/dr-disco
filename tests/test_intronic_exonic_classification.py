@@ -3,8 +3,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 """
-Dr. Disco - testing a bug that STAR introduces (negative
-alignment score via AS tag)
+Dr. Disco - testing classification of intronic and exonic
 
 [License: GNU General Public License v3 (GPLv3)]
 

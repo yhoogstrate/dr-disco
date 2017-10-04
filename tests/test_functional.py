@@ -25,8 +25,7 @@ import filecmp
 import pysam
 import os
 import subprocess
-
-from test_intronic_break_detection import sam_to_fixed_bam
+from utils import *
 
 # Nosetests doesn't use main()
 
@@ -129,7 +128,7 @@ class TestFunctional_detect(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         command = ["bin/dr-disco",
                    "detect",
@@ -150,7 +149,7 @@ class TestFunctional_detect(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         command = ["bin/dr-disco",
                    "detect",
@@ -253,10 +252,6 @@ class TestFunctional_integrate(unittest.TestCase):
         self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
-
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':

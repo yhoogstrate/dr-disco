@@ -30,6 +30,8 @@ import filecmp
 import os
 import pysam
 from drdisco.ChimericAlignment import ChimericAlignment
+from utils import *
+
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
@@ -42,50 +44,6 @@ if not os.path.exists(T_TEST_DIR):
     os.makedirs(T_TEST_DIR)
 
 
-def sam_to_fixed_bam(sam, fixed_bam):
-    basename, ext = os.path.splitext(os.path.basename(sam))
-    bam_file = T_TEST_DIR + '/' + basename + '.bam'
-
-    fhq = open(bam_file, "wb")
-    fhq.write(pysam.view('-b', sam))
-    fhq.close()
-
-    alignment_handle = ChimericAlignment(bam_file)
-    return alignment_handle.convert(fixed_bam, T_TEST_DIR)
-
-
-def bam_diff(f1, f2):
-    basename, ext = os.path.splitext(os.path.basename(f1))
-
-    f1sorted = T_TEST_DIR + basename + '.f1.sorted.bam'
-    f2sorted = T_TEST_DIR + basename + '.f2.sorted.bam'
-
-    pysam.sort(f1, '-n', '-o', f1sorted)
-    pysam.sort(f2, '-n', '-o', f2sorted)
-
-    f1sam = T_TEST_DIR + basename + '.f1.sam'
-    f2sam = T_TEST_DIR + basename + '.f2.sam'
-
-    fhq = open(f1sam, "w")
-    fhq.write(pysam.view('-h', f1sorted))
-    fhq.close()
-
-    fhq = open(f2sam, "w")
-    fhq.write(pysam.view('-h', f2sorted))
-    fhq.close()
-
-    subprocess.Popen(['sed', '-i', '-r', 's@(SA:[^\\t]+)\\t(LB:[^\\t]+)\t(RG:[^\\t]+)@\\3\\t\\1\\t\\2@', f2sam], stdout=subprocess.PIPE).stdout.read()
-
-    subprocess.Popen(['sed', '-i', '-r', 's@\\tFI:i:[0-9]+@@', f1sam], stdout=subprocess.PIPE).stdout.read()
-    subprocess.Popen(['sed', '-i', '-r', 's@\\tFI:i:[0-9]+@@', f2sam], stdout=subprocess.PIPE).stdout.read()
-
-    # one time only
-    # subprocess.Popen(['sed', '-i' , '-r', 's@\\tSA:Z:[^\\t]+@@', f1sam], stdout=subprocess.PIPE).stdout.read()
-    # subprocess.Popen(['sed', '-i' , '-r', 's@\\tSA:Z:[^\\t]+@@', f2sam], stdout=subprocess.PIPE).stdout.read()
-
-    return filecmp.cmp(f1sam, f2sam), f1sam, f2sam
-
-
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
         test_id = '01'
@@ -95,7 +53,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -114,7 +72,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -132,7 +90,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -150,7 +108,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -168,7 +126,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -185,7 +143,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -203,7 +161,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -222,7 +180,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -240,7 +198,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -258,7 +216,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -276,7 +234,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -294,7 +252,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -312,7 +270,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -330,7 +288,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -348,7 +306,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -366,7 +324,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -384,7 +342,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -403,7 +361,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -422,7 +380,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -447,7 +405,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -466,7 +424,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -485,7 +443,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -504,7 +462,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -523,7 +481,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -542,7 +500,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -563,7 +521,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -582,7 +540,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -605,7 +563,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        sam_to_fixed_bam(input_file_a, fixed_bam)
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
 
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
@@ -617,8 +575,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':

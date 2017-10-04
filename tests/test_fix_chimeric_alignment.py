@@ -30,6 +30,8 @@ import subprocess
 import filecmp
 import pysam
 import os
+from utils import *
+
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
@@ -122,10 +124,6 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.close()
 
         self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
-
-
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':

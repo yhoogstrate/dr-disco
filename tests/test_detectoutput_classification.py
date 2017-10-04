@@ -28,9 +28,10 @@ import filecmp
 import os
 import subprocess
 
-
 from drdisco.Classify import Blacklist
 from drdisco.DetectOutput import DetectOutput
+
+from utils import *
 
 
 D_TEST_DIR = "tests/detect-intronic/"
@@ -587,10 +588,6 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         for blacklist in blacklists:
             cl = DetectOutput(input_file)
             cl.classify(output_file, False, blacklist)
-
-
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':

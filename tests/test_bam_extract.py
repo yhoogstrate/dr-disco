@@ -151,9 +151,5 @@ class TestIntronicBreakDetection(unittest.TestCase):
             self.assertEqual(fh.read(), "")  # empty file check
 
 
-def main():
-    unittest.main()
-
-
 if __name__ == '__main__':
     main()
