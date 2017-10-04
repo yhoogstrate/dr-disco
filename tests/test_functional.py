@@ -25,7 +25,7 @@ import filecmp
 import pysam
 import os
 import subprocess
-from utils import *
+from utils import main, sam_to_fixed_bam
 
 # Nosetests doesn't use main()
 

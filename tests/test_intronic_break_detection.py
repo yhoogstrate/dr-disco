@@ -28,9 +28,7 @@ import unittest
 import subprocess
 import filecmp
 import os
-import pysam
-from drdisco.ChimericAlignment import ChimericAlignment
-from utils import *
+from utils import main, sam_to_fixed_bam
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
@@ -573,8 +571,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         # Test data not checked, should just not throw an exception
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
-
 
 
 if __name__ == '__main__':

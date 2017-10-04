@@ -29,9 +29,7 @@ import unittest
 import subprocess
 import filecmp
 import os
-import pysam
-from drdisco.ChimericAlignment import ChimericAlignment
-from utils import *
+from utils import main, sam_to_fixed_bam
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])

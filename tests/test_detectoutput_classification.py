@@ -31,7 +31,7 @@ import subprocess
 from drdisco.Classify import Blacklist
 from drdisco.DetectOutput import DetectOutput
 
-from utils import *
+from utils import main
 
 
 D_TEST_DIR = "tests/detect-intronic/"

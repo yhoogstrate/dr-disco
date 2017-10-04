@@ -28,7 +28,7 @@ from fuma.Fusion import STRAND_REVERSE
 
 import unittest
 
-from utils import *
+from utils import main
 
 
 class TestIntronicBreakDetection(unittest.TestCase):

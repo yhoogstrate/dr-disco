@@ -24,7 +24,7 @@ import os
 import unittest
 import subprocess
 import filecmp
-from utils import *
+from utils import main
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])

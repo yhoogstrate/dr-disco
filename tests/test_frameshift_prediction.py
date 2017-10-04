@@ -27,7 +27,7 @@ import unittest
 import os
 
 from drdisco.DetectFrameShifts import DetectFrameShifts
-from utils import *
+from utils import main
 
 
 TEST_DIR = "tests/integrate/"

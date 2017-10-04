@@ -28,7 +28,7 @@ import filecmp
 import os
 import subprocess
 from drdisco.DetectOutput import DetectOutput
-from utils import *
+from utils import main
 
 
 TEST_DIR = "tests/integrate/"

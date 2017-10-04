@@ -31,7 +31,7 @@ import subprocess
 from drdisco.Classify import Blacklist
 from drdisco.DetectOutput import DetectOutput
 
-from utils import *
+from utils import main
 
 
 TEST_DIR = "tests/intronic-exonic-classification/"

@@ -30,7 +30,7 @@ import subprocess
 import filecmp
 import pysam
 import os
-from utils import *
+from utils import main
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])

@@ -27,6 +27,7 @@ import unittest
 import filecmp
 import os
 import pysam
+import subprocess
 from drdisco.ChimericAlignment import ChimericAlignment
 
 
@@ -76,4 +77,3 @@ def bam_diff(f1, f2, T_TEST_DIR):
 
 def main():
     unittest.main()
-
