@@ -67,6 +67,8 @@ class DetectFrameShifts:
         Such gtf files are provided by Ensembl
         """
 
+        log.info("Loading GTF file " + self.gtf_file + " for protein frameshift analysis")
+
         def load_gtf_per_transcript():
             transcript_idx = {}
             gtf_file = HTSeq.GFF_Reader(self.gtf_file, end_included=True)
