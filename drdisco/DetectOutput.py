@@ -153,7 +153,7 @@ class DetectOutputEntry:
             pos = HTSeq.GenomicInterval(chrom, pos_pos, pos_pos + 1, ".")
             genes = set([])
 
-            for step in gtf_file[pos]:
+            for step in gtf_file.idx[pos]:
                 genes = genes.union(step)
 
             genes_str = ','.join(sorted(list(genes)))
@@ -176,6 +176,38 @@ class DetectOutputEntry:
         line = self.line
         line[11] = self.status
         return "\t".join(line) + "\n"
+
+
+class GeneAnnotation:
+    def __init__(self, gtf_file):
+        self.gtf_file = gtf_file
+        self.idx = self.parse()
+
+    def parse(self):
+        idx = HTSeq.GenomicArrayOfSets("auto", stranded=False)
+        if self.gtf_file:  # could be None of no gtf file is provided
+            gtf_file = HTSeq.GFF_Reader(self.gtf_file, end_included=True)
+            n = 0
+
+            for feature in gtf_file:
+                if feature.type == "gene":
+                    if 'gene_name' in feature.attr:
+                        name = feature.attr['gene_name']
+                    elif 'Name' in feature.attr:
+                        name = feature.attr['Name']
+                    elif 'gene' in feature.attr:
+                        name = feature.attr['gene']
+                    else:
+                        name = feature.name
+
+                    if feature.iv.chrom[0:3] == 'chr':
+                        feature.iv.chrom = feature.iv.chrom[3:]
+
+                    idx[feature.iv] += name
+                    n += 1
+
+            log.info("Loaded " + str(n) + " features")
+        return idx
 
 
 class DetectOutput:
@@ -315,34 +347,19 @@ class DetectOutput:
             header = "\t".join(header[:-1] + ['full-gene-disregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
 
             fh_out.write("shared-id\tfusion\t" + header)
+
+            # index used to find duplicates
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
-            gene_annotation = HTSeq.GenomicArrayOfSets("auto", stranded=False)
-            dfs = None
 
-            if gtf_file:
-                dfs = DetectFrameShifts(gtf_file)
-                gtf_file = HTSeq.GFF_Reader(gtf_file, end_included=True)
-
-                for feature in gtf_file:
-                    if feature.type == "gene":
-                        if 'gene_name' in feature.attr:
-                            name = feature.attr['gene_name']
-                        elif 'Name' in feature.attr:
-                            name = feature.attr['Name']
-                        elif 'gene' in feature.attr:
-                            name = feature.attr['gene']
-                        else:
-                            name = feature.name
-
-                        if feature.iv.chrom[0:3] == 'chr':
-                            feature.iv.chrom = feature.iv.chrom[3:]
-
-                        gene_annotation[feature.iv] += name
+            # index used to annotate gene names: TMPRSS2->ERG
+            gene_annotation = GeneAnnotation(gtf_file)
+            dfs = DetectFrameShifts(gtf_file) if gtf_file else None
 
             intronic_linear = []
             remainder = []
 
             # Find 'duplicates' or fusions that belong to each other
+            log.info("Searching for intronic and exonic breaks that belong to the same event")
             for e in self:
                 if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
                     done_breaks = set([])
@@ -451,6 +468,7 @@ class DetectOutput:
             for e in remainder:
                 insert_in_index(idx2, [e], e.score)
 
+            log.info("Determining fusion gene names and generate output")
             # Generate output
             i = 1
             exported = set([])
