@@ -28,6 +28,8 @@ from fuma.Fusion import STRAND_REVERSE
 
 import unittest
 
+from utils import main
+
 
 class TestIntronicBreakDetection(unittest.TestCase):
     def test_01(self):
@@ -93,10 +95,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
         self.assertEqual(aligned_cigars[0], [(4, 40), (0, 84)])
         self.assertEqual(aligned_cigars[1], [(0, 40), (4, 85)])
         self.assertEqual(ca.get_order(), STRAND_REVERSE)
-
-
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':
