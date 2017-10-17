@@ -344,7 +344,7 @@ class DetectOutput:
 
         with open(output_table, 'w') as fh_out:
             header = self.header.split("\t")
-            header = "\t".join(header[:-1] + ['full-gene-disregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
+            header = "\t".join(header[:-1] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
 
             fh_out.write("shared-id\tfusion\t" + header)
 

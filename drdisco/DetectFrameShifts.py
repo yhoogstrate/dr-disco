@@ -203,7 +203,7 @@ class DetectFrameShifts:
             _to[0] = _to[0][3:]
 
         # These are ends of the exons in which translation was not (yet?) started
-        # A full gene disregulation is found when in the next gene a start_codon-containing exon is found
+        # A full gene dysregulation is found when in the next gene a start_codon-containing exon is found
         # these still need to be implemented
         for step in self.gene_annotation_from_fgd[HTSeq.GenomicInterval(_from[0], max(0, _from[1] - offset), _from[1] + offset + 1, _from[2])].steps():
             for entry in step[1]:
