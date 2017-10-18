@@ -37,3 +37,4 @@ truncated.*
 *.backup
 .~lock.*
 /classification
+ignore

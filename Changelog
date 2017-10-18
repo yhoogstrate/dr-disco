@@ -1,3 +1,29 @@
+2017-10-17	Youri Hoogstrate	v0.12.2
+	* Typo in output (disregulation->dys...)
+
+2017-09-27	Youri Hoogstrate	v0.12.1
+	* Added more regions and junctions to blacklist
+	* Works around a STAR bug (assigning negative AS values)
+
+2017-09-27	Youri Hoogstrate	v0.12.0
+	* Added new classification variable focussing on fusions
+	  with low number of reads
+
+2017-09-27	Youri Hoogstrate	v0.11.2
+	* Added many regions to the blacklist (based on repeat regions)
+
+2017-09-26	Youri Hoogstrate	v0.11.1
+	* Added many junctions to the blacklist (based on repeat regions)
+
+2017-09-22	Youri Hoogstrate	v0.11.0
+	* Added way to use mismatches + alignment score for classification
+
+2017-09-08	Youri Hoogstrate	v0.10.0
+	* Improved frameshift detection by looking for all split junctions
+	  the data structure
+	* Added support and column for finding 'full gene dysregulation'
+	  fusion transcripts
+
 2017-07-26	Youri Hoogstrate	v0.9.0
 	* Support for frame shift detection in Integrate function
 	* Some bugfixes in integrate

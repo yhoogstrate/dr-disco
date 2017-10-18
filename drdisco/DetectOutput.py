@@ -84,31 +84,37 @@ class DetectOutputEntry:
         self.n_split_reads = int(self.line[16])
         self.n_discordant_reads = int(self.line[17])
         self.n_supporting_reads = self.n_split_reads + self.n_discordant_reads
-        self.n_edges = self.line[18]
-        self.n_nodes_A = int(self.line[19])
-        self.n_nodes_B = int(self.line[20])
-        self.n_nodes = self.n_nodes_A + self.n_nodes_B
-        self.n_splice_junc_A = self.line[21]
-        self.n_splice_junc_B = self.line[22]
-        self.entropy_bp_edge = float(self.line[23])
-        self.entropy_all_edges = float(self.line[24])
-        self.bp_pos_stddev = float(self.line[25])
-        self.entropy_disco_bps = self.line[26]
-        self.lr_A_slope = float(self.line[27])
-        self.lr_A_intercept = self.line[28]
-        self.lr_A_rvalue = float(self.line[29])
 
-        self.lr_A_pvalue = self.line[30]
-        self.lr_A_stderr = self.line[31]
-        self.lr_B_slope = float(self.line[32])
-        self.lr_B_intercept = self.line[33]
-        self.lr_B_rvalue = float(self.line[34])
-        self.lr_B_pvalue = self.line[35]
-        self.lr_B_stderr = self.line[36]
-        self.disco_split = self.line[37]
-        self.clips_score = self.line[38]
-        self.nodes_edge = float(self.line[39])
-        self.structure = self.line[40]
+        self.alignment_score = int(self.line[18])
+        self.mismatches = int(self.line[19])
+
+        self.n_edges = self.line[20]
+        self.n_nodes_A = int(self.line[21])
+        self.n_nodes_B = int(self.line[22])
+        self.n_nodes = self.n_nodes_A + self.n_nodes_B
+        self.n_splice_junc_A = self.line[23]
+        self.n_splice_junc_B = self.line[24]
+        self.entropy_bp_edge = float(self.line[25])
+        self.entropy_all_edges = float(self.line[26])
+        self.bp_pos_stddev = float(self.line[27])
+        self.entropy_disco_bps = self.line[28]
+
+        self.lr_A_slope = float(self.line[29])
+        self.lr_A_intercept = float(self.line[30])
+        self.lr_A_rvalue = float(self.line[31])
+        self.lr_A_pvalue = float(self.line[32])
+        self.lr_A_stderr = self.line[33]
+
+        self.lr_B_slope = float(self.line[34])
+        self.lr_B_intercept = float(self.line[35])
+        self.lr_B_rvalue = float(self.line[36])
+        self.lr_B_pvalue = float(self.line[37])
+        self.lr_B_stderr = self.line[38]
+
+        self.disco_split = self.line[39]  # ratio1
+        self.clips_score = self.line[40]  # ratio2
+        self.nodes_edge = float(self.line[41])  # ratio3 -> 1.0 * (nodes_a + nodes_b) / len(self.edges)
+        self.structure = self.line[42]
 
         inv = {'-': '+', '+': '-'}
         if self.acceptorA > self.donorA:
@@ -121,6 +127,7 @@ class DetectOutputEntry:
             self.RNAstrandA = '.'
             self.RNAstrandB = '.'
 
+        self.fgd = ''
         self.frameshift_0 = ''
         self.frameshift_1 = ''
         self.frameshift_2 = ''
@@ -146,7 +153,7 @@ class DetectOutputEntry:
             pos = HTSeq.GenomicInterval(chrom, pos_pos, pos_pos + 1, ".")
             genes = set([])
 
-            for step in gtf_file[pos]:
+            for step in gtf_file.idx[pos]:
                 genes = genes.union(step)
 
             genes_str = ','.join(sorted(list(genes)))
@@ -169,6 +176,38 @@ class DetectOutputEntry:
         line = self.line
         line[11] = self.status
         return "\t".join(line) + "\n"
+
+
+class GeneAnnotation:
+    def __init__(self, gtf_file):
+        self.gtf_file = gtf_file
+        self.idx = self.parse()
+
+    def parse(self):
+        idx = HTSeq.GenomicArrayOfSets("auto", stranded=False)
+        if self.gtf_file:  # could be None of no gtf file is provided
+            gtf_file = HTSeq.GFF_Reader(self.gtf_file, end_included=True)
+            n = 0
+
+            for feature in gtf_file:
+                if feature.type == "gene":
+                    if 'gene_name' in feature.attr:
+                        name = feature.attr['gene_name']
+                    elif 'Name' in feature.attr:
+                        name = feature.attr['Name']
+                    elif 'gene' in feature.attr:
+                        name = feature.attr['gene']
+                    else:
+                        name = feature.name
+
+                    if feature.iv.chrom[0:3] == 'chr':
+                        feature.iv.chrom = feature.iv.chrom[3:]
+
+                    idx[feature.iv] += name
+                    n += 1
+
+            log.info("Loaded " + str(n) + " features")
+        return idx
 
 
 class DetectOutput:
@@ -222,7 +261,6 @@ class DetectOutput:
                     # @todo subfunc
                     n_support_min = (0.215 * pow(max(0, e.n_nodes) - 1.0, 1.59)) + 6.5
                     n_support_min = int(round(n_support_min))
-
                     if e.n_supporting_reads < n_support_min:
                         status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min))
 
@@ -251,7 +289,7 @@ class DetectOutput:
 
                     # @todo subfunc
                     clips_min = (0.19 * e.score) - 25
-                    clips_max = (0.78 * e.score) + 97
+                    clips_max = (0.84 * e.score) + 90
                     if e.clips < clips_min:
                         status.append("clips=" + str(e.clips) + "<" + str(clips_min))
                     if e.clips > clips_max:
@@ -271,6 +309,20 @@ class DetectOutput:
                         status.append("log_ratio_slope=" + str(round(log_ratio_slope, 2)) + ">" + str(round(log_ratio_slope_max, 2)))
                     if log_ratio_rvalue > log_ratio_rvalue_max:
                         status.append("log_ratio_rvalue=" + str(round(log_ratio_rvalue, 2)) + ">" + str(round(log_ratio_rvalue_max, 2)))
+
+                    # @todo subfunc
+                    log_value_max = -(1.0 / 2000) * e.score - 3.95
+                    log_value = math.log((float(e.mismatches) + 0.0000001) / float(e.alignment_score))
+                    if log_value >= log_value_max:
+                        status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
+
+                    # @todo subfunc
+                    lr_a = e.lr_A_pvalue * e.lr_A_intercept
+                    lr_b = e.lr_A_pvalue * e.lr_B_intercept
+                    lr_symmetry_max = -e.score / (0.11 + (0.0246 * (e.score))) + 41
+                    n_lr_symmetry = pow(pow(lr_a, 2) + pow(lr_b, 2), 0.5)
+                    if n_lr_symmetry >= lr_symmetry_max:
+                        status.append("n_lr_symmetry=" + str(round(n_lr_symmetry, 2)) + ">=" + str(round(lr_symmetry_max, 2)))
 
                     if len(status) == 0:
                         e.status = 'valid'
@@ -292,47 +344,62 @@ class DetectOutput:
 
         with open(output_table, 'w') as fh_out:
             header = self.header.split("\t")
-            header = "\t".join(header[:-1] + ['frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
+            header = "\t".join(header[:-1] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
 
             fh_out.write("shared-id\tfusion\t" + header)
+
+            # index used to find duplicates
             self.idx = HTSeq.GenomicArrayOfSets("auto", stranded=True)
-            gene_annotation = HTSeq.GenomicArrayOfSets("auto", stranded=False)
-            dfs = None
 
-            if gtf_file:
-                dfs = DetectFrameShifts(gtf_file)
-                gtf_file = HTSeq.GFF_Reader(gtf_file, end_included=True)
-
-                for feature in gtf_file:
-                    if feature.type == "gene":
-                        if 'gene_name' in feature.attr:
-                            name = feature.attr['gene_name']
-                        elif 'Name' in feature.attr:
-                            name = feature.attr['Name']
-                        elif 'gene' in feature.attr:
-                            name = feature.attr['gene']
-                        else:
-                            name = feature.name
-
-                        if feature.iv.chrom[0:3] == 'chr':
-                            feature.iv.chrom = feature.iv.chrom[3:]
-
-                        gene_annotation[feature.iv] += name
+            # index used to annotate gene names: TMPRSS2->ERG
+            gene_annotation = GeneAnnotation(gtf_file)
+            dfs = DetectFrameShifts(gtf_file) if gtf_file else None
 
             intronic_linear = []
             remainder = []
 
             # Find 'duplicates' or fusions that belong to each other
+            log.info("Searching for intronic and exonic breaks that belong to the same event")
             for e in self:
                 if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
+                    done_breaks = set([])
+
                     if e.donorA > e.donorB:
                         frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
                     else:
                         frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
 
-                    e.frameshift_0 = ','.join(sorted([x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]))
-                    e.frameshift_1 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]))
-                    e.frameshift_2 = ','.join(sorted([x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]))
+                    done_breaks.add(e.chrA + ':' + str(e.posA) + '/' + str(e.posA + 1) + '(' + e.strandA + ')->' + e.chrB + ':' + str(e.posB) + '/' + str(e.posB + 1) + '(' + e.strandB + ')')
+
+                    fgd = [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
+                    frameshifts_0 = [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
+                    frameshifts_1 = [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]
+                    frameshifts_2 = [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
+
+                    for additional_breaks in e.structure.split('&'):
+                        params = additional_breaks.split(':(')
+                        n_split_reads = sum([int(x.split(':')[1]) for x in params[1].rstrip(')').split(',') if x.split(':')[0] != 'discordant_mates'])
+
+                        posAB = params[0].split(':')
+                        posA, posB = int(posAB[1].split('/')[0]), int(posAB[2].split('/')[0])
+
+                        if params[0] not in done_breaks and n_split_reads > 0:
+                            if e.donorA > e.donorB:
+                                frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
+                            else:
+                                frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+
+                            fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
+                            frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
+                            frameshifts_1 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]
+                            frameshifts_2 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
+
+                        done_breaks.add(params[0])
+
+                    e.fgd = ','.join(sorted(list(set(fgd))))
+                    e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
+                    e.frameshift_1 = ','.join(sorted(list(set(frameshifts_1))))
+                    e.frameshift_2 = ','.join(sorted(list(set(frameshifts_2))))
 
                 if e.x_onic == 'intronic' and e.circ_lin == 'linear':
                     intronic_linear.append(e)
@@ -401,6 +468,7 @@ class DetectOutput:
             for e in remainder:
                 insert_in_index(idx2, [e], e.score)
 
+            log.info("Determining fusion gene names and generate output")
             # Generate output
             i = 1
             exported = set([])
@@ -410,7 +478,7 @@ class DetectOutput:
                     for entry in idx2[score][key]:
                         if entry not in exported:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
-                            line = entry.line[:-1] + [entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-1:]
+                            line = entry.line[:-1] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-1:]
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line) + "\n")
                             exported.add(entry)
