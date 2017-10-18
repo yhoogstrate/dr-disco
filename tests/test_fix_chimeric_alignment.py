@@ -34,16 +34,20 @@ import os
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
 
+TEST_DIR = "tests/fix-chimeric/"
+T_TEST_DIR = "tmp/" + TEST_DIR
+
+if not os.path.exists(T_TEST_DIR):
+    os.makedirs(T_TEST_DIR)
+
+
 class TestChimericAlignment(unittest.TestCase):
     def test_01(self):
-        if not os.path.exists("tmp"):
-            os.mkdir("tmp")
+        input_file = TEST_DIR + "test_terg_01.filtered.bam"
+        output_file = T_TEST_DIR + "test_terg_01.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_terg_01.filtered.fixed.sam"
 
-        input_file = "tests/fix-chimeric/test_terg_01.filtered.bam"
-        output_file = "tmp/test_terg_01.filtered.fixed.bam"
-        output_file_s = "tmp/test_terg_01.filtered.fixed.sam"
-
-        test_file = "tests/fix-chimeric/test_terg_01.filtered.fixed.sam"
+        test_file = TEST_DIR + "test_terg_01.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
         alignment_handle.convert(output_file, "tmp")
@@ -59,11 +63,11 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file = "tests/fix-chimeric/test_terg_02.filtered.bam"
-        output_file = "tmp/test_terg_02.filtered.fixed.bam"
-        output_file_s = "tmp/test_terg_02.filtered.fixed.sam"
+        input_file = TEST_DIR + "test_terg_02.filtered.bam"
+        output_file = T_TEST_DIR + "test_terg_02.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_terg_02.filtered.fixed.sam"
 
-        test_file = "tests/fix-chimeric/test_terg_02.filtered.fixed.sam"
+        test_file = TEST_DIR + "test_terg_02.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
         alignment_handle.convert(output_file, "tmp")
@@ -82,11 +86,11 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file = "tests/fix-chimeric/test_terg_03.filtered.bam"
-        test_file = "tests/fix-chimeric/test_terg_03.filtered.fixed.sam"
+        input_file = TEST_DIR + "test_terg_03.filtered.bam"
+        test_file = TEST_DIR + "test_terg_03.filtered.fixed.sam"
 
-        output_file = "tmp/test_terg_03.filtered.fixed.bam"
-        output_file_s = "tmp/test_terg_03.filtered.fixed.sam"
+        output_file = T_TEST_DIR + "test_terg_03.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_terg_03.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
         alignment_handle.convert(output_file, "tmp")
@@ -103,11 +107,11 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file = "tests/fix-chimeric/test_terg_04.filtered.bam"
-        test_file = "tests/fix-chimeric/test_terg_04.filtered.fixed.sam"
+        input_file = TEST_DIR + "test_terg_04.filtered.bam"
+        test_file = TEST_DIR + "test_terg_04.filtered.fixed.sam"
 
-        output_file = "tmp/test_terg_04.filtered.fixed.bam"
-        output_file_s = "tmp/test_terg_04.filtered.fixed.sam"
+        output_file = T_TEST_DIR + "test_terg_04.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_terg_04.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
         alignment_handle.convert(output_file, "tmp")

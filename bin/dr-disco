@@ -13,6 +13,10 @@ from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.ChimericAlignment import ChimericAlignment
 from drdisco.ChimericAlignment import ChimericAlignmentFixed
 
+from drdisco.Classify import Blacklist
+from drdisco.DetectOutput import DetectOutput
+
+
 """[License: GNU General Public License v3 (GPLv3)]
 
     Dr. Disco: fusion gene detection in random hexamer RNA-seq data
@@ -35,7 +39,7 @@ from drdisco.ChimericAlignment import ChimericAlignmentFixed
     You can contact me via the github repository at the following url:
     <https://github.com/yhoogstrate/dr-disco>
 
-    You can e-mail me via 'yhoogstrate' at the following webmail domain:
+    You can e-mail me via 'y.hoogstrate' at the following webmail domain:
     gmail dot com
 """
 
@@ -52,27 +56,27 @@ def CLI():
 
 @CLI.command(name="fix", short_help="Fixes chimeric SAM/BAM alignment produced by RNA-STAR")
 @click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
-@click.argument('output_alignment_file')
 @click.argument('input_alignment_file', type=click.Path(exists=True))
-def CLI_fix_chimeric_alignment(temp_dir, output_alignment_file, input_alignment_file):
+@click.argument('output_alignment_file')
+def CLI_fix_chimeric_alignment(temp_dir, input_alignment_file, output_alignment_file):
     alignment_handle = ChimericAlignment(input_alignment_file)
     alignment_handle.convert(output_alignment_file, temp_dir)
 
 
 @CLI.command(name="unfix", short_help="Tries to restore the BAM file")
 @click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
-@click.argument('output_alignment_file')
 @click.argument('input_alignment_file', type=click.Path(exists=True))
-def CLI_unfix_chimeric_alignment(temp_dir, output_alignment_file, input_alignment_file):
+@click.argument('output_alignment_file')
+def CLI_unfix_chimeric_alignment(temp_dir, input_alignment_file, output_alignment_file):
     alignment_handle = ChimericAlignmentFixed(input_alignment_file)
     alignment_handle.convert(output_alignment_file, temp_dir)
 
 
 @CLI.command(name='detect', short_help='Detects and interprets intronic break points')
 @click.option("--min-e-score", "-m", default=8, help="Minimal score to initiate pulling sub-graphs (larger numbers boost performance but result in suboptimal results) [default=8]")
-@click.argument('output_file', type=click.File('w'))
 @click.argument('bam_input_file', type=click.Path(exists=True))
-def CLI_detect_intronic_break_points(min_e_score, output_file, bam_input_file):
+@click.argument('output_file', type=click.File('w'))
+def CLI_detect_break_points(min_e_score, bam_input_file, output_file):
     ic = IntronDecomposition(bam_input_file)
     ic.decompose(min_e_score)
     ic.export(output_file)
@@ -81,9 +85,9 @@ def CLI_detect_intronic_break_points(min_e_score, output_file, bam_input_file):
 @CLI.command(name='bam-extract', short_help='Extract reads from two chromosomal positions (and also take the mates with the same name) - regions are in the format chr1:123-546')
 @click.argument('region1')
 @click.argument('region2')
-@click.argument('bam_output_file')
 @click.argument('bam_input_file', type=click.Path(exists=True))
-def CLI_bam_extract_regions(region1, region2, bam_output_file, bam_input_file):
+@click.argument('bam_output_file')
+def CLI_bam_extract_regions(region1, region2, bam_input_file, bam_output_file):
     c = BAMExtract(bam_input_file, False)
     c.extract(region1, region2, bam_output_file)
 
@@ -110,6 +114,37 @@ def CLI_logo_sequence(region, fasta_input_file, offset_negative, offset_positive
     fh_p.write(fh.fetch(_chr, _pos + 1, _pos + offset_positive + 1) + "\n")
     fh_p.close()
     fh.close()
+
+
+@CLI.command(name='classify', short_help='Classifies between true and false positivies, without rerunning a whole dataset.')
+@click.argument('table_input_file', type=click.Path(exists=True))
+@click.argument('table_output_file')
+@click.option('--only-valid', is_flag=True, default=False, help="Only return results marked as 'valid'")
+@click.option('--blacklist-regions', help="Blacklist these regions (BED file)")
+@click.option('--blacklist-junctions', help="Blacklist these region-to-region junctions (custom format, see files in ./share/)")
+def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regions, blacklist_junctions):
+    blacklist = Blacklist()
+
+    if blacklist_junctions:
+        blacklist.add_junctions_from_file(blacklist_junctions)
+
+    if blacklist_regions:
+        blacklist.add_regions_from_bed(blacklist_regions)
+
+    cl = DetectOutput(table_input_file)
+    cl.classify(table_output_file, only_valid, blacklist)
+
+
+@CLI.command(name='integrate', short_help='Maps junctions back together that are likely to correspond to the same fusion event.')
+@click.argument('table_input_file', type=click.Path(exists=True))
+@click.argument('table_output_file')
+@click.option('--gtf', help="Use gene annotation (GTF file)")
+def CLI_integrate(table_input_file, table_output_file, gtf):
+    cl = DetectOutput(table_input_file)
+    if gtf:
+        cl.integrate(table_output_file, str(gtf))
+    else:
+        cl.integrate(table_output_file, None)
 
 
 if __name__ == '__main__':

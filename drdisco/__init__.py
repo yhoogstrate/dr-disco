@@ -24,19 +24,20 @@
     You can contact me via the github repository at the following url:
     <https://github.com/yhoogstrate/dr-disco>
 
-    You can e-mail me via 'yhoogstrate' at the following webmail domain:
+    You can e-mail me via 'y.hoogstrate' at the following webmail domain:
     gmail dot com
 """
 
-__version_info__ = ('0', '5', '0')
+import logging
+import sys
+
+__version_info__ = ('0', '12', '2')
 __version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.'.join(__version_info__[0:3]) + "-" + __version_info__[3]
 __author__ = 'Youri Hoogstrate'
 __homepage__ = 'https://github.com/yhoogstrate/dr-disco'
 __license__ = 'GNU General Public License v3 (GPLv3)'
 __license_notice__ = 'License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\nThis is free software: you are free to change and redistribute it.\nThere is NO WARRANTY, to the extent permitted by law.'
 
-import logging
-import sys
 __log_format__ = "[%(filename)s:%(lineno)s - %(funcName)s()] %(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=__log_format__, stream=sys.stderr)  # bioconda seems to crash on stdout here..
 log = logging.getLogger(__name__)
@@ -49,6 +50,4 @@ MAX_GENOME_DISTANCE = 999999999
 MAX_SIZE_CIRCULAR_RNA = 100000
 
 # filter settings
-MIN_SUBNET_ENTROPY = 0.8
 MIN_DISCO_PER_SUBNET_PER_NODE = 1  # minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
-MIN_SUPPORTING_READS_PER_SUBNET_PER_NODE = 4  # minimum supporting reads is 8 per subnet

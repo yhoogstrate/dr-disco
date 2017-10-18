@@ -1,3 +1,64 @@
+2017-10-17	Youri Hoogstrate	v0.12.2
+	* Typo in output (disregulation->dys...)
+
+2017-09-27	Youri Hoogstrate	v0.12.1
+	* Added more regions and junctions to blacklist
+	* Works around a STAR bug (assigning negative AS values)
+
+2017-09-27	Youri Hoogstrate	v0.12.0
+	* Added new classification variable focussing on fusions
+	  with low number of reads
+
+2017-09-27	Youri Hoogstrate	v0.11.2
+	* Added many regions to the blacklist (based on repeat regions)
+
+2017-09-26	Youri Hoogstrate	v0.11.1
+	* Added many junctions to the blacklist (based on repeat regions)
+
+2017-09-22	Youri Hoogstrate	v0.11.0
+	* Added way to use mismatches + alignment score for classification
+
+2017-09-08	Youri Hoogstrate	v0.10.0
+	* Improved frameshift detection by looking for all split junctions
+	  the data structure
+	* Added support and column for finding 'full gene dysregulation'
+	  fusion transcripts
+
+2017-07-26	Youri Hoogstrate	v0.9.0
+	* Support for frame shift detection in Integrate function
+	* Some bugfixes in integrate
+
+2017-07-05	Youri Hoogstrate	v0.8.2
+	* Changed another filter, reduces the amount of false negatives
+
+2017-07-05	Youri Hoogstrate	v0.8.1
+	* Looser settings and new shape for entropy filter
+
+2017-06-22	Youri Hoogstrate	v0.8.0
+	* Adds `dr-disco integrate` to find genomic breaks and exon-to-
+	  exon fused splice junctions that belong to the same event
+	* Adds donor acceptor calculation
+	* Adds possibility to add gene names by adding a GTF file
+
+2017-06-16	Youri Hoogstrate	v0.7.1
+	* Allows running `dr-disco fix` in parallel mode (random tmp files)
+	* Classified on slope
+	* Many new entries in blacklists
+
+2017-05-17	Youri Hoogstrate	v0.7.0
+	* Changed CLI interface
+	* Added `dr-disco classify`
+	* Removed classification step from `dr-disco detect` such that
+	  classification can be done without re-running detect completely.
+	* Added blacklist system plus a few known contaminants
+	* Fixed broken nose (dependency)
+	* Adds some extra variables useful for classification
+	* Improved the TP and FP ratio of the filter
+
+2017-04-12	Youri Hoogstrate	v0.6.0
+	* Changed behavior of pruning: less post-merging steps necessary
+	* Added two extra variables that can be used for classification
+
 2017-04-05	Youri Hoogstrate	v0.5.0
 	* Large improvements in parsing junctions from reads and much better
 	  performance on circRNAs

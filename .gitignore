@@ -36,3 +36,5 @@ truncated.*
 /previous_R_data
 *.backup
 .~lock.*
+/classification
+ignore
