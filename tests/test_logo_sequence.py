@@ -24,6 +24,8 @@ import os
 import unittest
 import subprocess
 import filecmp
+from utils import main
+
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
@@ -76,10 +78,6 @@ class TestLogoSequence(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(output_file_n, test_file_n))
         self.assertTrue(filecmp.cmp(output_file_p, test_file_p))
-
-
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':

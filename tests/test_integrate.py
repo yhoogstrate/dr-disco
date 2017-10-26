@@ -27,9 +27,8 @@ import unittest
 import filecmp
 import os
 import subprocess
-
-
 from drdisco.DetectOutput import DetectOutput
+from utils import main
 
 
 TEST_DIR = "tests/integrate/"
@@ -98,10 +97,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
             cl.integrate(output_file, gtf_file)
 
             self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
-
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':

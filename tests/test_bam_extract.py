@@ -27,6 +27,9 @@ import filecmp
 import pysam
 import os
 
+from utils import main
+
+
 TEST_DIR = "tests/bam-extract/"
 T_TEST_DIR = "tmp/" + TEST_DIR
 
@@ -149,10 +152,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         with open(output_file_s, "r") as fh:
             self.assertEqual(fh.read(), "")  # empty file check
-
-
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':
