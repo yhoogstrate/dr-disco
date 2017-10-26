@@ -79,7 +79,7 @@ class Blacklist:
 
         try:
             self.idx_regions[HTSeq.GenomicInterval(_chr, _pos_s, _pos_e, _strand)] += uid
-        except:
+        except Exception:
             raise ValueError("Invalid entry in region file:", uid, ":", _chr, _pos_s, _pos_e, _strand, id_suffix)
 
         self.r += 1
@@ -125,7 +125,7 @@ class Blacklist:
         try:
             self.idx_junctions[HTSeq.GenomicInterval(reg1[0], reg1[1], reg1[2], reg1[3])] += uid
             self.idx_junctions[HTSeq.GenomicInterval(reg2[0], reg2[1], reg2[2], reg2[3])] += uid
-        except:
+        except Exception:
             raise ValueError("Invalid entry in junction file:", uid, ":", reg1, reg2, id_suffix)
 
         self.j += 1

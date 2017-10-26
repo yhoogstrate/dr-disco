@@ -288,7 +288,7 @@ class Node:
     def remove_edge(self, edge):
         try:
             del(self.edges[edge._origin.position._hash])
-        except:
+        except Exception:
             del(self.edges[edge._target.position._hash])
 
     def __str__(self):  # pragma: no cover
@@ -1263,7 +1263,7 @@ class BAMExtract(object):
 
         try:  # pragma: no cover
             bam_fh.fetch()
-        except:  # pragma: no cover
+        except Exception:  # pragma: no cover
             fname = bam_fh.filename
             log.info('Indexing BAM file with pysam: ' + fname)  # create index if it does not exist
             bam_fh.close()
@@ -1273,7 +1273,7 @@ class BAMExtract(object):
 
         try:
             bam_fh.fetch()
-        except:
+        except Exception:
             raise Exception('Could not indexing BAM file: ' + bam_fh.filename)
 
         return bam_fh
@@ -1576,7 +1576,7 @@ class BAMExtract(object):
         for read in self.pysam_fh.fetch():
             try:
                 sa = self.parse_SA(read.get_tag('SA'))
-            except:
+            except Exception:
                 raise ValueError("Problems parsing SA tag for:\n\t%s", str(read))
             _chr = self.pysam_fh.get_reference_name(read.reference_id)
             rg = JunctionTypeUtils.enum(read.get_tag('RG'))
