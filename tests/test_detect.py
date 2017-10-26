@@ -3,7 +3,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 """
-Dr. Disco - testing fix-chimeric
+Dr. Disco - testing `dr-disco detect ...`. This includes running `dr-disco fix ...` first to ensure the whole pipeline is in working.
 
 [License: GNU General Public License v3 (GPLv3)]
 
@@ -33,7 +33,7 @@ from utils import main, sam_to_fixed_bam
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
-TEST_DIR = "tests/detect-intronic/"
+TEST_DIR = "tests/detect/"
 T_TEST_DIR = "tmp/" + TEST_DIR
 
 
