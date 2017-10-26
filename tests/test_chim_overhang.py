@@ -29,6 +29,8 @@ import filecmp
 import os
 
 from drdisco.IntronDecomposition import IntronDecomposition
+from drdisco.DetectOutput import DetectOutput
+from drdisco.Classify import Blacklist
 from utils import main, sam_to_fixed_bam
 
 
@@ -61,28 +63,119 @@ class TestChimOverhang(unittest.TestCase):
     def test_01(self):
         test_id = '01'
 
-        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        unfixed_sam = TEST_DIR + "test_" + test_id + ".sam"
         fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
-        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
-        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        drdisco_detect = T_TEST_DIR + "test_" + test_id + "_detect.out.txt"
+        drdisco_detect_test = TEST_DIR + "test_" + test_id + "_detect.out.txt"
+
+        drdisco_classify = T_TEST_DIR + "test_" + test_id + "_classify.out.txt"
+        drdisco_classify_test = TEST_DIR + "test_" + test_id + "_classify.out.txt"
+
+        drdisco_integrate = T_TEST_DIR + "test_" + test_id + "_integrate.out.txt"
+        drdisco_integrate_test = TEST_DIR + "test_" + test_id + "_integrate.out.txt"
 
         # Step 01: dr-disco fix (don't check please)
-        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
+        sam_to_fixed_bam(unfixed_sam, fixed_bam, T_TEST_DIR)
 
         # Step 02: dr-disco detect (check appropriate values and columns)
         ic = IntronDecomposition(fixed_bam)
         ic.decompose(0)
 
-        with open(output_file, "w") as fh:
+        with open(drdisco_detect, "w") as fh:
             ic.export(fh)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(drdisco_detect_test, drdisco_detect), msg="diff '" + drdisco_detect_test + "' '" + drdisco_detect + "':\n" + subprocess.Popen(['diff', drdisco_detect_test, drdisco_detect], stdout=subprocess.PIPE).stdout.read())
 
         # Step 03: dr-disco classify
-        # see if classifier invalides based on imbalance
+        cl = DetectOutput(drdisco_detect)
+        cl.classify(drdisco_classify, False, Blacklist())
+
+        self.assertTrue(filecmp.cmp(drdisco_classify_test, drdisco_classify), msg="diff '" + drdisco_classify_test + "' '" + drdisco_classify + "':\n" + subprocess.Popen(['diff', drdisco_classify_test, drdisco_classify], stdout=subprocess.PIPE).stdout.read())
 
         # Step 04: dr-disco integrate
-        # see if columns from classify are copied into integrate
+        cl = DetectOutput(drdisco_classify)
+        cl.integrate(drdisco_integrate, None)
+
+        self.assertTrue(filecmp.cmp(drdisco_integrate_test, drdisco_integrate), msg="diff '" + drdisco_integrate_test + "' '" + drdisco_integrate + "':\n" + subprocess.Popen(['diff', drdisco_integrate_test, drdisco_integrate], stdout=subprocess.PIPE).stdout.read())
+
+    def test_02(self):
+        test_id = '02'
+
+        unfixed_sam = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+
+        drdisco_detect = T_TEST_DIR + "test_" + test_id + "_detect.out.txt"
+        drdisco_detect_test = TEST_DIR + "test_" + test_id + "_detect.out.txt"
+
+        drdisco_classify = T_TEST_DIR + "test_" + test_id + "_classify.out.txt"
+        drdisco_classify_test = TEST_DIR + "test_" + test_id + "_classify.out.txt"
+
+        drdisco_integrate = T_TEST_DIR + "test_" + test_id + "_integrate.out.txt"
+        drdisco_integrate_test = TEST_DIR + "test_" + test_id + "_integrate.out.txt"
+
+        # Step 01: dr-disco fix (don't check please)
+        sam_to_fixed_bam(unfixed_sam, fixed_bam, T_TEST_DIR)
+
+        # Step 02: dr-disco detect (check appropriate values and columns)
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
+
+        with open(drdisco_detect, "w") as fh:
+            ic.export(fh)
+
+        self.assertTrue(filecmp.cmp(drdisco_detect_test, drdisco_detect), msg="diff '" + drdisco_detect_test + "' '" + drdisco_detect + "':\n" + subprocess.Popen(['diff', drdisco_detect_test, drdisco_detect], stdout=subprocess.PIPE).stdout.read())
+
+        # Step 03: dr-disco classify
+        cl = DetectOutput(drdisco_detect)
+        cl.classify(drdisco_classify, False, Blacklist())
+
+        self.assertTrue(filecmp.cmp(drdisco_classify_test, drdisco_classify), msg="diff '" + drdisco_classify_test + "' '" + drdisco_classify + "':\n" + subprocess.Popen(['diff', drdisco_classify_test, drdisco_classify], stdout=subprocess.PIPE).stdout.read())
+
+        # Step 04: dr-disco integrate
+        cl = DetectOutput(drdisco_classify)
+        cl.integrate(drdisco_integrate, None)
+
+        self.assertTrue(filecmp.cmp(drdisco_integrate_test, drdisco_integrate), msg="diff '" + drdisco_integrate_test + "' '" + drdisco_integrate + "':\n" + subprocess.Popen(['diff', drdisco_integrate_test, drdisco_integrate], stdout=subprocess.PIPE).stdout.read())
+
+    def test_03(self):
+        test_id = '03'
+
+        unfixed_sam = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+
+        drdisco_detect = T_TEST_DIR + "test_" + test_id + "_detect.out.txt"
+        drdisco_detect_test = TEST_DIR + "test_" + test_id + "_detect.out.txt"
+
+        drdisco_classify = T_TEST_DIR + "test_" + test_id + "_classify.out.txt"
+        drdisco_classify_test = TEST_DIR + "test_" + test_id + "_classify.out.txt"
+
+        drdisco_integrate = T_TEST_DIR + "test_" + test_id + "_integrate.out.txt"
+        drdisco_integrate_test = TEST_DIR + "test_" + test_id + "_integrate.out.txt"
+
+        # Step 01: dr-disco fix (don't check please)
+        sam_to_fixed_bam(unfixed_sam, fixed_bam, T_TEST_DIR)
+
+        # Step 02: dr-disco detect (check appropriate values and columns)
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
+
+        with open(drdisco_detect, "w") as fh:
+            ic.export(fh)
+
+        self.assertTrue(filecmp.cmp(drdisco_detect_test, drdisco_detect), msg="diff '" + drdisco_detect_test + "' '" + drdisco_detect + "':\n" + subprocess.Popen(['diff', drdisco_detect_test, drdisco_detect], stdout=subprocess.PIPE).stdout.read())
+
+        # Step 03: dr-disco classify
+        cl = DetectOutput(drdisco_detect)
+        cl.classify(drdisco_classify, False, Blacklist())
+
+        self.assertTrue(filecmp.cmp(drdisco_classify_test, drdisco_classify), msg="diff '" + drdisco_classify_test + "' '" + drdisco_classify + "':\n" + subprocess.Popen(['diff', drdisco_classify_test, drdisco_classify], stdout=subprocess.PIPE).stdout.read())
+
+        # Step 04: dr-disco integrate
+        cl = DetectOutput(drdisco_classify)
+        cl.integrate(drdisco_integrate, None)
+
+        self.assertTrue(filecmp.cmp(drdisco_integrate_test, drdisco_integrate), msg="diff '" + drdisco_integrate_test + "' '" + drdisco_integrate + "':\n" + subprocess.Popen(['diff', drdisco_integrate_test, drdisco_integrate], stdout=subprocess.PIPE).stdout.read())
 
 
 if __name__ == '__main__':
