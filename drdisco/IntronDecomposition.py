@@ -5,18 +5,6 @@
 
 from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MAX_SIZE_CIRCULAR_RNA
 
-def median(lst):
-    sortedLst = sorted(lst)
-    lstLen = len(lst)
-    index = (lstLen - 1) // 2
-
-    return sortedLst[index]
-    # return lowest value if there are two center points
-    # if (lstLen % 2):
-    #     return sortedLst[index]
-    # else:
-    #     return min(sortedLst[index], sortedLst[index + 1])
-
 import math
 import operator
 
@@ -60,6 +48,20 @@ from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 Tries to find genomic and exon to exon break points within a discordant
 RNA-Seq read alignment.
 """
+
+
+def median(lst):
+    sortedLst = sorted(lst)
+    lstLen = len(lst)
+    index = (lstLen - 1) // 2
+
+    return sortedLst[index]
+    # return lowest value if there are two center points
+    # if (lstLen % 2):
+    #     return sortedLst[index]
+    # else:
+    #     return min(sortedLst[index], sortedLst[index + 1])
+
 
 strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
 x_onic_tt = {0: 'unknown', 1: 'exonic', 2: 'intronic'}

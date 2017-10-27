@@ -98,7 +98,6 @@ class TestChimOverhang(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(drdisco_integrate_test, drdisco_integrate), msg="diff '" + drdisco_integrate_test + "' '" + drdisco_integrate + "':\n" + subprocess.Popen(['diff', drdisco_integrate_test, drdisco_integrate], stdout=subprocess.PIPE).stdout.read())
 
-
     def test_02(self):
         test_id = '02'
 
@@ -137,7 +136,6 @@ class TestChimOverhang(unittest.TestCase):
         cl.integrate(drdisco_integrate, None)
 
         self.assertTrue(filecmp.cmp(drdisco_integrate_test, drdisco_integrate), msg="diff '" + drdisco_integrate_test + "' '" + drdisco_integrate + "':\n" + subprocess.Popen(['diff', drdisco_integrate_test, drdisco_integrate], stdout=subprocess.PIPE).stdout.read())
-
 
     def test_03(self):
         test_id = '03'
