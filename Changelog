@@ -1,7 +1,11 @@
+2017-10-26	Youri Hoogstrate	v0.13.0
+	* Improved classification for exonic / spliced
+	* Added more stuff to blacklist (after analysing DNA seq)
+
 2017-10-17	Youri Hoogstrate	v0.12.2
 	* Typo in output (disregulation->dys...)
 
-2017-09-27	Youri Hoogstrate	v0.12.1
+2017-10-27	Youri Hoogstrate	v0.12.1
 	* Added more regions and junctions to blacklist
 	* Works around a STAR bug (assigning negative AS values)
 

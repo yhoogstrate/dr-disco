@@ -26,8 +26,8 @@ Dr. Disco - testing fix-chimeric
 import unittest
 import os
 
-
 from drdisco.DetectFrameShifts import DetectFrameShifts
+from utils import main
 
 
 TEST_DIR = "tests/integrate/"
@@ -75,10 +75,6 @@ class TestFrameShiftPrediction(unittest.TestCase):
                 self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 1), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
                 self.assertEqual(len(frameshift_annotation[1]), 0)
                 self.assertEqual(len(frameshift_annotation[2]), 0)
-
-
-def main():
-    unittest.main()
 
 
 if __name__ == '__main__':

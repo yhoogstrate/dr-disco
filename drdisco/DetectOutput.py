@@ -88,7 +88,7 @@ class DetectOutputEntry:
         self.alignment_score = int(self.line[18])
         self.mismatches = int(self.line[19])
 
-        self.n_edges = self.line[20]
+        self.n_edges = int(self.line[20])
         self.n_nodes_A = int(self.line[21])
         self.n_nodes_B = int(self.line[22])
         self.n_nodes = self.n_nodes_A + self.n_nodes_B
@@ -175,6 +175,7 @@ class DetectOutputEntry:
     def __str__(self):
         line = self.line
         line[11] = self.status
+        line[13] = self.x_onic
         return "\t".join(line) + "\n"
 
 
@@ -243,6 +244,14 @@ class DetectOutput:
                 if isinstance(e, basestring):
                     fh.write(e)
                 else:
+                    def classify_intronic_exonic():
+                        n_edges_max = int(round(0.00575 * e.score + 5.75, 0))
+
+                        if e.n_edges >= n_edges_max:
+                            e.x_onic = 'exonic'
+
+                    classify_intronic_exonic()
+
                     status = []
                     n += 1
 

@@ -25,7 +25,6 @@ truncated.*
 /samples
 .Rhistory
 *.png
-/*.R
 /*.svg
 
 # Development / OS

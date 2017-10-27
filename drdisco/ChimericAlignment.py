@@ -100,7 +100,7 @@ class ChimericAlignment:
         for read in reads_updated:
             try:
                 nm = read.get_tag('nM')
-            except:
+            except Exception:
                 nm = -1
 
             sa_id = [bam_file.get_reference_name(read.reference_id),
