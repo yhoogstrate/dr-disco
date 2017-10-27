@@ -33,7 +33,7 @@ from utils import main, sam_to_fixed_bam
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
 
-TEST_DIR = "tests/detect/"
+TEST_DIR = "tests/detect-intronic/"
 T_TEST_DIR = "tmp/" + TEST_DIR
 
 

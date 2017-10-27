@@ -430,6 +430,12 @@ class Edge:
         self.n_mismatches = 0
         self.n_matches = 0
 
+        # These are the number of matches per piece of an edge:
+        # [::::::::::>  -----   <:::]
+        # will add p1=12, p2=5 given the alignment length of the chunks
+        self.n_matches_p1 = []
+        self.n_matches_p2 = []
+
     def get_entropy_of_alignments(self):
         """Entropy is an important metric / propery of an edge
         The assumption is that all reads should be 'different', i.e.
@@ -683,12 +689,14 @@ class Graph:
 
         return None
 
-    def insert_edge(self, pos1, pos2, _type, cigarstrs, ctps, acceptor, donor, n_mismatches, n_matches):
+    def insert_edge(self, pos1, pos2, _type, cigarstrs, ctps, acceptor, donor, n_mismatches, n_matches, n_match_p1, n_match_p2):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
 
          cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
+
+         @todo what a MESS - C++ would be so neat here
         """
         self.create_node(pos1)
         self.create_node(pos2)
@@ -740,6 +748,10 @@ class Graph:
                 edge.acceptor_donor[pos_key] = [0, 1]  # acceptor score, donor score
             else:
                 edge.acceptor_donor[pos_key][1] += 1
+
+        edge.n_matches_p1.append(n_match_p1)
+        edge.n_matches_p2.append(n_match_p2)
+
 
     def reinsert_edges(self, edges):
         """Only works for Edges of which the _origin and _target Node
@@ -1280,6 +1292,7 @@ class BAMExtract(object):
 
     def extract_junctions(self, fusion_junctions, splice_junctions):
         def read_to_junction(read, rg, parsed_SA_tag, specific_type=None):
+            parsed_cigar_tuple = cigar_to_cigartuple(parsed_SA_tag[2])
             pos1, pos2, acceptor, donor = None, None, None, None
 
             if rg == JunctionTypes.discordant_mates:
@@ -1314,9 +1327,11 @@ class BAMExtract(object):
 
                 # more or less tested
                 if read.is_read1:
-                    acceptor, donor = pos1, pos2
+                    donor, acceptor = pos2, pos1
+                    n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
                 else:
-                    acceptor, donor = pos2, pos1
+                    donor, acceptor = pos1, pos2
+                    n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg == JunctionTypes.spanning_singleton_1:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1328,7 +1343,8 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
                 # more or less tested
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
+                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg == JunctionTypes.spanning_singleton_2:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1336,10 +1352,11 @@ class BAMExtract(object):
                                      read.is_reverse)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                     parsed_SA_tag[1] + bam_parse_alignment_offset(parsed_cigar_tuple),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
+                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg == JunctionTypes.spanning_singleton_1_r:
                 # test 24 covers these - positions are 100% correct, strands not sure ...
@@ -1355,13 +1372,14 @@ class BAMExtract(object):
                 if parsed_SA_tag[4] == "-":
                     pos2_offset = 0
                 else:
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
+                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_singleton_2_r]:
                 if read.is_reverse:
@@ -1374,7 +1392,7 @@ class BAMExtract(object):
                                      read.is_reverse)
 
                 if parsed_SA_tag[4] == "-":
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1382,7 +1400,8 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
+                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_1]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1395,7 +1414,7 @@ class BAMExtract(object):
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == '+':   # Tested in TERG s55 double inversion
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1403,7 +1422,8 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
+                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_2]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1416,7 +1436,7 @@ class BAMExtract(object):
                                      STRAND_REVERSE if not read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == '-':  # Tested in TERG s55 double inversion
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1424,7 +1444,8 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
+                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_1_r]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1437,7 +1458,7 @@ class BAMExtract(object):
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == '+':   # Tested in TERG s55 double inversion
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1445,7 +1466,8 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
+                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_2_r]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1458,7 +1480,7 @@ class BAMExtract(object):
                                      read.is_reverse)
 
                 if parsed_SA_tag[4] == '-':  # Tested in TERG s55 double inversion
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1466,7 +1488,8 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
+                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_1_s]:
                 # Very clear example in S054 @ chr21:40, 064, 610-40, 064, 831  and implemented in test case 14
@@ -1480,7 +1503,7 @@ class BAMExtract(object):
                                      STRAND_REVERSE if not read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == "-":
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1488,7 +1511,8 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_REVERSE if parsed_SA_tag[4] == "-" else STRAND_FORWARD)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
+                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_2_s]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1503,13 +1527,14 @@ class BAMExtract(object):
                 if parsed_SA_tag[4] == "-":
                     pos2_offset = 0
                 else:
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] != "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
+                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_1_t]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1524,13 +1549,14 @@ class BAMExtract(object):
                 if parsed_SA_tag[4] == "-":  # Tested in TERG s55 double inversion
                     pos2_offset = 0
                 else:
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
+                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_2_t]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1545,32 +1571,31 @@ class BAMExtract(object):
                 if parsed_SA_tag[4] == "+":  # Tested in TERG s55 double inversion
                     pos2_offset = 0
                 else:
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
+                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg != JunctionTypes.silent_mate:  # pragma: no cover
                 raise Exception("Fatal Error, RG: %s" % JunctionTypeUtils.str(rg))
 
-            else:
-                raise Exception("Unnknown read group: %s", rg)
-
+            # @todo Shouldn't this return either and Edge or None
             if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
                 return (pos1, pos2,
                         (read.cigarstring, parsed_SA_tag[2]),
                         (
                             bam_parse_alignment_offset(read.cigar, True),
-                            bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]), True)
+                            bam_parse_alignment_offset(parsed_cigar_tuple, True)
                         ),
-                        acceptor,
-                        donor
+                        acceptor, donor,
+                        n_match_p1, n_match_p2
                         )
 
-            return (None, None, None, None, None, None)
+            return (None, None, None, None, None, None, None, None)
 
         log.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
@@ -1584,14 +1609,14 @@ class BAMExtract(object):
             pos1, pos2 = None, None
 
             if JunctionTypeUtils.is_fusion_junction(rg):
-                pos1, pos2, junction, ctps, acceptor, donor = read_to_junction(read, rg, sa[0])
+                pos1, pos2, junction, ctps, acceptor, donor, n_match_p1, n_match_p2 = read_to_junction(read, rg, sa[0])
                 if pos1 is not None:
                     alignment_score = read.get_tag('AS')
                     # It happens that STAR assigns incorrenct alignment scores like -2147483577
                     # If this happens we set it to 12 as some kind of wild guess
                     if alignment_score < 0:
                         alignment_score = 12
-                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score)
+                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score, n_match_p1, n_match_p2)
 
             elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
@@ -1631,9 +1656,9 @@ class BAMExtract(object):
                     if i_pos1 is not None:
                         if internal_edge[2] == JunctionTypes.cigar_splice_junction:
                             # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
-                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)
+                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)
                         else:
-                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)  # By insertion tags in cigar string
+                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)  # By insertion tags in cigar string
 
         log.debug("alignment data loaded")
 
