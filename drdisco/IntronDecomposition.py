@@ -5,6 +5,18 @@
 
 from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MAX_SIZE_CIRCULAR_RNA
 
+def median(lst):
+    sortedLst = sorted(lst)
+    lstLen = len(lst)
+    index = (lstLen - 1) // 2
+
+    return sortedLst[index]
+    # return lowest value if there are two center points
+    # if (lstLen % 2):
+    #     return sortedLst[index]
+    # else:
+    #     return min(sortedLst[index], sortedLst[index + 1])
+
 import math
 import operator
 
@@ -409,6 +421,10 @@ class JunctionTypeUtils:
 class Edge:
     """Connection between two genomic locations
      - the connection can by of different types
+
+    Attributes:
+        origin: this is a genomic location (BreakPosition) - donor / acceptor is not determined and term 'origin' and 'target' is meaningless
+        target: this is a genomic location (BreakPosition)
     """
 
     def __init__(self, origin, target):
@@ -423,7 +439,7 @@ class Edge:
 
         #  Used for determining entropy / rmsqd:
         self.unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)
-                                    False: ({}, {})}  # other types: (origin, target)
+                                   False: ({}, {})}  # other types: (origin, target)
 
         self.acceptor_donor = {}
 
@@ -553,6 +569,12 @@ class Edge:
             self.n_mismatches += edge.n_mismatches
             self.n_matches += edge.n_matches
 
+        def update_n_matches_p1_p2(edge):
+            for n_match_p1 in edge.n_matches_p1:
+                self.n_matches_p1.append(n_match_p1)
+            for n_match_p2 in edge.n_matches_p2:
+                self.n_matches_p2.append(n_match_p2)
+
         for alignment_key in edge.unique_alignment_hashes:
             self.add_alignment_key(alignment_key)
 
@@ -568,6 +590,7 @@ class Edge:
         update_ctps(edge)
         update_acceptor_donor(edge)
         update_matches_mismatches(edge)
+        update_n_matches_p1_p2(edge)
 
     def add_type(self, _type, weight):
         if _type in self.types:
@@ -749,9 +772,12 @@ class Graph:
             else:
                 edge.acceptor_donor[pos_key][1] += 1
 
-        edge.n_matches_p1.append(n_match_p1)
-        edge.n_matches_p2.append(n_match_p2)
-
+        if str(pos1) == str(edge.origin.position):
+            edge.n_matches_p1.append(n_match_p1)
+            edge.n_matches_p2.append(n_match_p2)
+        else:
+            edge.n_matches_p1.append(n_match_p2)
+            edge.n_matches_p2.append(n_match_p1)
 
     def reinsert_edges(self, edges):
         """Only works for Edges of which the origin and target Node
@@ -1129,6 +1155,7 @@ class SubGraph():
             "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-A
             "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-B
             "%.4f\t%.4f\t%.4f\t"
+            "%i\t%i\t%i\t%i\t"
             "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0].origin.position.strand],  # Pos-A
                       self.posA_acceptor, self.posA_donor,
                       node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0].target.position.strand],  # Pos-B
@@ -1145,6 +1172,8 @@ class SubGraph():
                       1.0 * self.get_n_discordant_reads() / max(self.get_n_split_reads(), 0.1),
                       1.0 * self.total_clips / self.total_score,
                       1.0 * (nodes_a + nodes_b) / len(self.edges),
+                      self.get_n_matches_p1_median(), self.get_n_matches_p2_median(),
+                      self.get_n_matches_p1_max(), self.get_n_matches_p2_max(),
                       "&".join([str(edge) for edge in self.edges])))  # Data structure
 
     def get_overall_entropy(self):
@@ -1239,6 +1268,38 @@ class SubGraph():
         for rnode in rnodes:
             yield rnode
 
+    def get_n_matches_p1_median(self):
+        a = []
+        for edge in self.edges:
+            for n_match_p1 in edge.n_matches_p1:
+                a.append(n_match_p1)
+
+        return median(a)
+
+    def get_n_matches_p2_median(self):
+        a = []
+        for edge in self.edges:
+            for n_match_p2 in edge.n_matches_p2:
+                a.append(n_match_p2)
+
+        return median(a)
+
+    def get_n_matches_p1_max(self):
+        a = []
+        for edge in self.edges:
+            for n_match_p1 in edge.n_matches_p1:
+                a.append(n_match_p1)
+
+        return max(a)
+
+    def get_n_matches_p2_max(self):
+        a = []
+        for edge in self.edges:
+            for n_match_p2 in edge.n_matches_p2:
+                a.append(n_match_p2)
+
+        return max(a)
+
     def merge(self, subnet_m):
         for edge in subnet_m.edges:
             self.edges.append(edge)
@@ -1328,10 +1389,8 @@ class BAMExtract(object):
                 # more or less tested
                 if read.is_read1:
                     donor, acceptor = pos2, pos1
-                    n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
                 else:
                     donor, acceptor = pos1, pos2
-                    n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg == JunctionTypes.spanning_singleton_1:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1344,7 +1403,6 @@ class BAMExtract(object):
 
                 # more or less tested
                 donor, acceptor = pos2, pos1
-                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg == JunctionTypes.spanning_singleton_2:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1356,7 +1414,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
                 donor, acceptor = pos1, pos2
-                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg == JunctionTypes.spanning_singleton_1_r:
                 # test 24 covers these - positions are 100% correct, strands not sure ...
@@ -1379,7 +1436,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
                 donor, acceptor = pos1, pos2
-                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_singleton_2_r]:
                 if read.is_reverse:
@@ -1401,7 +1457,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
                 donor, acceptor = pos2, pos1
-                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_1]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1423,7 +1478,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
                 donor, acceptor = pos2, pos1
-                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_2]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1445,7 +1499,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
                 donor, acceptor = pos1, pos2
-                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_1_r]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1467,7 +1520,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
                 donor, acceptor = pos2, pos1
-                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_2_r]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1489,7 +1541,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
                 donor, acceptor = pos1, pos2
-                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_1_s]:
                 # Very clear example in S054 @ chr21:40, 064, 610-40, 064, 831  and implemented in test case 14
@@ -1512,7 +1563,6 @@ class BAMExtract(object):
                                      STRAND_REVERSE if parsed_SA_tag[4] == "-" else STRAND_FORWARD)
 
                 donor, acceptor = pos2, pos1
-                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_2_s]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1534,7 +1584,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] != "+" else STRAND_REVERSE)
 
                 donor, acceptor = pos1, pos2
-                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_1_t]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1556,7 +1605,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
                 donor, acceptor = pos1, pos2
-                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg in [JunctionTypes.spanning_paired_2_t]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1578,7 +1626,6 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
                 donor, acceptor = pos2, pos1
-                n_match_p2, n_match_p1 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
             elif rg != JunctionTypes.silent_mate:  # pragma: no cover
                 raise Exception("Fatal Error, RG: %s" % JunctionTypeUtils.str(rg))
@@ -1586,6 +1633,8 @@ class BAMExtract(object):
             # @todo Shouldn't this return either and Edge or None
             # @todo only skip if type == DiscordantMates/Reads, if Spanning then always allow (example 072?)
             if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
+                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
+
                 return (pos1, pos2,
                         (read.cigarstring, parsed_SA_tag[2]),
                         (
@@ -1856,6 +1905,7 @@ class IntronDecomposition:
                 "lr-A-slope"       "\t" "lr-A-intercept"    "\t" "lr-A-rvalue"   "\t" "lr-A-pvalue"        "\t" "lr-A-stderr" "\t"
                 "lr-B-slope"       "\t" "lr-B-intercept"    "\t" "lr-B-rvalue"   "\t" "lr-B-pvalue"        "\t" "lr-B-stderr" "\t"
                 "disco/split"      "\t" "clips/score"       "\t" "nodes/edge"    "\t"
+                "median-AS-A"      "\t" "median-AS-B"       "\t" "max-AS-A"      "\t" "max-AS-B"           "\t"
                 "data-structure"   "\n"
                 "%s" % (''.join([str(subnet) for subnet in ordered])))
 
