@@ -1,3 +1,7 @@
+2017-10-27	Youri Hoogstrate	v0.14.0
+	* Adds variables to output that can be used to determine hangover
+	  imbalance
+
 2017-10-26	Youri Hoogstrate	v0.13.0
 	* Improved classification for exonic / spliced
 	* Added more stuff to blacklist (after analysing DNA seq)
