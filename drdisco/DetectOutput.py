@@ -238,7 +238,7 @@ class DetectOutput:
                 else:
                     header = False
 
-    def classify(self, output_file, only_valid, blacklist):
+    def classify(self, output_file, only_valid, blacklist, min_chim_overhang):
         log.info("Loading " + output_file + "[only_valid=" + {True: 'true', False: 'false'}[only_valid] + "]")
         n = 0
         k = 0
@@ -341,9 +341,8 @@ class DetectOutput:
 
                     # @todo subfunc
                     chim_overhang = min(e.break_A_max_AS, e.break_B_max_AS)
-                    chim_overhang_min = 35
-                    if chim_overhang < chim_overhang_min:
-                        status.append("chim_overhang=" + str(chim_overhang) + "<" + str(chim_overhang_min))
+                    if chim_overhang < min_chim_overhang:
+                        status.append("chim_overhang=" + str(chim_overhang) + "<" + str(min_chim_overhang))
 
                     if len(status) == 0:
                         e.status = 'valid'
