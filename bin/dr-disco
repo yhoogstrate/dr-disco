@@ -122,7 +122,7 @@ def CLI_logo_sequence(region, fasta_input_file, offset_negative, offset_positive
 @click.option('--only-valid', is_flag=True, default=False, help="Only return results marked as 'valid'")
 @click.option('--blacklist-regions', help="Blacklist these regions (BED file)")
 @click.option('--blacklist-junctions', help="Blacklist these region-to-region junctions (custom format, see files in ./share/)")
-@click.option('--min_chim_overhang', default=50, help="Minimum alignment length on each side of the junction. May need to be set to smaller values for read lengths smaller than 75bp. Larger values are more stringent. [default=50]")
+@click.option('--min-chim-overhang', default=50, help="Minimum alignment length on each side of the junction. May need to be set to smaller values for read lengths smaller than 75bp. Larger values are more stringent. [default=50]")
 def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regions, blacklist_junctions, min_chim_overhang):
     blacklist = Blacklist()
 
