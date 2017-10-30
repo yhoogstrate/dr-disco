@@ -3,7 +3,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 """
-Dr. Disco - testing fix-chimeric
+Dr. Disco - testing `dr-disco detect ...`. This includes running `dr-disco fix ...` first to ensure the whole pipeline is in working.
 
 [License: GNU General Public License v3 (GPLv3)]
 

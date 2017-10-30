@@ -53,7 +53,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -65,7 +65,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -77,7 +77,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -89,7 +89,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -101,7 +101,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -113,7 +113,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -125,7 +125,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -137,7 +137,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -149,7 +149,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -161,7 +161,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -173,7 +173,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -185,7 +185,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -197,7 +197,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -209,7 +209,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -221,7 +221,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -233,7 +233,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -245,7 +245,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -257,7 +257,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -269,7 +269,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -281,7 +281,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -293,7 +293,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -305,7 +305,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -317,7 +317,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -329,7 +329,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -341,7 +341,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -353,7 +353,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -365,7 +365,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -377,7 +377,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -389,7 +389,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -401,7 +401,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -413,7 +413,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -425,7 +425,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -437,7 +437,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -449,7 +449,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -461,7 +461,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -473,7 +473,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -485,7 +485,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -497,7 +497,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -509,7 +509,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -521,7 +521,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -533,7 +533,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -545,7 +545,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -557,7 +557,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist())
+        cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -569,7 +569,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.only-valid.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, True, Blacklist())
+        cl.classify(output_file, True, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -587,7 +587,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
 
         for blacklist in blacklists:
             cl = DetectOutput(input_file)
-            cl.classify(output_file, False, blacklist)
+            cl.classify(output_file, False, blacklist, 1)
 
 
 if __name__ == '__main__':

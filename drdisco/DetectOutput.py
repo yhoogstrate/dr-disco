@@ -114,7 +114,13 @@ class DetectOutputEntry:
         self.disco_split = self.line[39]  # ratio1
         self.clips_score = self.line[40]  # ratio2
         self.nodes_edge = float(self.line[41])  # ratio3 -> 1.0 * (nodes_a + nodes_b) / len(self.edges)
-        self.structure = self.line[42]
+
+        self.break_A_median_AS = int(self.line[42])
+        self.break_B_median_AS = int(self.line[43])
+        self.break_A_max_AS = int(self.line[44])
+        self.break_B_max_AS = int(self.line[45])
+
+        self.structure = self.line[46]
 
         inv = {'-': '+', '+': '-'}
         if self.acceptorA > self.donorA:
@@ -232,7 +238,7 @@ class DetectOutput:
                 else:
                     header = False
 
-    def classify(self, output_file, only_valid, blacklist):
+    def classify(self, output_file, only_valid, blacklist, min_chim_overhang):
         log.info("Loading " + output_file + "[only_valid=" + {True: 'true', False: 'false'}[only_valid] + "]")
         n = 0
         k = 0
@@ -333,6 +339,11 @@ class DetectOutput:
                     if n_lr_symmetry >= lr_symmetry_max:
                         status.append("n_lr_symmetry=" + str(round(n_lr_symmetry, 2)) + ">=" + str(round(lr_symmetry_max, 2)))
 
+                    # @todo subfunc
+                    chim_overhang = min(e.break_A_max_AS, e.break_B_max_AS)
+                    if chim_overhang < min_chim_overhang:
+                        status.append("chim_overhang=" + str(chim_overhang) + "<" + str(min_chim_overhang))
+
                     if len(status) == 0:
                         e.status = 'valid'
                         fh.write(str(e))
@@ -353,7 +364,7 @@ class DetectOutput:
 
         with open(output_table, 'w') as fh_out:
             header = self.header.split("\t")
-            header = "\t".join(header[:-1] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-1:])
+            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-5:])
 
             fh_out.write("shared-id\tfusion\t" + header)
 
@@ -487,7 +498,7 @@ class DetectOutput:
                     for entry in idx2[score][key]:
                         if entry not in exported:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
-                            line = entry.line[:-1] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-1:]
+                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-5:]
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line) + "\n")
                             exported.add(entry)

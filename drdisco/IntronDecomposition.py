@@ -49,6 +49,20 @@ Tries to find genomic and exon to exon break points within a discordant
 RNA-Seq read alignment.
 """
 
+
+def median(lst):
+    sortedLst = sorted(lst)
+    lstLen = len(lst)
+    index = (lstLen - 1) // 2
+
+    return sortedLst[index]
+    # return lowest value if there are two center points
+    # if (lstLen % 2):
+    #     return sortedLst[index]
+    # else:
+    #     return min(sortedLst[index], sortedLst[index + 1])
+
+
 strand_tt = {STRAND_FORWARD: '+', STRAND_REVERSE: '-', STRAND_UNDETERMINED: '?'}
 x_onic_tt = {0: 'unknown', 1: 'exonic', 2: 'intronic'}
 
@@ -280,16 +294,16 @@ class Node:
             return None
 
     def insert_edge(self, edge):
-        if edge._target == self:
-            self.edges[edge._origin.position._hash] = edge
+        if edge.target == self:
+            self.edges[edge.origin.position._hash] = edge
         else:
-            self.edges[edge._target.position._hash] = edge
+            self.edges[edge.target.position._hash] = edge
 
     def remove_edge(self, edge):
         try:
-            del(self.edges[edge._origin.position._hash])
+            del(self.edges[edge.origin.position._hash])
         except Exception:
-            del(self.edges[edge._target.position._hash])
+            del(self.edges[edge.target.position._hash])
 
     def __str__(self):  # pragma: no cover
         out = str(self.position)
@@ -297,12 +311,12 @@ class Node:
         a = 0
         for k in sorted(self.edges):
             edge = self.edges[k]
-            filtered_edges = {JunctionTypeUtils.str(x): edge._types[x] for x in sorted(edge._types)}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
+            filtered_edges = {JunctionTypeUtils.str(x): edge.types[x] for x in sorted(edge.types)}  # if x not in ['cigar_soft_clip','cigar_hard_clip']
 
             len_edges = len(filtered_edges)
             a += len_edges
             if len_edges > 0:
-                out += "\n\t[" + str(id(edge)) + "][m:" + str(edge.n_matches) + ",mm:" + str(edge.n_mismatches) + "] " + str(edge._origin.position) + "->" + str(edge._target.position) + " " + str(filtered_edges)
+                out += "\n\t[" + str(id(edge)) + "][m:" + str(edge.n_matches) + ",mm:" + str(edge.n_mismatches) + "] " + str(edge.origin.position) + "->" + str(edge.target.position) + " " + str(filtered_edges)
 
         if a > 0:
             return out + "\n\t-> soft /hard clips: " + str(self.clips) + "\n"
@@ -409,26 +423,36 @@ class JunctionTypeUtils:
 class Edge:
     """Connection between two genomic locations
      - the connection can by of different types
+
+    Attributes:
+        origin: this is a genomic location (BreakPosition) - donor / acceptor is not determined and term 'origin' and 'target' is meaningless
+        target: this is a genomic location (BreakPosition)
     """
 
-    def __init__(self, _origin, _target):
-        if not isinstance(_target, Node) or not isinstance(_origin, Node):  # pragma: no cover
-            raise Exception("_origin and _target must be a Node")
+    def __init__(self, origin, target):
+        if not isinstance(target, Node) or not isinstance(origin, Node):  # pragma: no cover
+            raise Exception("origin and target must be a Node")
 
-        self._origin = _origin
-        self._target = _target
-        self._types = {}
-        self._unique_alignment_hashes = {}  # Used for determining entropy
-        self._alignment_counter_positions = ({}, {})
+        self.origin = origin
+        self.target = target
+        self.types = {}
+        self.unique_alignment_hashes = {}  # Used for determining entropy
+        self.alignment_counter_positions = ({}, {})
 
         #  Used for determining entropy / rmsqd:
-        self._unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)
-                                    False: ({}, {})}  # other types: (origin, target)
+        self.unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)
+                                   False: ({}, {})}  # other types: (origin, target)
 
         self.acceptor_donor = {}
 
         self.n_mismatches = 0
         self.n_matches = 0
+
+        # These are the number of matches per piece of an edge:
+        # [::::::::::>  -----   <:::]
+        # will add p1=12, p2=5 given the alignment length of the chunks
+        self.n_matches_p1 = []
+        self.n_matches_p2 = []
 
     def get_entropy_of_alignments(self):
         """Entropy is an important metric / propery of an edge
@@ -482,7 +506,7 @@ class Edge:
         but calculating the true possiblities has too many degrees of freedom.
         """
 
-        return entropy(self._unique_alignment_hashes)
+        return entropy(self.unique_alignment_hashes)
 
     def get_distances_to_breakpoints(self, distances_of_discordant_mates):
         """
@@ -505,17 +529,17 @@ class Edge:
         Here we return the dist to the median of each of the values (0,0,0,0,0) for top example, (-1, -1, 0, 2, 2) for bottom
         """
 
-        medians = (self._origin.position.pos, self._target.position.pos)
+        medians = (self.origin.position.pos, self.target.position.pos)
         dists = []
         for i in [0, 1]:
-            for key in self._unique_breakpoints[distances_of_discordant_mates][i]:
-                dists += self._unique_breakpoints[distances_of_discordant_mates][i][key] * [medians[i] - key]
+            for key in self.unique_breakpoints[distances_of_discordant_mates][i]:
+                dists += self.unique_breakpoints[distances_of_discordant_mates][i][key] * [medians[i] - key]
 
         return dists
 
     def get_complement(self):
         try:
-            return self._target.edges[self._origin.position._hash]
+            return self.target.edges[self.origin.position._hash]
         except KeyError:  # todo write test for this
             raise KeyError("Could not find complement for edge:   " + str(self))
 
@@ -523,17 +547,17 @@ class Edge:
         """Merges (non splice) edges"""
 
         def update_pos(pos, i, is_discordant_mates, n):
-            if pos not in self._unique_breakpoints[is_discordant_mates][i]:
-                self._unique_breakpoints[is_discordant_mates][i][pos] = 0
-            self._unique_breakpoints[is_discordant_mates][i][pos] += n
+            if pos not in self.unique_breakpoints[is_discordant_mates][i]:
+                self.unique_breakpoints[is_discordant_mates][i][pos] = 0
+            self.unique_breakpoints[is_discordant_mates][i][pos] += n
 
         def update_ctps(edge):
             for i in [0, 1]:
-                for ctp in edge._alignment_counter_positions[i]:
-                    n = edge._alignment_counter_positions[i][ctp]
-                    if ctp not in self._alignment_counter_positions[i]:
-                        self._alignment_counter_positions[i][ctp] = 0
-                    self._alignment_counter_positions[i][ctp] += n
+                for ctp in edge.alignment_counter_positions[i]:
+                    n = edge.alignment_counter_positions[i][ctp]
+                    if ctp not in self.alignment_counter_positions[i]:
+                        self.alignment_counter_positions[i][ctp] = 0
+                    self.alignment_counter_positions[i][ctp] += n
 
         def update_acceptor_donor(edge):
             for key in edge.acceptor_donor:
@@ -547,33 +571,40 @@ class Edge:
             self.n_mismatches += edge.n_mismatches
             self.n_matches += edge.n_matches
 
-        for alignment_key in edge._unique_alignment_hashes:
+        def update_n_matches_p1_p2(edge):
+            for n_match_p1 in edge.n_matches_p1:
+                self.n_matches_p1.append(n_match_p1)
+            for n_match_p2 in edge.n_matches_p2:
+                self.n_matches_p2.append(n_match_p2)
+
+        for alignment_key in edge.unique_alignment_hashes:
             self.add_alignment_key(alignment_key)
 
         for key in [True, False]:
             for i in [0, 1]:
-                for breakpoint in edge._unique_breakpoints[key][i]:
-                    update_pos(breakpoint, i, key, edge._unique_breakpoints[key][i][breakpoint])
+                for breakpoint in edge.unique_breakpoints[key][i]:
+                    update_pos(breakpoint, i, key, edge.unique_breakpoints[key][i][breakpoint])
 
-        for _type in edge._types:
+        for _type in edge.types:
             if _type != JunctionTypes.silent_mate:
-                self.add_type(_type, edge._types[_type])
+                self.add_type(_type, edge.types[_type])
 
         update_ctps(edge)
         update_acceptor_donor(edge)
         update_matches_mismatches(edge)
+        update_n_matches_p1_p2(edge)
 
     def add_type(self, _type, weight):
-        if _type in self._types:
-            self._types[_type] += weight
+        if _type in self.types:
+            self.types[_type] += weight
         else:
-            self._types[_type] = weight
+            self.types[_type] = weight
 
     def add_alignment_key(self, alignment_key):
-        if alignment_key in self._unique_alignment_hashes:
-            self._unique_alignment_hashes[alignment_key] += 1
+        if alignment_key in self.unique_alignment_hashes:
+            self.unique_alignment_hashes[alignment_key] += 1
         else:
-            self._unique_alignment_hashes[alignment_key] = 1
+            self.unique_alignment_hashes[alignment_key] = 1
 
     def add_ctps(self, ctps):
         """
@@ -581,24 +612,24 @@ class Edge:
         """
         for i in [0, 1]:
             ctp = ctps[i]
-            if ctp in self._alignment_counter_positions[i]:
-                self._alignment_counter_positions[i][ctp] += 1
+            if ctp in self.alignment_counter_positions[i]:
+                self.alignment_counter_positions[i][ctp] += 1
             else:
-                self._alignment_counter_positions[i][ctp] = 1
+                self.alignment_counter_positions[i][ctp] = 1
 
     def add_break_pos(self, pos1, pos2, is_discordant_mates):
         def update_pos(pos, i):
-            if pos not in self._unique_breakpoints[is_discordant_mates][i]:
-                self._unique_breakpoints[is_discordant_mates][i][pos] = 1
+            if pos not in self.unique_breakpoints[is_discordant_mates][i]:
+                self.unique_breakpoints[is_discordant_mates][i][pos] = 1
             else:
-                self._unique_breakpoints[is_discordant_mates][i][pos] += 1
+                self.unique_breakpoints[is_discordant_mates][i][pos] += 1
 
         update_pos(pos1.pos, 0)
         update_pos(pos2.pos, 1)
 
     def get_count(self, _type):
-        if _type in self._types:
-            return self._types[_type]
+        if _type in self.types:
+            return self.types[_type]
         else:
             return 0
 
@@ -618,26 +649,26 @@ class Edge:
         return (self.get_count(JunctionTypes.cigar_splice_junction), self.get_clips())
 
     def get_clips(self):  # pragma: no cover
-        return self._origin.clips + self._target.clips
+        return self.origin.clips + self.target.clips
 
     def is_circular(self):
-        return (self._origin.position._chr == self._target.position._chr) and \
-               (self._origin.position.strand == STRAND_FORWARD) and \
-               (self._target.position.strand == STRAND_REVERSE) and \
-               (self._origin.position.get_dist(self._target.position, False) <= MAX_SIZE_CIRCULAR_RNA)
+        return (self.origin.position._chr == self.target.position._chr) and \
+               (self.origin.position.strand == STRAND_FORWARD) and \
+               (self.target.position.strand == STRAND_REVERSE) and \
+               (self.origin.position.get_dist(self.target.position, False) <= MAX_SIZE_CIRCULAR_RNA)
 
     def __str__(self):
         typestring = []
 
-        for _t in sorted(self._types):
-            typestring.append(str(JunctionTypeUtils.str(_t)) + ":" + str(self._types[_t]))
+        for _t in sorted(self.types):
+            typestring.append(str(JunctionTypeUtils.str(_t)) + ":" + str(self.types[_t]))
 
-        out = str(self._origin.position) + "->" + str(self._target.position) + ":(" + ','.join(typestring) + ")"
+        out = str(self.origin.position) + "->" + str(self.target.position) + ":(" + ','.join(typestring) + ")"
 
-        # spacer = " "*len(str(self._origin.position))
+        # spacer = " "*len(str(self.origin.position))
 
-        # for _k in self._origin.splice_edges:
-        #    out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self._origin.splice_edges[_k][1].get_splice_score())
+        # for _k in self.origin.splice_edges:
+        #    out += "\n"+spacer+"=>"+str(_k.position)+":score="+str(self.origin.splice_edges[_k][1].get_splice_score())
 
         return out
 
@@ -658,7 +689,7 @@ class Graph:
 
     def check_symmetry(self):  # debug function
         for edge in self.edge_idx:
-            for key in edge._types:
+            for key in edge.types:
                 score = edge.get_score(key)
                 cscore = edge.get_score(JunctionTypeUtils.complement_table[key])
 
@@ -683,12 +714,14 @@ class Graph:
 
         return None
 
-    def insert_edge(self, pos1, pos2, _type, cigarstrs, ctps, acceptor, donor, n_mismatches, n_matches):
+    def insert_edge(self, pos1, pos2, _type, cigarstrs, ctps, acceptor, donor, n_mismatches, n_matches, n_match_p1, n_match_p2):
         """ - Checks if Node exists at pos1, otherwise creates one
             - Checks if Node exists at pos2, otherwise creates one
             - Checks if Edge exists between them, otherwise inserts it into the Nodes
 
          cigarstrs must be something like ("126M","126M") or ("25S50M2000N","25M50S")
+
+         @todo what a MESS - C++ would be so neat here
         """
         self.create_node(pos1)
         self.create_node(pos2)
@@ -709,16 +742,16 @@ class Graph:
         edge.n_matches += n_matches
 
         edge.add_type(_type, 1)
-        if node1 == edge._origin and _type != JunctionTypes.cigar_splice_junction:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
+        if node1 == edge.origin and _type != JunctionTypes.cigar_splice_junction:  # Avoid double insertion of all keys :) only do it if the positions don't get swapped
             edge.add_alignment_key(cigarstrs)
             edge.add_break_pos(pos1, pos2, (_type == JunctionTypes.discordant_mates))
             if ctps is not None:
                 edge.add_ctps(ctps)
 
         if acceptor is not None:
-            if str(acceptor) == str(edge._origin.position):
+            if str(acceptor) == str(edge.origin.position):
                 pos_key = 'pos-A'
-            elif str(acceptor) == str(edge._target.position):
+            elif str(acceptor) == str(edge.target.position):
                 pos_key = 'pos-B'
             else:
                 raise Exception("invalid acceptor position")
@@ -729,9 +762,9 @@ class Graph:
                 edge.acceptor_donor[pos_key][0] += 1
 
         if donor is not None:
-            if str(donor) == str(edge._origin.position):
+            if str(donor) == str(edge.origin.position):
                 pos_key = 'pos-A'
-            elif str(donor) == str(edge._target.position):
+            elif str(donor) == str(edge.target.position):
                 pos_key = 'pos-B'
             else:
                 raise Exception("invalid acceptor position")
@@ -741,13 +774,20 @@ class Graph:
             else:
                 edge.acceptor_donor[pos_key][1] += 1
 
+        if str(pos1) == str(edge.origin.position):
+            edge.n_matches_p1.append(n_match_p1)
+            edge.n_matches_p2.append(n_match_p2)
+        else:
+            edge.n_matches_p1.append(n_match_p2)
+            edge.n_matches_p2.append(n_match_p1)
+
     def reinsert_edges(self, edges):
-        """Only works for Edges of which the _origin and _target Node
+        """Only works for Edges of which the origin and target Node
         still exists
         """
         for edge in edges:
-            node1 = edge._origin
-            node2 = edge._target
+            node1 = edge.origin
+            node2 = edge.target
 
             node1.insert_edge(edge)
             node2.insert_edge(edge)
@@ -755,8 +795,8 @@ class Graph:
         # self.print_chain()
 
     def remove_edge(self, edge):
-        node1 = edge._origin
-        node2 = edge._target
+        node1 = edge.origin
+        node2 = edge.target
 
         node1.remove_edge(edge)
         node2.remove_edge(edge)
@@ -822,8 +862,8 @@ class Graph:
         #  @todo double check if this is strand specific
 
         for edge_m in self.search_edges_between(edge):
-            d1 = edge._origin.position.get_dist(edge_m._origin.position, True)
-            d2 = edge._target.position.get_dist(edge_m._target.position, True)
+            d1 = edge.origin.position.get_dist(edge_m.origin.position, True)
+            d2 = edge.target.position.get_dist(edge_m.target.position, True)
             d = abs(d1) + abs(d2)
 
             if d <= MAX_ACCEPTABLE_INSERT_SIZE:
@@ -842,7 +882,7 @@ class Graph:
                 #  return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE) + 1
                 return pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR, (pos.pos + MAX_ACCEPTABLE_INSERT_SIZE) + 1
 
-        pos1, pos2 = edge_to_prune._origin.position, edge_to_prune._target.position
+        pos1, pos2 = edge_to_prune.origin.position, edge_to_prune.target.position
 
         pos1_min, pos1_max = pos_to_range(pos1)
         pos2_min, pos2_max = pos_to_range(pos2)
@@ -853,7 +893,7 @@ class Graph:
                 if position and pos1.strand in position:
                     node_i = position[pos1.strand]
                     for edge in node_i.edges.values():
-                        if edge != edge_to_prune and edge._target.position.strand == pos2.strand and edge._target.position.pos >= pos2_min and edge._target.position.pos <= pos2_max:
+                        if edge != edge_to_prune and edge.target.position.strand == pos2.strand and edge.target.position.pos >= pos2_min and edge.target.position.pos <= pos2_max:
                             yield edge
 
     def rejoin_splice_juncs(self, splice_junctions):
@@ -887,11 +927,11 @@ thick edges:
         for node in splice_junctions:
             for splice_junction in node.edges.values():
                 if splice_junction not in splice_edges_had:
-                    for lnode in search(splice_junction._origin.position):
-                        for rnode in search(splice_junction._target.position):
+                    for lnode in search(splice_junction.origin.position):
+                        for rnode in search(splice_junction.target.position):
                             if lnode.position.strand == rnode.position.strand and lnode != rnode:
-                                d1 = abs(splice_junction._origin.position.get_dist(lnode.position, False))
-                                d2 = abs(splice_junction._target.position.get_dist(rnode.position, False))
+                                d1 = abs(splice_junction.origin.position.get_dist(lnode.position, False))
+                                d2 = abs(splice_junction.target.position.get_dist(rnode.position, False))
                                 dist = d1 + d2
                                 if dist <= MAX_ACCEPTABLE_INSERT_SIZE:
                                     if lnode.position < rnode.position and rnode in lnode.splice_edges[STRAND_FORWARD]:
@@ -940,8 +980,8 @@ terugloop probleem redelijk opgelost.
             right_splice_junctions = set()
 
             if start_point.get_scores() >= MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS:
-                left_nodes, left_splice_junctions_ds = start_point._origin.get_connected_splice_junctions()
-                right_nodes, right_splice_junctions_ds = start_point._target.get_connected_splice_junctions()
+                left_nodes, left_splice_junctions_ds = start_point.origin.get_connected_splice_junctions()
+                right_nodes, right_splice_junctions_ds = start_point.target.get_connected_splice_junctions()
 
                 subedges = []  # [start_point] if code below is commented out
 
@@ -951,13 +991,13 @@ terugloop probleem redelijk opgelost.
                     for right_node in right_nodes:
                         if right_node.position._hash in left_node.edges:
                             subedge = left_node.edges[right_node.position._hash]
-                            if subedge._target.position._hash == right_node.position._hash:
+                            if subedge.target.position._hash == right_node.position._hash:
                                 subedges.append(subedge)
 
-                                if left_node != start_point._origin:  # must be merged by a splice junction
+                                if left_node != start_point.origin:  # must be merged by a splice junction
                                     left_splice_junctions = left_splice_junctions.union(left_splice_junctions_ds[left_node])
 
-                                if right_node != start_point._target:
+                                if right_node != start_point.target:
                                     right_splice_junctions = right_splice_junctions.union(right_splice_junctions_ds[right_node])
 
                                 if subedge != start_point:
@@ -996,7 +1036,7 @@ class SubGraph():
         idx = {}
         for edge in self.edges:
             key1 = edge.get_scores()
-            key2 = edge._origin.position._hash + "-" + edge._target.position._hash
+            key2 = edge.origin.position._hash + "-" + edge.target.position._hash
 
             if key1 not in idx:
                 idx[key1] = {}
@@ -1015,8 +1055,8 @@ class SubGraph():
 
         nodes = set()
         for edge in self.edges:
-            nodes.add(edge._origin)
-            nodes.add(edge._target)
+            nodes.add(edge.origin)
+            nodes.add(edge.target)
 
         for node in nodes:
             clips += node.clips
@@ -1059,7 +1099,7 @@ class SubGraph():
                     raise Exception("error")
 
     def classify_intronic_exonic(self, splice_junctions):
-        for pos in [self.edges[0]._origin.position, self.edges[0]._target.position]:
+        for pos in [self.edges[0].origin.position, self.edges[0].target.position]:
             for step in splice_junctions.idxtree[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR), max(1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR + 1))].steps():
                 if step[1]:
                     for strand in step[1]:
@@ -1092,14 +1132,14 @@ class SubGraph():
 
     def __str__(self):
         """Makes tabular output"""
-        node_a, node_b = self.edges[0]._origin, self.edges[0]._target
+        node_a, node_b = self.edges[0].origin, self.edges[0].target
         nodes_a, nodes_b = self.get_n_nodes()
         dist = node_a.position.get_dist(node_b.position, False)
         if dist == MAX_GENOME_DISTANCE:
             dist = 'inf'
 
-        lregA = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[0])
-        lregB = lin_regres_from_fq(self.edges[0]._alignment_counter_positions[1])
+        lregA = lin_regres_from_fq(self.edges[0].alignment_counter_positions[0])
+        lregB = lin_regres_from_fq(self.edges[0].alignment_counter_positions[1])
         m_mm = self.calc_m_mm()
 
         return (
@@ -1117,9 +1157,10 @@ class SubGraph():
             "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-A
             "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-B
             "%.4f\t%.4f\t%.4f\t"
-            "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0]._origin.position.strand],  # Pos-A
+            "%i\t%i\t%i\t%i\t"
+            "%s\n" % (node_a.position._chr, node_a.position.pos, strand_tt[self.edges[0].origin.position.strand],  # Pos-A
                       self.posA_acceptor, self.posA_donor,
-                      node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0]._target.position.strand],  # Pos-B
+                      node_b.position._chr, node_b.position.pos, strand_tt[self.edges[0].target.position.strand],  # Pos-B
                       self.posB_acceptor, self.posB_donor,
                       dist, ("circular" if self.edges[0].is_circular() else "linear"), x_onic_tt[self.xonic],  # Classification status
                       self.total_score / 2, self.total_clips, self.get_n_split_reads() / 2, self.get_n_discordant_reads() / 2,  # Evidence stats
@@ -1133,18 +1174,20 @@ class SubGraph():
                       1.0 * self.get_n_discordant_reads() / max(self.get_n_split_reads(), 0.1),
                       1.0 * self.total_clips / self.total_score,
                       1.0 * (nodes_a + nodes_b) / len(self.edges),
+                      self.get_n_matches_p1_median(), self.get_n_matches_p2_median(),
+                      self.get_n_matches_p1_max(), self.get_n_matches_p2_max(),
                       "&".join([str(edge) for edge in self.edges])))  # Data structure
 
     def get_overall_entropy(self):
-        frequency_table = merge_frequency_tables([edge._unique_alignment_hashes for edge in self.edges])
+        frequency_table = merge_frequency_tables([edge.unique_alignment_hashes for edge in self.edges])
         return entropy(frequency_table)
 
     def get_n_nodes(self):
         nodes_a, nodes_b = set(), set()
 
         for edge in self.edges:
-            nodes_a.add(edge._origin)
-            nodes_b.add(edge._target)
+            nodes_a.add(edge.origin)
+            nodes_b.add(edge.target)
 
         return len(nodes_a), len(nodes_b)
 
@@ -1213,7 +1256,7 @@ class SubGraph():
         lnodes = set()
 
         for edge in self.edges:
-            lnodes.add(edge._origin)
+            lnodes.add(edge.origin)
 
         for lnode in lnodes:
             yield lnode
@@ -1222,10 +1265,42 @@ class SubGraph():
         rnodes = set()
 
         for edge in self.edges:
-            rnodes.add(edge._target)
+            rnodes.add(edge.target)
 
         for rnode in rnodes:
             yield rnode
+
+    def get_n_matches_p1_median(self):
+        a = []
+        for edge in self.edges:
+            for n_match_p1 in edge.n_matches_p1:
+                a.append(n_match_p1)
+
+        return median(a)
+
+    def get_n_matches_p2_median(self):
+        a = []
+        for edge in self.edges:
+            for n_match_p2 in edge.n_matches_p2:
+                a.append(n_match_p2)
+
+        return median(a)
+
+    def get_n_matches_p1_max(self):
+        a = []
+        for edge in self.edges:
+            for n_match_p1 in edge.n_matches_p1:
+                a.append(n_match_p1)
+
+        return max(a)
+
+    def get_n_matches_p2_max(self):
+        a = []
+        for edge in self.edges:
+            for n_match_p2 in edge.n_matches_p2:
+                a.append(n_match_p2)
+
+        return max(a)
 
     def merge(self, subnet_m):
         for edge in subnet_m.edges:
@@ -1280,6 +1355,7 @@ class BAMExtract(object):
 
     def extract_junctions(self, fusion_junctions, splice_junctions):
         def read_to_junction(read, rg, parsed_SA_tag, specific_type=None):
+            parsed_cigar_tuple = cigar_to_cigartuple(parsed_SA_tag[2])
             pos1, pos2, acceptor, donor = None, None, None, None
 
             if rg == JunctionTypes.discordant_mates:
@@ -1314,9 +1390,9 @@ class BAMExtract(object):
 
                 # more or less tested
                 if read.is_read1:
-                    acceptor, donor = pos1, pos2
+                    donor, acceptor = pos2, pos1
                 else:
-                    acceptor, donor = pos2, pos1
+                    donor, acceptor = pos1, pos2
 
             elif rg == JunctionTypes.spanning_singleton_1:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1328,7 +1404,7 @@ class BAMExtract(object):
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
                 # more or less tested
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
 
             elif rg == JunctionTypes.spanning_singleton_2:
                 pos1 = BreakPosition(self.pysam_fh.get_reference_name(read.reference_id),
@@ -1336,10 +1412,10 @@ class BAMExtract(object):
                                      read.is_reverse)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
-                                     parsed_SA_tag[1] + bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2])),
+                                     parsed_SA_tag[1] + bam_parse_alignment_offset(parsed_cigar_tuple),
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
 
             elif rg == JunctionTypes.spanning_singleton_1_r:
                 # test 24 covers these - positions are 100% correct, strands not sure ...
@@ -1355,13 +1431,13 @@ class BAMExtract(object):
                 if parsed_SA_tag[4] == "-":
                     pos2_offset = 0
                 else:
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
 
             elif rg in [JunctionTypes.spanning_singleton_2_r]:
                 if read.is_reverse:
@@ -1374,7 +1450,7 @@ class BAMExtract(object):
                                      read.is_reverse)
 
                 if parsed_SA_tag[4] == "-":
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1382,7 +1458,7 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
 
             elif rg in [JunctionTypes.spanning_paired_1]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1395,7 +1471,7 @@ class BAMExtract(object):
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == '+':   # Tested in TERG s55 double inversion
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1403,7 +1479,7 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
 
             elif rg in [JunctionTypes.spanning_paired_2]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1416,7 +1492,7 @@ class BAMExtract(object):
                                      STRAND_REVERSE if not read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == '-':  # Tested in TERG s55 double inversion
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1424,7 +1500,7 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
 
             elif rg in [JunctionTypes.spanning_paired_1_r]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1437,7 +1513,7 @@ class BAMExtract(object):
                                      STRAND_REVERSE if read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == '+':   # Tested in TERG s55 double inversion
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1445,7 +1521,7 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
 
             elif rg in [JunctionTypes.spanning_paired_2_r]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1458,7 +1534,7 @@ class BAMExtract(object):
                                      read.is_reverse)
 
                 if parsed_SA_tag[4] == '-':  # Tested in TERG s55 double inversion
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1466,7 +1542,7 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
 
             elif rg in [JunctionTypes.spanning_paired_1_s]:
                 # Very clear example in S054 @ chr21:40, 064, 610-40, 064, 831  and implemented in test case 14
@@ -1480,7 +1556,7 @@ class BAMExtract(object):
                                      STRAND_REVERSE if not read.is_reverse else STRAND_FORWARD)
 
                 if parsed_SA_tag[4] == "-":
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
                 else:
                     pos2_offset = 0
 
@@ -1488,7 +1564,7 @@ class BAMExtract(object):
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_REVERSE if parsed_SA_tag[4] == "-" else STRAND_FORWARD)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
 
             elif rg in [JunctionTypes.spanning_paired_2_s]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1503,13 +1579,13 @@ class BAMExtract(object):
                 if parsed_SA_tag[4] == "-":
                     pos2_offset = 0
                 else:
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] != "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
 
             elif rg in [JunctionTypes.spanning_paired_1_t]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1524,13 +1600,13 @@ class BAMExtract(object):
                 if parsed_SA_tag[4] == "-":  # Tested in TERG s55 double inversion
                     pos2_offset = 0
                 else:
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "-" else STRAND_REVERSE)
 
-                acceptor, donor = pos2, pos1
+                donor, acceptor = pos1, pos2
 
             elif rg in [JunctionTypes.spanning_paired_2_t]:
                 if read.is_reverse:  # Tested in TERG s55 double inversion
@@ -1545,32 +1621,33 @@ class BAMExtract(object):
                 if parsed_SA_tag[4] == "+":  # Tested in TERG s55 double inversion
                     pos2_offset = 0
                 else:
-                    pos2_offset = bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]))
+                    pos2_offset = bam_parse_alignment_offset(parsed_cigar_tuple)
 
                 pos2 = BreakPosition(parsed_SA_tag[0],
                                      parsed_SA_tag[1] + pos2_offset,
                                      STRAND_FORWARD if parsed_SA_tag[4] == "+" else STRAND_REVERSE)
 
-                acceptor, donor = pos1, pos2
+                donor, acceptor = pos2, pos1
 
             elif rg != JunctionTypes.silent_mate:  # pragma: no cover
                 raise Exception("Fatal Error, RG: %s" % JunctionTypeUtils.str(rg))
 
-            else:
-                raise Exception("Unnknown read group: %s", rg)
-
+            # @todo Shouldn't this return either and Edge or None
+            # @todo only skip if type == DiscordantMates/Reads, if Spanning then always allow (example 072?)
             if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
+                n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
+
                 return (pos1, pos2,
                         (read.cigarstring, parsed_SA_tag[2]),
                         (
                             bam_parse_alignment_offset(read.cigar, True),
-                            bam_parse_alignment_offset(cigar_to_cigartuple(parsed_SA_tag[2]), True)
+                            bam_parse_alignment_offset(parsed_cigar_tuple, True)
                         ),
-                        acceptor,
-                        donor
+                        acceptor, donor,
+                        n_match_p1, n_match_p2
                         )
 
-            return (None, None, None, None, None, None)
+            return (None, None, None, None, None, None, None, None)
 
         log.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
@@ -1584,14 +1661,14 @@ class BAMExtract(object):
             pos1, pos2 = None, None
 
             if JunctionTypeUtils.is_fusion_junction(rg):
-                pos1, pos2, junction, ctps, acceptor, donor = read_to_junction(read, rg, sa[0])
+                pos1, pos2, junction, ctps, acceptor, donor, n_match_p1, n_match_p2 = read_to_junction(read, rg, sa[0])
                 if pos1 is not None:
                     alignment_score = read.get_tag('AS')
                     # It happens that STAR assigns incorrenct alignment scores like -2147483577
                     # If this happens we set it to 12 as some kind of wild guess
                     if alignment_score < 0:
                         alignment_score = 12
-                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score)
+                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score, n_match_p1, n_match_p2)
 
             elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                 pass
@@ -1631,9 +1708,9 @@ class BAMExtract(object):
                     if i_pos1 is not None:
                         if internal_edge[2] == JunctionTypes.cigar_splice_junction:
                             # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
-                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)
+                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)
                         else:
-                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0)  # By insertion tags in cigar string
+                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)  # By insertion tags in cigar string
 
         log.debug("alignment data loaded")
 
@@ -1830,6 +1907,7 @@ class IntronDecomposition:
                 "lr-A-slope"       "\t" "lr-A-intercept"    "\t" "lr-A-rvalue"   "\t" "lr-A-pvalue"        "\t" "lr-A-stderr" "\t"
                 "lr-B-slope"       "\t" "lr-B-intercept"    "\t" "lr-B-rvalue"   "\t" "lr-B-pvalue"        "\t" "lr-B-stderr" "\t"
                 "disco/split"      "\t" "clips/score"       "\t" "nodes/edge"    "\t"
+                "median-AS-A"      "\t" "median-AS-B"       "\t" "max-AS-A"      "\t" "max-AS-B"           "\t"
                 "data-structure"   "\n"
                 "%s" % (''.join([str(subnet) for subnet in ordered])))
 
@@ -1886,8 +1964,8 @@ class IntronDecomposition:
         def tree_remove(genometree, subnet):
             positions = set()
             for edge in subnet.edges:
-                positions.add(edge._origin.position)
-                positions.add(edge._target.position)
+                positions.add(edge.origin.position)
+                positions.add(edge.target.position)
 
             for pos in positions:
                 position_accession = HTSeq.GenomicPosition(pos._chr, pos.pos)
@@ -1904,8 +1982,8 @@ class IntronDecomposition:
 
         for subnet in subnets:
             for edge in subnet.edges:
-                tree_insert(idx_l, edge._origin.position, subnet)
-                tree_insert(idx_r, edge._target.position, subnet)
+                tree_insert(idx_l, edge.origin.position, subnet)
+                tree_insert(idx_r, edge.target.position, subnet)
 
         k = 0
         new_subnets = []
@@ -1920,14 +1998,14 @@ class IntronDecomposition:
 
             for edge in subnet.edges:
                 # based on l-node to be close
-                pos = edge._origin.position
+                pos = edge.origin.position
                 for step in idx_l[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
                     if step[1] and pos.strand in step[1]:
                         for candidate_subnet in step[1][pos.strand]:
                             if subnet != candidate_subnet:
                                 candidates.add(candidate_subnet)
 
-                pos = edge._target.position
+                pos = edge.target.position
                 for step in idx_r[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
                     if step[1] and pos.strand in step[1]:
                         for candidate_subnet in step[1][pos.strand]:
