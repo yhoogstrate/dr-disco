@@ -1,6 +1,7 @@
 2017-10-27	Youri Hoogstrate	v0.14.0
-	* Adds variables to output that can be used to determine hangover
-	  imbalance
+	* Adds classification variable that determines minimum
+	  alignment length on both sides of the junction
+	  (--min_chim_overhang 50)
 
 2017-10-26	Youri Hoogstrate	v0.13.0
 	* Improved classification for exonic / spliced
