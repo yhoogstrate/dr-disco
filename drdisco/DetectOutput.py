@@ -339,6 +339,12 @@ class DetectOutput:
                     if n_lr_symmetry >= lr_symmetry_max:
                         status.append("n_lr_symmetry=" + str(round(n_lr_symmetry, 2)) + ">=" + str(round(lr_symmetry_max, 2)))
 
+                    # @todo subfunc
+                    chim_overhang = min(e.break_A_max_AS, e.break_B_max_AS)
+                    chim_overhang_min = 35
+                    if chim_overhang < chim_overhang_min:
+                        status.append("chim_overhang=" + str(chim_overhang) + "<" + str(chim_overhang_min))
+
                     if len(status) == 0:
                         e.status = 'valid'
                         fh.write(str(e))
