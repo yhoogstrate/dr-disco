@@ -125,6 +125,19 @@ class TestChimericAlignment(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
 
+    def test_05(self):
+        # It used to be problematic if 2 mates have exactly the same SA tag (chr, pos, cigar)
+        if not os.path.exists("tmp"):
+            os.mkdir("tmp")
+
+        input_file = TEST_DIR + "test_05.sam"
+
+        output_file = T_TEST_DIR + "test_05.fixed.bam"
+        alignment_handle = ChimericAlignment(input_file)
+
+        # alignment_handle.convert(output_file, "tmp")
+        self.assertRaises(Exception, alignment_handle.convert, output_file, "tmp")  # triggers exception because of empty file
+
 
 if __name__ == '__main__':
     main()
