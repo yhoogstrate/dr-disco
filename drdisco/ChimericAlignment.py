@@ -527,7 +527,12 @@ class ChimericAlignment:
                 alignments = []
                 last_read_name = read.qname
             alignments.append(read)
-        self.reconstruct_alignments(alignments, sam_file_discordant, fh)
+        if len(alignments) > 0:
+            self.reconstruct_alignments(alignments, sam_file_discordant, fh)
+        else:
+            err = "No reads were found, fixing empty sam/bam file: " + self.input_alignment_file
+            log.error(err)
+            raise Exception(err)
         fh.close()
 
         log.info("Converting fixed file into BAM")
