@@ -1,3 +1,6 @@
+2017-11-14	Youri Hoogstrate	v0.14.1
+	 * Update blacklist after analysis on misclassied entries
+
 2017-10-27	Youri Hoogstrate	v0.14.0
 	* Adds classification variable that determines minimum
 	  alignment length on both sides of the junction
