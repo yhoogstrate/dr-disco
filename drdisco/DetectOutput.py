@@ -6,6 +6,7 @@ import math
 
 from drdisco import log
 from drdisco.DetectFrameShifts import DetectFrameShifts
+import gzip
 import HTSeq
 
 
@@ -34,6 +35,15 @@ import HTSeq
     You can e-mail me via 'y.hoogstrate' at the following webmail domain:
     gmail dot com
 """
+
+
+def is_gzip(filename):
+    try:
+        f = gzip.GzipFile(filename, 'rb')
+        f.read()
+        return True
+    except Exception:
+        return False
 
 
 class DetectOutputEntry:
@@ -220,23 +230,39 @@ class GeneAnnotation:
 class DetectOutput:
     def __init__(self, input_results_file):
         self.input_alignment_file = input_results_file
+        self.is_gzip = is_gzip(input_results_file)
         self.header = self.get_header()
 
     def get_header(self):
-        with open(self.input_alignment_file, 'r') as fh_in:
-            for line in fh_in:
-                return line
+        if self.is_gzip:
+            with gzip.open(self.input_alignment_file, 'rb') as fh_in:
+                for line in fh_in:
+                    return line
+        else:
+            with open(self.input_alignment_file, 'r') as fh_in:
+                for line in fh_in:
+                    return line
         raise Exception("Invalid file: " + str(self.input_alignment_file))
 
     def __iter__(self):
         header = True
-        with open(self.input_alignment_file, 'r') as fh_in:
-            for line in fh_in:
-                if not header:
-                    e = DetectOutputEntry(line)
-                    yield e
-                else:
-                    header = False
+
+        if self.is_gzip:
+            with gzip.open(self.input_alignment_file, 'rb') as fh_in:
+                for line in fh_in:
+                    if not header:
+                        e = DetectOutputEntry(line)
+                        yield e
+                    else:
+                        header = False
+        else:
+            with open(self.input_alignment_file, 'r') as fh_in:
+                for line in fh_in:
+                    if not header:
+                        e = DetectOutputEntry(line)
+                        yield e
+                    else:
+                        header = False
 
     def classify(self, output_file, only_valid, blacklist, min_chim_overhang):
         log.info("Loading " + output_file + "[only_valid=" + {True: 'true', False: 'false'}[only_valid] + "]")

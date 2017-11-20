@@ -27,6 +27,7 @@ import unittest
 import filecmp
 import os
 import subprocess
+import gzip
 
 from drdisco.Classify import Blacklist
 from drdisco.DetectOutput import DetectOutput
@@ -53,6 +54,24 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
+        cl.classify(output_file, False, Blacklist(), 1)
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_01_gzip(self):
+        test_id = '01'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        input_file_gz = T_TEST_DIR + "test_" + test_id + ".in.dbed.gz"
+
+        # create gzip archive
+        with gzip.open(input_file_gz, 'wb') as fh_out, open(input_file, 'r') as fh_in:
+            fh_out.write(fh_in.read())
+
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        cl = DetectOutput(input_file_gz)
         cl.classify(output_file, False, Blacklist(), 1)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
