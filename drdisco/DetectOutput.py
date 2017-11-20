@@ -45,6 +45,7 @@ def is_gzip(filename):
     except:
         return False
 
+
 class DetectOutputEntry:
     def __init__(self, line_in_results_file):
         self.line = line_in_results_file.strip().split("\t")
@@ -245,7 +246,7 @@ class DetectOutput:
 
     def __iter__(self):
         header = True
-        
+
         if self.is_gzip:
             with gzip.open(self.input_alignment_file, 'rb') as fh_in:
                 for line in fh_in:
