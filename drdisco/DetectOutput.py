@@ -42,7 +42,7 @@ def is_gzip(filename):
         f = gzip.GzipFile(filename, 'rb')
         f.read()
         return True
-    except:
+    except Exception:
         return False
 
 
