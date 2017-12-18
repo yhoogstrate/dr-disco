@@ -287,7 +287,9 @@ class DetectOutput:
                     status = []
                     n += 1
 
-                    all_entropy_min = 0.705 + (math.atan((e.score - 150) * 0.005) * 0.035)
+                    all_entropy_min_f1 = 0.705 + (math.atan((e.score - 150.0) * 0.005) * 0.035)
+                    all_entropy_min_f2 = -0.1375 * math.tanh((e.score - 2250.0) / 900.0) + 0.6175
+                    all_entropy_min = min(all_entropy_min_f1, all_entropy_min_f2)
                     all_entropy_max = -1.0 * (max(e.score, 171) - 175.0) / (5.0 + max(e.score, 171) - 175.0) + (1.0 + 0.965)
                     if e.entropy_all_edges < all_entropy_min:
                         status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(round(all_entropy_min, 4)))
@@ -352,7 +354,7 @@ class DetectOutput:
                         status.append("log_ratio_rvalue=" + str(round(log_ratio_rvalue, 2)) + ">" + str(round(log_ratio_rvalue_max, 2)))
 
                     # @todo subfunc
-                    log_value_max = -(1.0 / 2000) * e.score - 3.95
+                    log_value_max = -6.4 - ((e.score + 6750.0) / (4000.0 - (e.score + 6750.0)))
                     log_value = math.log((float(e.mismatches) + 0.0000001) / float(e.alignment_score))
                     if log_value >= log_value_max:
                         status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
