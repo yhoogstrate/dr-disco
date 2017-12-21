@@ -1,3 +1,6 @@
+2017-12-20	Youri Hoogstrate	v0.14.6
+	 * New improvement to entropy filter
+
 2017-12-20	Youri Hoogstrate	v0.14.5
 	 * Updated max clipping filter and entropy cutoff based
 	   on previously misclassified datapoints
