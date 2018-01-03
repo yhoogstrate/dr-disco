@@ -210,17 +210,32 @@ motif:
         else:
             pos5p = None
         
-        print self.RNAstrandA, self.RNAstrandB
         
         if pos5p:
+            sequences = dict( (s.name, s) for s in fasta_fh )
+            
             print "lets proceed"
             print "from" , pos5p
             if pos5p[2] == '-':
-                # read sequence downstream
-                print " ... exon ]{} {} {}"
+                #print " ... exon ] {G} {T} {AG} {A} {G} {T}"
+                seq_in_5p_exon = str(sequences['chr2'][pos5p[1]-pos5_in_exon_length:pos5p[1]])
+                seq_post_5p_exon = str(sequences['chr2'][pos5p[1]:pos5p[1]+pos5_post_exon_length])
             else:
-                print "{} {} {} [ exon ..."
-                # read sequence upstream
+                #print "{T} {G} {A} {GA} {T} {G} [ exon ..."
+                seq_in_5p_exon = str(sequences['chr2'][pos5p[1]:pos5p[1]+pos5_in_exon_length]) + " <R or RC me !>"
+                seq_post_5p_exon  = str(sequences['chr2'][pos5p[1]-pos5_post_exon_length:pos5p[1]]) + " <R or RC me !>"
+
+            if pos3p[2] == '+':
+                #print "{C} {A} {G} [ exon ..."
+                seq_pre_3p_exon = str(sequences['chr2'][pos3p[1]-pos3_pre_exon_length:pos3p[1]])
+                seq_in_3p_exon = str(sequences['chr2'][pos3p[1]:pos3p[1]+pos3_in_exon_length])
+            else:
+                #print "... exon ] {G} {A} {C}"
+                seq_in_3p_exon = str(sequences['chr2'][pos3p[1]-pos3_in_exon_length:pos3p[1]]) + " <R or RC me !>"
+                seq_pre_3p_exon = str(sequences['chr2'][pos3p[1]:pos3p[1]+pos3_pre_exon_length]) + " <R or RC me !>"
+
+            print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ]"
+
         print
         print
 
