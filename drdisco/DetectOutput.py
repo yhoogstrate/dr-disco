@@ -218,21 +218,21 @@ motif:
             print "from" , pos5p
             if pos5p[2] == '-':
                 #print " ... exon ] {G} {T} {AG} {A} {G} {T}"
-                seq_in_5p_exon = str(sequences['chr2'][pos5p[1]-pos5_in_exon_length:pos5p[1]])
-                seq_post_5p_exon = str(sequences['chr2'][pos5p[1]:pos5p[1]+pos5_post_exon_length])
+                seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1]-pos5_in_exon_length:pos5p[1]])
+                seq_post_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_post_exon_length])
             else:
                 #print "{T} {G} {A} {GA} {T} {G} [ exon ..."
-                seq_in_5p_exon = str(sequences['chr2'][pos5p[1]:pos5p[1]+pos5_in_exon_length]) + " <R or RC me !>"
-                seq_post_5p_exon  = str(sequences['chr2'][pos5p[1]-pos5_post_exon_length:pos5p[1]]) + " <R or RC me !>"
+                seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_in_exon_length]) + "-<RC me !>"
+                seq_post_5p_exon  = str(sequences[pos5p[0]][pos5p[1]-pos5_post_exon_length:pos5p[1]]) + "-<RC me !>"
 
             if pos3p[2] == '+':
                 #print "{C} {A} {G} [ exon ..."
-                seq_pre_3p_exon = str(sequences['chr2'][pos3p[1]-pos3_pre_exon_length:pos3p[1]])
-                seq_in_3p_exon = str(sequences['chr2'][pos3p[1]:pos3p[1]+pos3_in_exon_length])
+                seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1]-pos3_pre_exon_length:pos3p[1]])
+                seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_in_exon_length])
             else:
                 #print "... exon ] {G} {A} {C}"
-                seq_in_3p_exon = str(sequences['chr2'][pos3p[1]-pos3_in_exon_length:pos3p[1]]) + " <R or RC me !>"
-                seq_pre_3p_exon = str(sequences['chr2'][pos3p[1]:pos3p[1]+pos3_pre_exon_length]) + " <R or RC me !>"
+                seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]-pos3_in_exon_length:pos3p[1]]) + "-<RC me !>"
+                seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_pre_exon_length]) + "-<RC me !>"
 
             print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ]"
 
