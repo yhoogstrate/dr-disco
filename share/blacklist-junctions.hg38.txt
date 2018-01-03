@@ -3122,6 +3122,5 @@ chr2	81548742	81548753	-	chr2	81822264	81822275	+	most likely new gene	brca
 chr2	81548742	81548753	-	chr2	81848747	81848758	+	most likely new gene	brca
 chr2	81570408	81570419	-	chr2	81797812	81797823	+	most likely new gene	brca
 chr2	81570408	81570419	-	chr2	81848747	81848758	+	most likely new gene	brca
-
-
+chr2	173533339	173533340	-	chr2	173761578	173761579	+	most likely new gene	brca
 

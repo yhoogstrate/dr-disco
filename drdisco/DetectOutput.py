@@ -126,7 +126,7 @@ class DetectOutputEntry:
         if self.acceptorA > self.donorA:
             self.RNAstrandA = self.strandA
             self.RNAstrandB = inv[self.strandB]
-        elif self.donorA < self.acceptorA:
+        elif self.acceptorA < self.donorA:
             self.RNAstrandA = inv[self.strandA]
             self.RNAstrandB = self.strandB
         else:
@@ -177,6 +177,52 @@ class DetectOutputEntry:
             return genesB + '->' + genesA
         else:
             return genesB + '<->' + genesA
+
+    def is_on_splice_junction_motif(self, fasta_fh):
+        """
+
+motif:
+
+5' exon:                    
+
+[ ...{AC}{A}{G} ] {G}{T}{AG}{A}{G}{T} . . . {C}{A}{G} [ {G}... ]
+
+        """
+        
+        pos5_in_exon_length = 3
+        pos5_post_exon_length = 6
+        
+        pos3_pre_exon_length = 3
+        pos3_in_exon_length = 1
+        
+        print
+        print
+        print
+        print "calculating change on intron/exon junction using fasta"
+        print "rna-strand: + -   means breakA -> breakB, means A=5' B=3'"
+        
+        if self.donorA > self.donorB:
+            pos5p = [self.chrA, self.posA, self.strandA]
+            pos3p = [self.chrB, self.posB, self.strandB]
+        elif self.donorA < self.donorB:
+            pos5p = [self.chrB, self.posB, self.strandB]
+            pos3p = [self.chrA, self.posA, self.strandA]
+        else:
+            pos5p = None
+        
+        print self.RNAstrandA, self.RNAstrandB
+        
+        if pos5p:
+            print "lets proceed"
+            print "from" , pos5p
+            if pos5p[2] == '-':
+                # read sequence downstream
+                print " ... exon ]{} {} {}"
+            else:
+                print "{} {} {} [ exon ..."
+                # read sequence upstream
+        print
+        print
 
     def __str__(self):
         line = self.line
@@ -354,7 +400,7 @@ class DetectOutput:
 
         log.info("Classified " + str(k) + "/" + str(n) + " as valid")
 
-    def integrate(self, output_table, gtf_file):
+    def integrate(self, output_table, gtf_file, fasta_file):
         def insert_in_index(index, entries, score):
             if score not in index:
                 index[score] = {}
@@ -374,6 +420,8 @@ class DetectOutput:
             # index used to annotate gene names: TMPRSS2->ERG
             gene_annotation = GeneAnnotation(gtf_file)
             dfs = DetectFrameShifts(gtf_file) if gtf_file else None
+            
+            ffs = HTSeq.FastaReader(fasta_file) if fasta_file else None
 
             intronic_linear = []
             remainder = []
@@ -420,6 +468,9 @@ class DetectOutput:
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
                     e.frameshift_1 = ','.join(sorted(list(set(frameshifts_1))))
                     e.frameshift_2 = ','.join(sorted(list(set(frameshifts_2))))
+
+                if ffs:
+                    e.is_on_splice_junction_motif(ffs)
 
                 if e.x_onic == 'intronic' and e.circ_lin == 'linear':
                     intronic_linear.append(e)
