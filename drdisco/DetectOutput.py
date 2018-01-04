@@ -6,6 +6,7 @@ import math
 
 from drdisco import log
 from drdisco.DetectFrameShifts import DetectFrameShifts
+import gzip
 import HTSeq
 
 
@@ -34,6 +35,15 @@ import HTSeq
     You can e-mail me via 'y.hoogstrate' at the following webmail domain:
     gmail dot com
 """
+
+
+def is_gzip(filename):
+    try:
+        f = gzip.GzipFile(filename, 'rb')
+        f.read()
+        return True
+    except Exception:
+        return False
 
 
 class DetectOutputEntry:
@@ -281,23 +291,39 @@ class GeneAnnotation:
 class DetectOutput:
     def __init__(self, input_results_file):
         self.input_alignment_file = input_results_file
+        self.is_gzip = is_gzip(input_results_file)
         self.header = self.get_header()
 
     def get_header(self):
-        with open(self.input_alignment_file, 'r') as fh_in:
-            for line in fh_in:
-                return line
+        if self.is_gzip:
+            with gzip.open(self.input_alignment_file, 'rb') as fh_in:
+                for line in fh_in:
+                    return line
+        else:
+            with open(self.input_alignment_file, 'r') as fh_in:
+                for line in fh_in:
+                    return line
         raise Exception("Invalid file: " + str(self.input_alignment_file))
 
     def __iter__(self):
         header = True
-        with open(self.input_alignment_file, 'r') as fh_in:
-            for line in fh_in:
-                if not header:
-                    e = DetectOutputEntry(line)
-                    yield e
-                else:
-                    header = False
+
+        if self.is_gzip:
+            with gzip.open(self.input_alignment_file, 'rb') as fh_in:
+                for line in fh_in:
+                    if not header:
+                        e = DetectOutputEntry(line)
+                        yield e
+                    else:
+                        header = False
+        else:
+            with open(self.input_alignment_file, 'r') as fh_in:
+                for line in fh_in:
+                    if not header:
+                        e = DetectOutputEntry(line)
+                        yield e
+                    else:
+                        header = False
 
     def classify(self, output_file, only_valid, blacklist, min_chim_overhang):
         log.info("Loading " + output_file + "[only_valid=" + {True: 'true', False: 'false'}[only_valid] + "]")
@@ -322,7 +348,9 @@ class DetectOutput:
                     status = []
                     n += 1
 
-                    all_entropy_min = 0.705 + (math.atan((e.score - 150) * 0.005) * 0.035)
+                    # all_entropy_min_f1 = 0.705 + (math.atan((e.score - 150.0) * 0.005) * 0.035)
+                    # all_entropy_min_f2 = -0.1375 * math.tanh((e.score - 2250.0) / 900.0) + 0.6175
+                    all_entropy_min = -0.24 * math.tanh((e.score - 50.0) / 35.0) + 0.63
                     all_entropy_max = -1.0 * (max(e.score, 171) - 175.0) / (5.0 + max(e.score, 171) - 175.0) + (1.0 + 0.965)
                     if e.entropy_all_edges < all_entropy_min:
                         status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(round(all_entropy_min, 4)))
@@ -342,7 +370,7 @@ class DetectOutput:
 
                     # @todo subfunc
                     # n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
-                    n_disco_max = int(round(math.pow(22 * e.n_split_reads, 0.9) + 13))
+                    n_disco_max = int(round(math.pow(22.0 * e.n_split_reads, 0.9) + 13))
                     n_disco_min = int(round(math.pow(0.0195 * e.n_split_reads, 1.95)))
                     if e.n_discordant_reads > n_disco_max:
                         status.append("n_disco=" + str(e.n_discordant_reads) + ">" + str(n_disco_max))
@@ -350,22 +378,22 @@ class DetectOutput:
                         status.append("n_disco=" + str(e.n_discordant_reads) + "<" + str(n_disco_min))
 
                     # @todo subfunc
-                    n_split_min = int(round((0.32 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.15) - 4))
-                    n_split_max = int(round((0.985 * e.n_supporting_reads) - pow(0.014 * e.n_supporting_reads, 2.20 - ((1 / 15000) * e.n_supporting_reads))))
+                    n_split_min = int(round((0.32 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.15) - 4.0))
+                    n_split_max = int(round((0.978 * e.n_supporting_reads) - pow(0.014 * e.n_supporting_reads, 1.99 - ((1.0 / 15000.0) * e.n_supporting_reads))))
                     if e.n_split_reads < n_split_min:
                         status.append("n_split=" + str(e.n_split_reads) + "<" + str(n_split_min))
                     if e.n_split_reads > n_split_max:
                         status.append("n_split=" + str(e.n_split_reads) + ">" + str(n_split_max))
 
                     # @todo subfunc
-                    slope = 51
-                    bp_pos_stddev_max = -(slope * e.nodes_edge) + 15 + (2 * slope)
+                    slope = 51.0
+                    bp_pos_stddev_max = -(slope * e.nodes_edge) + 15 + (2.0 * slope)
                     if e.bp_pos_stddev > bp_pos_stddev_max:
                         status.append("bp_pos_stddev=" + str(e.bp_pos_stddev) + ">" + str(bp_pos_stddev_max))
 
                     # @todo subfunc
-                    clips_min = (0.19 * e.score) - 25
-                    clips_max = (0.84 * e.score) + 90
+                    clips_min = (0.19 * e.score) - 25.0
+                    clips_max = (0.84 * e.score) + 550.0
                     if e.clips < clips_min:
                         status.append("clips=" + str(e.clips) + "<" + str(clips_min))
                     if e.clips > clips_max:
@@ -387,7 +415,7 @@ class DetectOutput:
                         status.append("log_ratio_rvalue=" + str(round(log_ratio_rvalue, 2)) + ">" + str(round(log_ratio_rvalue_max, 2)))
 
                     # @todo subfunc
-                    log_value_max = -(1.0 / 2000) * e.score - 3.95
+                    log_value_max = -6.4 - ((e.score + 6750.0) / (4000.0 - (e.score + 6750.0)))
                     log_value = math.log((float(e.mismatches) + 0.0000001) / float(e.alignment_score))
                     if log_value >= log_value_max:
                         status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
