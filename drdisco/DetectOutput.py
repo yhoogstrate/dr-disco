@@ -225,7 +225,7 @@ motif:
             sequences = dict( (s.name, s) for s in fasta_fh )
             
             print "lets proceed"
-            print "from" , pos5p
+            print "from" , pos5p, "   to" , pos3p
             if pos5p[2] == '-':
                 #print " ... exon ] {G} {T} {AG} {A} {G} {T}"
                 seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1]-pos5_in_exon_length:pos5p[1]])
