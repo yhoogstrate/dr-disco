@@ -196,18 +196,18 @@ class DetectOutputEntry:
 
 motif:
 
-5' exon:                    
+5' exon:
 
 [ ...{AC}{A}{G} ] {G}{T}{AG}{A}{G}{T} . . . {C}{A}{G} [ {G}... ]
 
         """
-        
+
         pos5_in_exon_length = 3
         pos5_post_exon_length = 6
-        
+
         pos3_pre_exon_length = 3
         pos3_in_exon_length = 1
-        
+
         if self.donorA > self.donorB:
             pos5p = [self.chrA, self.posA, self.strandA]
             pos3p = [self.chrB, self.posB, self.strandB]
@@ -216,28 +216,27 @@ motif:
             pos3p = [self.chrA, self.posA, self.strandA]
         else:
             pos5p = None
-        
 
         if pos5p:
-            sequences = dict( (s.name, s) for s in fasta_fh )
-            
-            if pos5p[2] == '-':
-                seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1]-pos5_in_exon_length:pos5p[1]]).upper()
-                seq_post_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_post_exon_length]).upper()
-            else:
-                seq_in_5p_exon = reverse_complement(str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_in_exon_length]))
-                seq_post_5p_exon  = reverse_complement(str(sequences[pos5p[0]][pos5p[1]-pos5_post_exon_length:pos5p[1]]))
+            sequences = dict((s.name, s) for s in fasta_fh)
 
-            if pos3p[2] == '+':
-                seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1]-pos3_pre_exon_length:pos3p[1]]).upper()
-                seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_in_exon_length]).upper()
+            if pos5p[2] == '-':
+                seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
+                seq_post_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
             else:
-                seq_in_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]-pos3_in_exon_length:pos3p[1]]))
-                seq_pre_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_pre_exon_length]))
+                seq_in_5p_exon = reverse_complement(str(sequences[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
+                seq_post_5p_exon = reverse_complement(str(sequences[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
+
+            if pos3p[2] == ' + ':
+                seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
+                seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
+            else:
+                seq_in_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
+                seq_pre_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]:pos3p[1] + pos3_pre_exon_length]))
 
         def calc_dist(pat, subseq):
             d = 0
-            
+
             if len(pat) != len(subseq):
                 raise Exception("invalid pattern size")
             for i in range(len(pat)):
@@ -245,9 +244,9 @@ motif:
                     d += 1
 
             return d
-        
-        # print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ]" , 
-        dist = calc_dist(["AC","A","G"], seq_in_5p_exon) + calc_dist(["G","T","AG","A","G","T" ], seq_post_5p_exon) + calc_dist(["C","A","G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon)
+
+        # print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ]" ,
+        dist = calc_dist(["AC", "A", "G"], seq_in_5p_exon) + calc_dist(["G", "T", "AG", "A", "G", "T"], seq_post_5p_exon) + calc_dist(["C", "A", "G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon)
         self.edit_dist_to_splice_motif = str(dist)
         return dist
 
@@ -465,7 +464,7 @@ class DetectOutput:
             # index used to annotate gene names: TMPRSS2->ERG
             gene_annotation = GeneAnnotation(gtf_file)
             dfs = DetectFrameShifts(gtf_file) if gtf_file else None
-            
+
             ffs = HTSeq.FastaReader(fasta_file) if fasta_file else None
 
             intronic_linear = []

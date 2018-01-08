@@ -72,7 +72,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-
     def test_sj_02(self):
         test_id = 'splice_site_motif_02'
 
