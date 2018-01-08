@@ -208,12 +208,6 @@ motif:
         pos3_pre_exon_length = 3
         pos3_in_exon_length = 1
         
-        print
-        print
-        print
-        print "calculating change on intron/exon junction using fasta"
-        print "rna-strand: + -   means breakA -> breakB, means A=5' B=3'"
-        
         if self.donorA > self.donorB:
             pos5p = [self.chrA, self.posA, self.strandA]
             pos3p = [self.chrB, self.posB, self.strandB]
@@ -223,29 +217,23 @@ motif:
         else:
             pos5p = None
         
-        
+
         if pos5p:
             sequences = dict( (s.name, s) for s in fasta_fh )
             
-            print "lets proceed"
-            print "from" , pos5p, "   to" , pos3p
             if pos5p[2] == '-':
-                #print " ... exon ] {G} {T} {AG} {A} {G} {T}"
                 seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1]-pos5_in_exon_length:pos5p[1]]).upper()
                 seq_post_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_post_exon_length]).upper()
             else:
-                #print "{T} {G} {A} {GA} {T} {G} [ exon ..."
-                seq_in_5p_exon = reverse_complement(str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_in_exon_length])) # + "-<RC me !>"
-                seq_post_5p_exon  = reverse_complement(str(sequences[pos5p[0]][pos5p[1]-pos5_post_exon_length:pos5p[1]]))# + "-<RC me !>"
+                seq_in_5p_exon = reverse_complement(str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_in_exon_length]))
+                seq_post_5p_exon  = reverse_complement(str(sequences[pos5p[0]][pos5p[1]-pos5_post_exon_length:pos5p[1]]))
 
             if pos3p[2] == '+':
-                #print "{C} {A} {G} [ exon ..."
                 seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1]-pos3_pre_exon_length:pos3p[1]]).upper()
                 seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_in_exon_length]).upper()
             else:
-                #print "... exon ] {G} {A} {C}"
-                seq_in_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]-pos3_in_exon_length:pos3p[1]])) # + "-<RC me !>"
-                seq_pre_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_pre_exon_length])) # + "-<RC me !>"
+                seq_in_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]-pos3_in_exon_length:pos3p[1]]))
+                seq_pre_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_pre_exon_length]))
 
         def calc_dist(pat, subseq):
             d = 0
@@ -258,8 +246,10 @@ motif:
 
             return d
         
-        self.edit_dist_to_splice_motif = str(calc_dist(["AC","A","G"], seq_in_5p_exon) + calc_dist(["G","T","AG","A","G","T" ], seq_post_5p_exon) + calc_dist(["C","A","G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon))
-        return self.edit_dist_to_splice_motif
+        # print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ]" , 
+        dist = calc_dist(["AC","A","G"], seq_in_5p_exon) + calc_dist(["G","T","AG","A","G","T" ], seq_post_5p_exon) + calc_dist(["C","A","G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon)
+        self.edit_dist_to_splice_motif = str(dist)
+        return dist
 
     def __str__(self):
         line = self.line
