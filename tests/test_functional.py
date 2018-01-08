@@ -254,5 +254,63 @@ class TestFunctional_integrate(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
+
+class TestFunctional_integrate_splice_site_motif(unittest.TestCase):
+    def __get_temp_dirs(self):
+        TEST_DIR = "tests/splice_site_motif/"
+        T_TEST_DIR = "tmp/" + TEST_DIR
+
+        if not os.path.exists(T_TEST_DIR):
+            os.makedirs(T_TEST_DIR)
+
+        return TEST_DIR, T_TEST_DIR
+
+    def test_sj_01(self):
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+
+        test_id = 'splice_site_motif_01'
+
+
+        input_sam = TEST_DIR + "test_" + test_id + ".in.sam"
+        input_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        input_file = T_TEST_DIR + "test_" + test_id + ".dbed"
+
+        gtf_file = None
+        fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
+
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        # sam -> fixed bam
+        command = ["bin/dr-disco",
+                   "fix",
+                   input_sam,
+                   input_bam]
+
+        self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
+
+        # fixed bam -> dr-disco detect
+        command = ["bin/dr-disco",
+                   "detect",
+                   "-m", "0",
+                   input_bam,
+                   input_file]
+
+        self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
+
+
+        # dr-disco-detect (skip classify) -> dr-disco integrate
+        command = ["bin/dr-disco",
+                "integrate",
+                "--fasta", fasta_file,
+                input_file,
+                output_file]
+
+        self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+
+
 if __name__ == '__main__':
     main()

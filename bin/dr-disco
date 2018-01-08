@@ -140,12 +140,14 @@ def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regi
 @click.argument('table_input_file', type=click.Path(exists=True))
 @click.argument('table_output_file')
 @click.option('--gtf', help="Use gene annotation (GTF file)")
-def CLI_integrate(table_input_file, table_output_file, gtf):
+@click.option('--fasta', help="Use FASTA sequence file to estimate edit distances to splice junction motifs")
+def CLI_integrate(table_input_file, table_output_file, gtf, fasta):
     cl = DetectOutput(table_input_file)
-    if gtf:
-        cl.integrate(table_output_file, str(gtf))
-    else:
-        cl.integrate(table_output_file, None)
+    
+    gtf = str(gtf) if gtf else None
+    fasta = str(fasta) if fasta else None
+    
+    cl.integrate(table_output_file, gtf, fasta)
 
 
 if __name__ == '__main__':
