@@ -51,7 +51,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         for gtf_file in gtf_files:
             cl = DetectOutput(input_file)
-            cl.integrate(output_file, gtf_file)
+            cl.integrate(output_file, gtf_file, None)
 
             self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -64,7 +64,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
 
         cl = DetectOutput(input_file)
-        cl.integrate(output_file, gtf_file)
+        cl.integrate(output_file, gtf_file, None)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -77,7 +77,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
 
         cl = DetectOutput(input_file)
-        cl.integrate(output_file, gtf_file)
+        cl.integrate(output_file, gtf_file, None)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
@@ -94,7 +94,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         for gtf_file in gtf_files:
             cl = DetectOutput(input_file)
-            cl.integrate(output_file, gtf_file)
+            cl.integrate(output_file, gtf_file, None)
 
             self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
