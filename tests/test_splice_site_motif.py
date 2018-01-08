@@ -52,8 +52,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         gtf_file = None
         fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
-        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
 
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
 
         # sam -> fixed bam
@@ -82,8 +82,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         gtf_file = None
         fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
-        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
 
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
         test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
 
         # sam -> fixed bam

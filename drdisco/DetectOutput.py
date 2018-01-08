@@ -6,6 +6,7 @@ import math
 
 from drdisco import log
 from drdisco.DetectFrameShifts import DetectFrameShifts
+from drdisco.utils import reverse_complement
 import gzip
 import HTSeq
 
@@ -130,6 +131,8 @@ class DetectOutputEntry:
         self.break_A_max_AS = int(self.line[44])
         self.break_B_max_AS = int(self.line[45])
 
+        self.edit_dist_to_splice_motif = ""
+
         self.structure = self.line[46]
 
         inv = {'-': '+', '+': '-'}
@@ -228,26 +231,35 @@ motif:
             print "from" , pos5p, "   to" , pos3p
             if pos5p[2] == '-':
                 #print " ... exon ] {G} {T} {AG} {A} {G} {T}"
-                seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1]-pos5_in_exon_length:pos5p[1]])
-                seq_post_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_post_exon_length])
+                seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1]-pos5_in_exon_length:pos5p[1]]).upper()
+                seq_post_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_post_exon_length]).upper()
             else:
                 #print "{T} {G} {A} {GA} {T} {G} [ exon ..."
-                seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_in_exon_length]) + "-<RC me !>"
-                seq_post_5p_exon  = str(sequences[pos5p[0]][pos5p[1]-pos5_post_exon_length:pos5p[1]]) + "-<RC me !>"
+                seq_in_5p_exon = reverse_complement(str(sequences[pos5p[0]][pos5p[1]:pos5p[1]+pos5_in_exon_length])) # + "-<RC me !>"
+                seq_post_5p_exon  = reverse_complement(str(sequences[pos5p[0]][pos5p[1]-pos5_post_exon_length:pos5p[1]]))# + "-<RC me !>"
 
             if pos3p[2] == '+':
                 #print "{C} {A} {G} [ exon ..."
-                seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1]-pos3_pre_exon_length:pos3p[1]])
-                seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_in_exon_length])
+                seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1]-pos3_pre_exon_length:pos3p[1]]).upper()
+                seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_in_exon_length]).upper()
             else:
                 #print "... exon ] {G} {A} {C}"
-                seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]-pos3_in_exon_length:pos3p[1]]) + "-<RC me !>"
-                seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_pre_exon_length]) + "-<RC me !>"
+                seq_in_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]-pos3_in_exon_length:pos3p[1]])) # + "-<RC me !>"
+                seq_pre_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]:pos3p[1]+pos3_pre_exon_length])) # + "-<RC me !>"
 
-            print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ]"
+        def calc_dist(pat, subseq):
+            d = 0
+            
+            if len(pat) != len(subseq):
+                raise Exception("invalid pattern size")
+            for i in range(len(pat)):
+                if subseq[i] not in pat[i]:
+                    d += 1
 
-        print
-        print
+            return d
+        
+        self.edit_dist_to_splice_motif = str(calc_dist(["AC","A","G"], seq_in_5p_exon) + calc_dist(["G","T","AG","A","G","T" ], seq_post_5p_exon) + calc_dist(["C","A","G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon))
+        return self.edit_dist_to_splice_motif
 
     def __str__(self):
         line = self.line
@@ -453,7 +465,7 @@ class DetectOutput:
 
         with open(output_table, 'w') as fh_out:
             header = self.header.split("\t")
-            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-5:])
+            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2', 'splice-motif-edit-distance'] + header[-5:])
 
             fh_out.write("shared-id\tfusion\t" + header)
 
@@ -592,7 +604,7 @@ class DetectOutput:
                     for entry in idx2[score][key]:
                         if entry not in exported:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
-                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-5:]
+                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2, entry.edit_dist_to_splice_motif] + entry.line[-5:]
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line) + "\n")
                             exported.add(entry)
