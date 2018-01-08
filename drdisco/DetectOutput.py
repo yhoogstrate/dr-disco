@@ -9,6 +9,7 @@ from drdisco.DetectFrameShifts import DetectFrameShifts
 from drdisco.utils import reverse_complement
 import gzip
 import HTSeq
+from pyfaidx import Fasta
 
 
 """[License: GNU General Public License v3 (GPLv3)]
@@ -218,37 +219,38 @@ motif:
             pos5p = None
 
         if pos5p:
-            sequences = dict((s.name, s) for s in fasta_fh)
-
             if pos5p[2] == '-':
-                seq_in_5p_exon = str(sequences[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
-                seq_post_5p_exon = str(sequences[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
+                seq_in_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
+                seq_post_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
             else:
-                seq_in_5p_exon = reverse_complement(str(sequences[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
-                seq_post_5p_exon = reverse_complement(str(sequences[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
+                seq_in_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
+                seq_post_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
 
-            if pos3p[2] == ' + ':
-                seq_pre_3p_exon = str(sequences[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
-                seq_in_3p_exon = str(sequences[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
+            if pos3p[2] == '+':
+                seq_pre_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
+                seq_in_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
             else:
-                seq_in_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
-                seq_pre_3p_exon = reverse_complement(str(sequences[pos3p[0]][pos3p[1]:pos3p[1] + pos3_pre_exon_length]))
+                seq_in_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
+                seq_pre_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_pre_exon_length]))
 
-        def calc_dist(pat, subseq):
-            d = 0
+            def calc_dist(pat, subseq):
+                d = 0
 
-            if len(pat) != len(subseq):
-                raise Exception("invalid pattern size")
-            for i in range(len(pat)):
-                if subseq[i] not in pat[i]:
-                    d += 1
+                if len(pat) != len(subseq):
+                    raise Exception("invalid pattern size")
+                for i in range(len(pat)):
+                    if subseq[i] not in pat[i]:
+                        d += 1
 
-            return d
+                return d
 
-        # print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ]" ,
-        dist = calc_dist(["AC", "A", "G"], seq_in_5p_exon) + calc_dist(["G", "T", "AG", "A", "G", "T"], seq_post_5p_exon) + calc_dist(["C", "A", "G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon)
-        self.edit_dist_to_splice_motif = str(dist)
-        return dist
+            dist = calc_dist(["AC", "A", "G"], seq_in_5p_exon) + calc_dist(["G", "T", "AG", "A", "G", "T"], seq_post_5p_exon) + calc_dist(["C", "A", "G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon)
+            # print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ] ---> " + str(dist)
+            self.edit_dist_to_splice_motif = str(dist)
+
+            return dist
+        else:
+            return ""
 
     def __str__(self):
         line = self.line
@@ -465,7 +467,7 @@ class DetectOutput:
             gene_annotation = GeneAnnotation(gtf_file)
             dfs = DetectFrameShifts(gtf_file) if gtf_file else None
 
-            ffs = HTSeq.FastaReader(fasta_file) if fasta_file else None
+            ffs = Fasta(fasta_file) if fasta_file else None
 
             intronic_linear = []
             remainder = []
