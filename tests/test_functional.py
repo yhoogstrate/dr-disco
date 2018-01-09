@@ -271,17 +271,17 @@ class TestFrameShiftPrediction(unittest.TestCase):
 
         # both do have their DNA strand at minus!! :
         #
-                    #         <=(-)=| acceptor in negative strand at RNA
-                    # =====(+)=====>| donor in positive strand at RNA
-                    #        
-                    # donor                   acceptor
-        # fusions = ['chr1', 1035203, '+'], ['chr1', 999610, '-'])
-        #         , (['1', 1035203, '+'], ['1', 999610, '-'])]  # strands are at RNA level, and gene order is DONOR, ACCEPTOR
+        #             <=(-)=| acceptor in negative strand at RNA
+        #     =====(+)=====>| donor in positive strand at RNA
+
+        #           donor                   acceptor
+        # fusions = chr1', 1035203, '+'], ['chr1', 999610, '-'])
+        #           1', 1035203, '+'], ['1', 999610, '-'])]  # strands are at RNA level, and gene order is DONOR, ACCEPTOR
 
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
         test_file = TEST_DIR + "test_" + test_id + ".out.txt"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
-        
+
         gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
         for gtf_file in gtf_files:
             command = ["bin/dr-disco",
@@ -307,7 +307,7 @@ class TestFrameShiftPrediction(unittest.TestCase):
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
         test_file = TEST_DIR + "test_" + test_id + ".out.txt"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
-        
+
         gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
         for gtf_file in gtf_files:
             command = ["bin/dr-disco",
@@ -353,11 +353,11 @@ class TestFrameShiftPrediction(unittest.TestCase):
         test_id = 'frameshift-prediction_03'
 
         # fusions = [(['chr1', 1040604, '+'], ['chr1', 999020, '-']), (['1', 1040604, '+'], ['1', 999020, '-'])]
-        
+
         input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
         test_file = TEST_DIR + "test_" + test_id + ".out.txt"
         output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
-        
+
         gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
         for gtf_file in gtf_files:
             command = ["bin/dr-disco",

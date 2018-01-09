@@ -491,7 +491,7 @@ class DetectOutput:
                             posA, posB = int(posAB[1].split('/')[0]), int(posAB[2].split('/')[0])
 
                             if params[0] not in done_breaks and n_split_reads > 0:
-                                if e.donorA > e.donorB:
+                                if e.donorA > e.donorB:  # nice, use same thing to swap if necessary
                                     frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
                                 else:
                                     frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
