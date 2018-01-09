@@ -254,6 +254,86 @@ class TestFunctional_integrate(unittest.TestCase):
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
+class TestFrameShiftPrediction(unittest.TestCase):
+    def __get_temp_dirs(self):
+        TEST_DIR = "tests/integrate/"
+        T_TEST_DIR = "tmp/" + TEST_DIR
+
+        if not os.path.exists(T_TEST_DIR):
+            os.makedirs(T_TEST_DIR)
+
+        return TEST_DIR, T_TEST_DIR
+
+    def test_01(self):  # example of in-frame fusion - strands are RNA strand
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+
+        test_id = 'frameshift-prediction_01'
+
+
+        # both do have their DNA strand at minus!! :
+        #
+                    #         <=(-)=| acceptor in negative strand at RNA
+                    # =====(+)=====>| donor in positive strand at RNA
+                    #        
+                    # donor                   acceptor
+        # fusions = ['chr1', 1035203, '+'], ['chr1', 999610, '-'])
+        #         , (['1', 1035203, '+'], ['1', 999610, '-'])]  # strands are at RNA level, and gene order is DONOR, ACCEPTOR
+        # 
+        # 
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
+        
+        gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
+        for gtf_file in gtf_files:
+            command = ["bin/dr-disco",
+                       "integrate",
+                       "--gtf", gtf_file,
+                       input_file,
+                       output_file]
+
+            self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
+
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+            # dfs = DetectFrameShifts(gtf_file)
+            # frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+            # self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 0))]")
+            # self.assertEqual(len(frameshift_annotation[1]), 0)
+            # self.assertEqual(len(frameshift_annotation[2]), 0)
+
+    def test_02(self):  # 0, +2
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+
+        test_id = 'frameshift-prediction_02'
+        
+        # fusions = [(['chr1', 1035203, '+'], ['chr1', 999020, '-']), (['1', 1035203, '+'], ['1', 999020, '-'])]  # (from), (to)  and strands are at RNA level!
+        # for fusion in fusions:
+        
+        # gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
+        # for gtf_file in gtf_files:
+            # dfs = DetectFrameShifts(gtf_file)
+            # frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+            # self.assertEqual(len(frameshift_annotation[0]), 0)
+            # self.assertEqual(len(frameshift_annotation[1]), 0)
+            # self.assertEqual(str(frameshift_annotation[2]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
+
+    def test_03(self):  # +1, +2 -> 0
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+
+        test_id = 'frameshift-prediction_02'
+        # fusions = [(['chr1', 1040604, '+'], ['chr1', 999020, '-']), (['1', 1040604, '+'], ['1', 999020, '-'])]
+        # gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
+
+        # for fusion in fusions:
+            # for gtf_file in gtf_files:
+                # dfs = DetectFrameShifts(gtf_file)
+                # frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+                # self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 1), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
+                # self.assertEqual(len(frameshift_annotation[1]), 0)
+                # self.assertEqual(len(frameshift_annotation[2]), 0)
+
+
 class TestFunctional_integrate_splice_site_motif(unittest.TestCase):
     def __get_temp_dirs(self):
         TEST_DIR = "tests/splice_site_motif/"

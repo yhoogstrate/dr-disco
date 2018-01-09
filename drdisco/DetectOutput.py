@@ -41,7 +41,7 @@ from pyfaidx import Fasta
 
 class DetectOutputEntry:
     def __init__(self, line_in_results_file):
-        self.line = line_in_results_file.strip().split("\t")
+        self.line = line_in_results_file.strip("\r\n").split("\t")
         self.parse()
 
     def parse(self):
@@ -146,14 +146,15 @@ class DetectOutputEntry:
     def get_donors_acceptors(self, gtf_file):
         idx = {}
         for a in self.structure.split('&'):
-            for b in a.split(':', 3)[3].strip('()').split(','):
-                c = b.split(':')
-                c[0] = c[0].replace('_1', '_[12]').replace('_2', '_[12]')
-                if c[0] != 'discordant_mates':
-                    if c[0] not in idx:
-                        idx[c[0]] = 0
+            if a != '':
+                for b in a.split(':', 3)[3].strip('()').split(','):
+                    c = b.split(':')
+                    c[0] = c[0].replace('_1', '_[12]').replace('_2', '_[12]')
+                    if c[0] != 'discordant_mates':
+                        if c[0] not in idx:
+                            idx[c[0]] = 0
 
-                    idx[c[0]] += int(c[1])
+                        idx[c[0]] += int(c[1])
 
         def pos_to_gene_str(pos_chr, pos_pos):
             if pos_chr[0:3] == 'chr':
@@ -482,24 +483,25 @@ class DetectOutput:
                     frameshifts_2 = [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
 
                     for additional_breaks in e.structure.split('&'):
-                        params = additional_breaks.split(':(')
-                        n_split_reads = sum([int(x.split(':')[1]) for x in params[1].rstrip(')').split(',') if x.split(':')[0] != 'discordant_mates'])
+                        if additional_breaks != '':
+                            params = additional_breaks.split(':(')
+                            n_split_reads = sum([int(x.split(':')[1]) for x in params[1].rstrip(')').split(',') if x.split(':')[0] != 'discordant_mates'])
 
-                        posAB = params[0].split(':')
-                        posA, posB = int(posAB[1].split('/')[0]), int(posAB[2].split('/')[0])
+                            posAB = params[0].split(':')
+                            posA, posB = int(posAB[1].split('/')[0]), int(posAB[2].split('/')[0])
 
-                        if params[0] not in done_breaks and n_split_reads > 0:
-                            if e.donorA > e.donorB:
-                                frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
-                            else:
-                                frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+                            if params[0] not in done_breaks and n_split_reads > 0:
+                                if e.donorA > e.donorB:
+                                    frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
+                                else:
+                                    frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
 
-                            fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
-                            frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
-                            frameshifts_1 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]
-                            frameshifts_2 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
+                                fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
+                                frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
+                                frameshifts_1 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]
+                                frameshifts_2 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
 
-                        done_breaks.add(params[0])
+                            done_breaks.add(params[0])
 
                     e.fgd = ','.join(sorted(list(set(fgd))))
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))

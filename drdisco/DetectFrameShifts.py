@@ -189,7 +189,14 @@ class DetectFrameShifts:
         """
         Offset may be convenient because STAR sometimes has problems aligning/clipping the first 2 bases after an exon
         Values of 4 and larger do not make sense.
+
+        Args:
+            _from ([chr, pos, strand]): donor break position
+            _to ([chr, pos, strand]): acceptor position position
+
         """
+        print _from , " --> " , _to
+        
         from_l_fgd = []
         to_l_fgd = []
 
