@@ -532,7 +532,7 @@ class DetectOutput:
 
             # Reorder
             idx2 = {}
-            i = 0
+            q = 0
             for e in intronic_linear:
                 results = {}
                 positions = [(e.chrA, e.posA, e.strandA), (e.chrB, e.posB, e.strandB)]
@@ -559,7 +559,7 @@ class DetectOutput:
                                 results[e2] += 1
 
                 top_result = (None, 9999999999999)
-                for r in results:
+                for r in sorted(results.keys()):
                     if results[r] >= 2:
                         d1 = (r.posA - e.posA)
                         d2 = (r.posB - e.posB)
@@ -567,18 +567,20 @@ class DetectOutput:
 
                         shared_score = math.sqrt((pow(e.score, 2) + pow(r.score, 2)) * 0.5)
                         penalty = 1.0 * sq_d / shared_score
+
                         if penalty < top_result[1]:
                             top_result = (r, penalty)
 
                 if top_result[0]:
-                    insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score, i)
+                    insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score, q)
                 else:
-                    insert_in_index(idx2, [e], e.score, i)
+                    insert_in_index(idx2, [e], e.score, q)
 
-                i += 1
+                q += 1
 
             for e in remainder:
-                insert_in_index(idx2, [e], e.score, i)
+                insert_in_index(idx2, [e], e.score, q)
+                q +=1
 
             log.info("Determining fusion gene names and generate output")
             # Generate output
@@ -586,7 +588,6 @@ class DetectOutput:
             exported = set([])
             for score in sorted(idx2.keys(), reverse=True):
                 for key in sorted(idx2[score].keys()):
-                    print score,key
                     added = 0
                     for entry in idx2[score][key]:
                         if entry not in exported:
