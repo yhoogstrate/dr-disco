@@ -6,8 +6,10 @@ import math
 
 from drdisco import log
 from drdisco.DetectFrameShifts import DetectFrameShifts
+from drdisco.utils import reverse_complement, is_gzip
 import gzip
 import HTSeq
+from pyfaidx import Fasta
 
 
 """[License: GNU General Public License v3 (GPLv3)]
@@ -37,18 +39,9 @@ import HTSeq
 """
 
 
-def is_gzip(filename):
-    try:
-        f = gzip.GzipFile(filename, 'rb')
-        f.read()
-        return True
-    except Exception:
-        return False
-
-
 class DetectOutputEntry:
     def __init__(self, line_in_results_file):
-        self.line = line_in_results_file.strip().split("\t")
+        self.line = line_in_results_file.strip("\r\n").split("\t")
         self.parse()
 
     def parse(self):
@@ -130,13 +123,15 @@ class DetectOutputEntry:
         self.break_A_max_AS = int(self.line[44])
         self.break_B_max_AS = int(self.line[45])
 
+        self.edit_dist_to_splice_motif = ""
+
         self.structure = self.line[46]
 
         inv = {'-': '+', '+': '-'}
         if self.acceptorA > self.donorA:
             self.RNAstrandA = self.strandA
             self.RNAstrandB = inv[self.strandB]
-        elif self.donorA < self.acceptorA:
+        elif self.acceptorA < self.donorA:
             self.RNAstrandA = inv[self.strandA]
             self.RNAstrandB = self.strandB
         else:
@@ -151,14 +146,15 @@ class DetectOutputEntry:
     def get_donors_acceptors(self, gtf_file):
         idx = {}
         for a in self.structure.split('&'):
-            for b in a.split(':', 3)[3].strip('()').split(','):
-                c = b.split(':')
-                c[0] = c[0].replace('_1', '_[12]').replace('_2', '_[12]')
-                if c[0] != 'discordant_mates':
-                    if c[0] not in idx:
-                        idx[c[0]] = 0
+            if a != '':
+                for b in a.split(':', 3)[3].strip('()').split(','):
+                    c = b.split(':')
+                    c[0] = c[0].replace('_1', '_[12]').replace('_2', '_[12]')
+                    if c[0] != 'discordant_mates':
+                        if c[0] not in idx:
+                            idx[c[0]] = 0
 
-                    idx[c[0]] += int(c[1])
+                        idx[c[0]] += int(c[1])
 
         def pos_to_gene_str(pos_chr, pos_pos):
             if pos_chr[0:3] == 'chr':
@@ -187,6 +183,66 @@ class DetectOutputEntry:
             return genesB + '->' + genesA
         else:
             return genesB + '<->' + genesA
+
+    def is_on_splice_junction_motif(self, fasta_fh):
+        """
+
+motif:
+
+5' exon:
+
+[ ...{AC}{A}{G} ] {G}{T}{AG}{A}{G}{T} . . . {C}{A}{G} [ {G}... ]
+
+        """
+
+        pos5_in_exon_length = 3
+        pos5_post_exon_length = 6
+
+        pos3_pre_exon_length = 3
+        pos3_in_exon_length = 1
+
+        if self.donorA > self.donorB:
+            pos5p = [self.chrA, self.posA, self.strandA]
+            pos3p = [self.chrB, self.posB, self.strandB]
+        elif self.donorA < self.donorB:
+            pos5p = [self.chrB, self.posB, self.strandB]
+            pos3p = [self.chrA, self.posA, self.strandA]
+        else:
+            pos5p = None
+
+        if pos5p:
+            if pos5p[2] == '-':
+                seq_in_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
+                seq_post_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
+            else:
+                seq_in_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
+                seq_post_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
+
+            if pos3p[2] == '+':
+                seq_pre_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
+                seq_in_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
+            else:
+                seq_in_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
+                seq_pre_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_pre_exon_length]))
+
+            def calc_dist(pat, subseq):
+                d = 0
+
+                if len(pat) != len(subseq):
+                    raise Exception("invalid pattern size")
+                for i in range(len(pat)):
+                    if subseq[i] not in pat[i]:
+                        d += 1
+
+                return d
+
+            dist = calc_dist(["AC", "A", "G"], seq_in_5p_exon) + calc_dist(["G", "T", "AG", "A", "G", "T"], seq_post_5p_exon) + calc_dist(["C", "A", "G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon)
+            # print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ] ---> " + str(dist)
+            self.edit_dist_to_splice_motif = str(dist)
+
+            return dist
+        else:
+            return ""
 
     def __str__(self):
         line = self.line
@@ -382,17 +438,17 @@ class DetectOutput:
 
         log.info("Classified " + str(k) + "/" + str(n) + " as valid")
 
-    def integrate(self, output_table, gtf_file):
-        def insert_in_index(index, entries, score):
+    def integrate(self, output_table, gtf_file, fasta_file):
+        def insert_in_index(index, entries, score, i):
             if score not in index:
                 index[score] = {}
 
-            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')'
+            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')_' + str(i)
             index[score][key] = entries
 
         with open(output_table, 'w') as fh_out:
             header = self.header.split("\t")
-            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2'] + header[-5:])
+            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2', 'splice-motif-edit-distance'] + header[-5:])
 
             fh_out.write("shared-id\tfusion\t" + header)
 
@@ -402,6 +458,8 @@ class DetectOutput:
             # index used to annotate gene names: TMPRSS2->ERG
             gene_annotation = GeneAnnotation(gtf_file)
             dfs = DetectFrameShifts(gtf_file) if gtf_file else None
+
+            ffs = Fasta(fasta_file) if fasta_file else None
 
             intronic_linear = []
             remainder = []
@@ -425,29 +483,33 @@ class DetectOutput:
                     frameshifts_2 = [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
 
                     for additional_breaks in e.structure.split('&'):
-                        params = additional_breaks.split(':(')
-                        n_split_reads = sum([int(x.split(':')[1]) for x in params[1].rstrip(')').split(',') if x.split(':')[0] != 'discordant_mates'])
+                        if additional_breaks != '':
+                            params = additional_breaks.split(':(')
+                            n_split_reads = sum([int(x.split(':')[1]) for x in params[1].rstrip(')').split(',') if x.split(':')[0] != 'discordant_mates'])
 
-                        posAB = params[0].split(':')
-                        posA, posB = int(posAB[1].split('/')[0]), int(posAB[2].split('/')[0])
+                            posAB = params[0].split(':')
+                            posA, posB = int(posAB[1].split('/')[0]), int(posAB[2].split('/')[0])
 
-                        if params[0] not in done_breaks and n_split_reads > 0:
-                            if e.donorA > e.donorB:
-                                frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
-                            else:
-                                frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+                            if params[0] not in done_breaks and n_split_reads > 0:
+                                if e.donorA > e.donorB:  # nice, use same thing to swap if necessary
+                                    frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
+                                else:
+                                    frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
 
-                            fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
-                            frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
-                            frameshifts_1 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]
-                            frameshifts_2 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
+                                fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
+                                frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
+                                frameshifts_1 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[1]]
+                                frameshifts_2 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
 
-                        done_breaks.add(params[0])
+                            done_breaks.add(params[0])
 
                     e.fgd = ','.join(sorted(list(set(fgd))))
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
                     e.frameshift_1 = ','.join(sorted(list(set(frameshifts_1))))
                     e.frameshift_2 = ','.join(sorted(list(set(frameshifts_2))))
+
+                if ffs:
+                    e.is_on_splice_junction_motif(ffs)
 
                 if e.x_onic == 'intronic' and e.circ_lin == 'linear':
                     intronic_linear.append(e)
@@ -470,7 +532,7 @@ class DetectOutput:
 
             # Reorder
             idx2 = {}
-
+            q = 0
             for e in intronic_linear:
                 results = {}
                 positions = [(e.chrA, e.posA, e.strandA), (e.chrB, e.posB, e.strandB)]
@@ -497,7 +559,7 @@ class DetectOutput:
                                 results[e2] += 1
 
                 top_result = (None, 9999999999999)
-                for r in results:
+                for r in sorted(results.keys()):
                     if results[r] >= 2:
                         d1 = (r.posA - e.posA)
                         d2 = (r.posB - e.posB)
@@ -505,16 +567,20 @@ class DetectOutput:
 
                         shared_score = math.sqrt((pow(e.score, 2) + pow(r.score, 2)) * 0.5)
                         penalty = 1.0 * sq_d / shared_score
+
                         if penalty < top_result[1]:
                             top_result = (r, penalty)
 
                 if top_result[0]:
-                    insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score)
+                    insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score, q)
                 else:
-                    insert_in_index(idx2, [e], e.score)
+                    insert_in_index(idx2, [e], e.score, q)
+
+                q += 1
 
             for e in remainder:
-                insert_in_index(idx2, [e], e.score)
+                insert_in_index(idx2, [e], e.score, q)
+                q += 1
 
             log.info("Determining fusion gene names and generate output")
             # Generate output
@@ -526,7 +592,7 @@ class DetectOutput:
                     for entry in idx2[score][key]:
                         if entry not in exported:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
-                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2] + entry.line[-5:]
+                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2, entry.edit_dist_to_splice_motif] + entry.line[-5:]
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line) + "\n")
                             exported.add(entry)

@@ -94,7 +94,7 @@ class TestChimOverhang(unittest.TestCase):
 
         # Step 04: dr-disco integrate
         cl = DetectOutput(drdisco_classify)
-        cl.integrate(drdisco_integrate, None)
+        cl.integrate(drdisco_integrate, None, None)
 
         self.assertTrue(filecmp.cmp(drdisco_integrate_test, drdisco_integrate), msg="diff '" + drdisco_integrate_test + "' '" + drdisco_integrate + "':\n" + subprocess.Popen(['diff', drdisco_integrate_test, drdisco_integrate], stdout=subprocess.PIPE).stdout.read())
 
@@ -133,7 +133,7 @@ class TestChimOverhang(unittest.TestCase):
 
         # Step 04: dr-disco integrate
         cl = DetectOutput(drdisco_classify)
-        cl.integrate(drdisco_integrate, None)
+        cl.integrate(drdisco_integrate, None, None)
 
         self.assertTrue(filecmp.cmp(drdisco_integrate_test, drdisco_integrate), msg="diff '" + drdisco_integrate_test + "' '" + drdisco_integrate + "':\n" + subprocess.Popen(['diff', drdisco_integrate_test, drdisco_integrate], stdout=subprocess.PIPE).stdout.read())
 
@@ -172,7 +172,7 @@ class TestChimOverhang(unittest.TestCase):
 
         # Step 04: dr-disco integrate
         cl = DetectOutput(drdisco_classify)
-        cl.integrate(drdisco_integrate, None)
+        cl.integrate(drdisco_integrate, None, None)
 
         self.assertTrue(filecmp.cmp(drdisco_integrate_test, drdisco_integrate), msg="diff '" + drdisco_integrate_test + "' '" + drdisco_integrate + "':\n" + subprocess.Popen(['diff', drdisco_integrate_test, drdisco_integrate], stdout=subprocess.PIPE).stdout.read())
 
