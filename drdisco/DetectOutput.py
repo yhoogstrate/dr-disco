@@ -439,11 +439,11 @@ class DetectOutput:
         log.info("Classified " + str(k) + "/" + str(n) + " as valid")
 
     def integrate(self, output_table, gtf_file, fasta_file):
-        def insert_in_index(index, entries, score):
+        def insert_in_index(index, entries, score, i):
             if score not in index:
                 index[score] = {}
 
-            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')'
+            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')_'+str(i)
             index[score][key] = entries
 
         with open(output_table, 'w') as fh_out:
@@ -532,7 +532,7 @@ class DetectOutput:
 
             # Reorder
             idx2 = {}
-
+            i = 0
             for e in intronic_linear:
                 results = {}
                 positions = [(e.chrA, e.posA, e.strandA), (e.chrB, e.posB, e.strandB)]
@@ -571,12 +571,14 @@ class DetectOutput:
                             top_result = (r, penalty)
 
                 if top_result[0]:
-                    insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score)
+                    insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score, i)
                 else:
-                    insert_in_index(idx2, [e], e.score)
+                    insert_in_index(idx2, [e], e.score, i)
+
+                i += 1
 
             for e in remainder:
-                insert_in_index(idx2, [e], e.score)
+                insert_in_index(idx2, [e], e.score, i)
 
             log.info("Determining fusion gene names and generate output")
             # Generate output
@@ -584,6 +586,7 @@ class DetectOutput:
             exported = set([])
             for score in sorted(idx2.keys(), reverse=True):
                 for key in sorted(idx2[score].keys()):
+                    print score,key
                     added = 0
                     for entry in idx2[score][key]:
                         if entry not in exported:
