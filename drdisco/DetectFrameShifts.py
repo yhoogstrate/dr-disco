@@ -195,8 +195,7 @@ class DetectFrameShifts:
             _to ([chr, pos, strand]): acceptor position position
 
         """
-        print _from , " --> " , _to
-        
+
         from_l_fgd = []
         to_l_fgd = []
 
