@@ -443,7 +443,7 @@ class DetectOutput:
             if score not in index:
                 index[score] = {}
 
-            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')_'+str(i)
+            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')_' + str(i)
             index[score][key] = entries
 
         with open(output_table, 'w') as fh_out:
@@ -580,7 +580,7 @@ class DetectOutput:
 
             for e in remainder:
                 insert_in_index(idx2, [e], e.score, q)
-                q +=1
+                q += 1
 
             log.info("Determining fusion gene names and generate output")
             # Generate output
