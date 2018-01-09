@@ -6,7 +6,7 @@ import math
 
 from drdisco import log
 from drdisco.DetectFrameShifts import DetectFrameShifts
-from drdisco.utils import reverse_complement
+from drdisco.utils import reverse_complement, is_gzip
 import gzip
 import HTSeq
 from pyfaidx import Fasta
@@ -37,15 +37,6 @@ from pyfaidx import Fasta
     You can e-mail me via 'y.hoogstrate' at the following webmail domain:
     gmail dot com
 """
-
-
-def is_gzip(filename):
-    try:
-        f = gzip.GzipFile(filename, 'rb')
-        f.read()
-        return True
-    except Exception:
-        return False
 
 
 class DetectOutputEntry:
