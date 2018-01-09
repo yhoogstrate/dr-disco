@@ -299,6 +299,27 @@ class TestFrameShiftPrediction(unittest.TestCase):
             # self.assertEqual(len(frameshift_annotation[1]), 0)
             # self.assertEqual(len(frameshift_annotation[2]), 0)
 
+    def test_01_complementary(self):
+        TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
+
+        test_id = 'frameshift-prediction_01-complementary'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
+        
+        gtf_files = [TEST_DIR + 'frameshift_example.gtf', TEST_DIR + 'frameshift_example.no_chr_prefix.gtf']
+        for gtf_file in gtf_files:
+            command = ["bin/dr-disco",
+                       "integrate",
+                       "--gtf", gtf_file,
+                       input_file,
+                       output_file]
+
+            self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
+
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
     def test_02(self):  # 0, +2
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
 
