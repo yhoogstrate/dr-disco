@@ -428,6 +428,13 @@ class DetectOutput:
                     if chim_overhang < min_chim_overhang:
                         status.append("chim_overhang=" + str(chim_overhang) + "<" + str(min_chim_overhang))
 
+                    # @todo subfunc
+                    lr_intercept_max = (-31.0 * ((e.score + 100.0) / (450.0 + e.score + 100.0))) + 85.25
+                    if e.lr_A_intercept > lr_intercept_max:
+                        status.append("lr_A_intercept=" + str(e.lr_A_intercept) + ">" + str(lr_intercept_max))
+                    if e.lr_B_intercept > lr_intercept_max:
+                        status.append("lr_B_intercept=" + str(e.lr_B_intercept) + ">" + str(lr_intercept_max))
+
                     if len(status) == 0:
                         e.status = 'valid'
                         fh.write(str(e))
