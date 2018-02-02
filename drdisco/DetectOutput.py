@@ -593,7 +593,7 @@ class DetectOutput:
 
                 top_result = (None, 9999999999999)
                 for r in sorted(results.keys()):
-                    if results[r] >= 2:
+                    if results[r] >= 2 and r.strandA == e.strandA and r.strandB == e.strandB:
                         d1 = (r.posA - e.posA)
                         d2 = (r.posB - e.posB)
                         sq_d = math.sqrt(pow(d1, 2) + pow(d2, 2))
