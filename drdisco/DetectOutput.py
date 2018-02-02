@@ -125,6 +125,9 @@ class DetectOutputEntry:
 
         self.edit_dist_to_splice_motif = ""
 
+        self.exons_from = ""
+        self.exons_to = ""
+
         self.structure = self.line[46]
 
         inv = {'-': '+', '+': '-'}
@@ -492,9 +495,9 @@ class DetectOutput:
                     done_breaks = set([])
 
                     if e.donorA > e.donorB:
-                        frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
+                        exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
                     else:
-                        frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
+                        exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
 
                     done_breaks.add(e.chrA + ':' + str(e.posA) + '/' + str(e.posA + 1) + '(' + e.strandA + ')->' + e.chrB + ':' + str(e.posB) + '/' + str(e.posB + 1) + '(' + e.strandB + ')')
 
@@ -513,9 +516,12 @@ class DetectOutput:
 
                             if params[0] not in done_breaks and n_split_reads > 0:
                                 if e.donorA > e.donorB:  # nice, use same thing to swap if necessary
-                                    frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
+                                    exons_from_, exons_to_, frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
                                 else:
-                                    frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+                                    exons_from_, exons_to_, frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+
+                                exons_from += exons_from_
+                                exons_to += exons_to_
 
                                 fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
                                 frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
@@ -523,6 +529,9 @@ class DetectOutput:
                                 frameshifts_2 += [x[0][0] + '(+' + str(x[0][1]) + ')->' + x[1][0] + '(+' + str(x[1][1]) + ')' for x in frame_shifts[2]]
 
                             done_breaks.add(params[0])
+
+                    e.exons_from = ",".join(sorted(exons_from))
+                    e.exons_to = ",".join(sorted(exons_to))
 
                     e.fgd = ','.join(sorted(list(set(fgd))))
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
