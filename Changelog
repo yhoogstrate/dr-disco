@@ -1,7 +1,9 @@
-2018-02-01	Youri Hoogstrate	v0.15.3
+2018-02-01	Youri Hoogstrate	v0.16.0
 	 * Adds the exons before the break and exons after the break to the
 	   integrate results. Remark that the offset to match an exon is
 	   [-2,+2] because STAR may introduce slight offset errors.
+	 * Fixes bug in integrate where rather similar fusions in opposite
+	   strands were still bundled together.
 
 2018-02-01	Youri Hoogstrate	v0.15.2
 	 * Makes mismatches per base classification more stringent
