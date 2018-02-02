@@ -238,7 +238,7 @@ class DetectFrameShifts:
         all_to = sorted(list(set([_ for _ in to_l_fgd] + [_[0] for _ in to_l])))
 
         print "from=",all_from
-        print "to=",all_from
+        print "to=",all_to
         print
 
         for from_l_i in from_l_fgd:
