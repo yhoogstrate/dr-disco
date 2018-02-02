@@ -125,6 +125,9 @@ class DetectOutputEntry:
 
         self.edit_dist_to_splice_motif = ""
 
+        self.exons_from = []
+        self.exons_to = []
+
         self.structure = self.line[46]
 
         inv = {'-': '+', '+': '-'}
@@ -464,12 +467,12 @@ class DetectOutput:
             if score not in index:
                 index[score] = {}
 
-            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')_' + str(i)
+            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')|' + str(i)
             index[score][key] = entries
 
         with open(output_table, 'w') as fh_out:
             header = self.header.split("\t")
-            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2', 'splice-motif-edit-distance'] + header[-5:])
+            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2', 'splice-motif-edit-distance', "exons from (5')", "exons to (3')"] + header[-5:])
 
             fh_out.write("shared-id\tfusion\t" + header)
 
@@ -492,9 +495,9 @@ class DetectOutput:
                     done_breaks = set([])
 
                     if e.donorA > e.donorB:
-                        frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
+                        exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
                     else:
-                        frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
+                        exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
 
                     done_breaks.add(e.chrA + ':' + str(e.posA) + '/' + str(e.posA + 1) + '(' + e.strandA + ')->' + e.chrB + ':' + str(e.posB) + '/' + str(e.posB + 1) + '(' + e.strandB + ')')
 
@@ -513,9 +516,13 @@ class DetectOutput:
 
                             if params[0] not in done_breaks and n_split_reads > 0:
                                 if e.donorA > e.donorB:  # nice, use same thing to swap if necessary
-                                    frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
+                                    exons_from_, exons_to_, frame_shifts = dfs.evaluate([e.chrA, posA, e.RNAstrandA], [e.chrB, posB, e.RNAstrandB], 2)
                                 else:
-                                    frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+                                    exons_from_, exons_to_, frame_shifts = dfs.evaluate([e.chrB, posB, e.RNAstrandB], [e.chrA, posA, e.RNAstrandA], 2)
+
+                                exons_from += exons_from_
+                                exons_to += exons_to_
+                                del(exons_from_, exons_to_)
 
                                 fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
                                 frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
@@ -524,10 +531,15 @@ class DetectOutput:
 
                             done_breaks.add(params[0])
 
+                    e.exons_from = sorted(list(set(exons_from)))
+                    e.exons_to = sorted(list(set(exons_to)))
+                    del(exons_from, exons_to)
+
                     e.fgd = ','.join(sorted(list(set(fgd))))
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
                     e.frameshift_1 = ','.join(sorted(list(set(frameshifts_1))))
                     e.frameshift_2 = ','.join(sorted(list(set(frameshifts_2))))
+                    del(fgd, frameshifts_0, frameshifts_1, frameshifts_2)
 
                 if ffs:
                     e.is_on_splice_junction_motif(ffs)
@@ -581,7 +593,7 @@ class DetectOutput:
 
                 top_result = (None, 9999999999999)
                 for r in sorted(results.keys()):
-                    if results[r] >= 2:
+                    if results[r] >= 2 and r.strandA == e.strandA and r.strandB == e.strandB:
                         d1 = (r.posA - e.posA)
                         d2 = (r.posB - e.posB)
                         sq_d = math.sqrt(pow(d1, 2) + pow(d2, 2))
@@ -596,7 +608,6 @@ class DetectOutput:
                     insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score, q)
                 else:
                     insert_in_index(idx2, [e], e.score, q)
-
                 q += 1
 
             for e in remainder:
@@ -613,7 +624,7 @@ class DetectOutput:
                     for entry in idx2[score][key]:
                         if entry not in exported:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
-                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2, entry.edit_dist_to_splice_motif] + entry.line[-5:]
+                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2, entry.edit_dist_to_splice_motif, ",".join(entry.exons_from), ",".join(entry.exons_to)] + entry.line[-5:]
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line) + "\n")
                             exported.add(entry)

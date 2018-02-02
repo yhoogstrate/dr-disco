@@ -530,6 +530,8 @@ class ChimericAlignment:
         if len(alignments) > 0:
             self.reconstruct_alignments(alignments, sam_file_discordant, fh)
         else:
+            os.remove(basename + ".name-sorted.bam")
+            os.remove(basename + ".name-sorted.fixed.sam")
             err = "No reads were found, fixing empty sam/bam file: " + self.input_alignment_file
             log.error(err)
             raise Exception(err)
