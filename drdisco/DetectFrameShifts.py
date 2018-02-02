@@ -90,7 +90,7 @@ class DetectFrameShifts:
                             transcript_idx[transcript_id][exon_number][gtf_type] = feature
 
                     except KeyError:
-                        log.warn("Warning: GTF file misses certain attributes (gene_name, transcript_id or transcript_version) and is therefore skipping the frameshift detection.")
+                        log.warn("Warning: GTF file misses certain attributes (gene_name, transcript_id or transcript_version) and is therefore skipping the frameshift detection. Ensembl GTF files are known to be compatible.")
                         # there is no GFF_Reader.close() so break it dirty:
                         break
 
@@ -229,6 +229,9 @@ class DetectFrameShifts:
 
         results = {0: [], 1: [], 2: [], 'fgd': []}
 
+        all_from = sorted(list(set([_[0] for _ in from_l_fgd] + [_[0] for _ in from_l])))
+        all_to = sorted(list(set([_[0] for _ in to_l_fgd] + [_[0] for _ in to_l])))
+
         for from_l_i in from_l_fgd:
             for to_l_i in to_l_fgd:
                 results['fgd'].append((from_l_i, to_l_i))
@@ -238,4 +241,4 @@ class DetectFrameShifts:
                 frame_shift = ((from_l_i[1] + to_l_i[1]) % 3)
                 results[frame_shift].append((from_l_i, to_l_i))
 
-        return results
+        return all_from, all_to, results

@@ -47,10 +47,13 @@ class TestFrameShiftPrediction(unittest.TestCase):
         for fusion in fusions:
             for gtf_file in gtf_files:
                 dfs = DetectFrameShifts(gtf_file)
-                frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+                exons_from, exons_to, frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
                 self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 0))]")
                 self.assertEqual(len(frameshift_annotation[1]), 0)
                 self.assertEqual(len(frameshift_annotation[2]), 0)
+
+                self.assertEqual(",".join(exons_from), "AGRN(ENST00000620552.4)-ensembl")
+                self.assertEqual(",".join(exons_to), "HES4(ENST00000304952.10)-ensembl_havana")
 
     def test_02(self):  # 0, +2
         fusions = [(['chr1', 1035203, '+'], ['chr1', 999020, '-']), (['1', 1035203, '+'], ['1', 999020, '-'])]  # (from), (to)  and strands are at RNA level!
@@ -59,10 +62,13 @@ class TestFrameShiftPrediction(unittest.TestCase):
         for fusion in fusions:
             for gtf_file in gtf_files:
                 dfs = DetectFrameShifts(gtf_file)
-                frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+                exons_from, exons_to, frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
                 self.assertEqual(len(frameshift_annotation[0]), 0)
                 self.assertEqual(len(frameshift_annotation[1]), 0)
                 self.assertEqual(str(frameshift_annotation[2]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
+
+                self.assertEqual(",".join(exons_from), "AGRN(ENST00000620552.4)-ensembl")
+                self.assertEqual(",".join(exons_to), "HES4(ENST00000304952.10)-ensembl_havana")
 
     def test_03(self):  # +1, +2 -> 0
         fusions = [(['chr1', 1040604, '+'], ['chr1', 999020, '-']), (['1', 1040604, '+'], ['1', 999020, '-'])]
@@ -71,10 +77,13 @@ class TestFrameShiftPrediction(unittest.TestCase):
         for fusion in fusions:
             for gtf_file in gtf_files:
                 dfs = DetectFrameShifts(gtf_file)
-                frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
+                exons_from, exons_to, frameshift_annotation = dfs.evaluate(fusion[0], fusion[1], 0)
                 self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 1), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
                 self.assertEqual(len(frameshift_annotation[1]), 0)
                 self.assertEqual(len(frameshift_annotation[2]), 0)
+
+                self.assertEqual(",".join(exons_from), "AGRN(ENST00000620552.4)-ensembl")
+                self.assertEqual(",".join(exons_to), "HES4(ENST00000304952.10)-ensembl_havana")
 
 
 if __name__ == '__main__':
