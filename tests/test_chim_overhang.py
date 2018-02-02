@@ -88,7 +88,7 @@ class TestChimOverhang(unittest.TestCase):
 
         # Step 03: dr-disco classify
         cl = DetectOutput(drdisco_detect)
-        cl.classify(drdisco_classify, False, Blacklist(), 25)
+        cl.classify(drdisco_classify, False, Blacklist(), 25, True)
 
         self.assertTrue(filecmp.cmp(drdisco_classify_test, drdisco_classify), msg="diff '" + drdisco_classify_test + "' '" + drdisco_classify + "':\n" + subprocess.Popen(['diff', drdisco_classify_test, drdisco_classify], stdout=subprocess.PIPE).stdout.read())
 
@@ -127,7 +127,7 @@ class TestChimOverhang(unittest.TestCase):
 
         # Step 03: dr-disco classify
         cl = DetectOutput(drdisco_detect)
-        cl.classify(drdisco_classify, False, Blacklist(), 25)
+        cl.classify(drdisco_classify, False, Blacklist(), 25, True)
 
         self.assertTrue(filecmp.cmp(drdisco_classify_test, drdisco_classify), msg="diff '" + drdisco_classify_test + "' '" + drdisco_classify + "':\n" + subprocess.Popen(['diff', drdisco_classify_test, drdisco_classify], stdout=subprocess.PIPE).stdout.read())
 
@@ -166,7 +166,7 @@ class TestChimOverhang(unittest.TestCase):
 
         # Step 03: dr-disco classify
         cl = DetectOutput(drdisco_detect)
-        cl.classify(drdisco_classify, False, Blacklist(), 25)
+        cl.classify(drdisco_classify, False, Blacklist(), 25, True)
 
         self.assertTrue(filecmp.cmp(drdisco_classify_test, drdisco_classify), msg="diff '" + drdisco_classify_test + "' '" + drdisco_classify + "':\n" + subprocess.Popen(['diff', drdisco_classify_test, drdisco_classify], stdout=subprocess.PIPE).stdout.read())
 

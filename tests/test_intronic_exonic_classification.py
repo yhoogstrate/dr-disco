@@ -52,7 +52,7 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
 
         cl = DetectOutput(input_file)
-        cl.classify(output_file, False, Blacklist(), 1)
+        cl.classify(output_file, False, Blacklist(), 1, True)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
