@@ -125,8 +125,8 @@ class DetectOutputEntry:
 
         self.edit_dist_to_splice_motif = ""
 
-        self.exons_from = ""
-        self.exons_to = ""
+        self.exons_from = []
+        self.exons_to = []
 
         self.structure = self.line[46]
 
@@ -522,6 +522,7 @@ class DetectOutput:
 
                                 exons_from += exons_from_
                                 exons_to += exons_to_
+                                del(exons_from_, exons_to_)
 
                                 fgd += [x[0] + '->' + x[1] for x in frame_shifts['fgd']]
                                 frameshifts_0 += [x[0][0] + '->' + x[1][0] for x in frame_shifts[0]]
@@ -532,11 +533,13 @@ class DetectOutput:
 
                     e.exons_from = sorted(list(set(exons_from)))
                     e.exons_to = sorted(list(set(exons_to)))
+                    del(exons_from, exons_to)
 
                     e.fgd = ','.join(sorted(list(set(fgd))))
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
                     e.frameshift_1 = ','.join(sorted(list(set(frameshifts_1))))
                     e.frameshift_2 = ','.join(sorted(list(set(frameshifts_2))))
+                    del(fgd, frameshifts_0, frameshifts_1, frameshifts_2)
 
                 if ffs:
                     e.is_on_splice_junction_motif(ffs)
