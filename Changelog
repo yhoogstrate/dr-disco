@@ -1,3 +1,8 @@
+2018-02-01	Youri Hoogstrate	v0.15.2
+	 * Makes mismatches per base classification more stringent
+	   unless `--ffpe` is used. Using `--ffpe` the old behaviour
+	   is preserved.
+
 2018-01-25	Youri Hoogstrate	v0.15.1
 	 * Added filter lr/intercept
 

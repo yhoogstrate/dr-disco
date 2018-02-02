@@ -123,7 +123,8 @@ def CLI_logo_sequence(region, fasta_input_file, offset_negative, offset_positive
 @click.option('--blacklist-regions', help="Blacklist these regions (BED file)")
 @click.option('--blacklist-junctions', help="Blacklist these region-to-region junctions (custom format, see files in ./share/)")
 @click.option('--min-chim-overhang', default=50, help="Minimum alignment length on each side of the junction. May need to be set to smaller values for read lengths smaller than 75bp. Larger values are more stringent. [default=50]")
-def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regions, blacklist_junctions, min_chim_overhang):
+@click.option('--ffpe', is_flag=True, default=False, help="Lowers the threshold for the relative amount of mismatches, as often found in FFPE material. Note that enabling this option will consequently result in more false positives.")
+def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regions, blacklist_junctions, min_chim_overhang, ffpe):
     blacklist = Blacklist()
 
     if blacklist_junctions:
@@ -133,7 +134,7 @@ def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regi
         blacklist.add_regions_from_bed(blacklist_regions)
 
     cl = DetectOutput(table_input_file)
-    cl.classify(table_output_file, only_valid, blacklist, min_chim_overhang)
+    cl.classify(table_output_file, only_valid, blacklist, min_chim_overhang, ffpe)
 
 
 @CLI.command(name='integrate', short_help='Maps junctions back together that are likely to correspond to the same fusion event.')
