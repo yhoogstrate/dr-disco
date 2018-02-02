@@ -415,18 +415,18 @@ class DetectOutput:
                     # now we're only estimating the MM ratio without entropy per position
                     # [CGCGCTATATCTCGATCGCCCTTAGAGATCCTTTCGAGAGAGCTCTAGAGCG] SOME KIND OF REFERENCE SEQUENCE
                     #  CGCG*TATAT*TC                  TTTC*AGAGAGCT*TAG      The more randomly dispersed mismatches are more trustworthy (right side example)
-                    #  CGCG*TATAT*TCGAT                TTCGAGAG*GCTCT  
-                    #   GCG*TATAT*TCG                  T*CGAGAGAG*TCTA 
-                    #   GCG*TATAT*TCGA                 TTCG*GAGAGCTCTA 
+                    #  CGCG*TATAT*TCGAT                TTCGAGAG*GCTCT
+                    #   GCG*TATAT*TCG                  T*CGAGAGAG*TCTA
+                    #   GCG*TATAT*TCGA                 TTCG*GAGAGCTCTA
                     #    CG*TATAT*TCGAT                TTCGAG*GAGCTCTAG
-                    #     G*TATAT*TCG                   TCGA*AGA*CTCT  
-                    # 
+                    #     G*TATAT*TCG                   TCGA*AGA*CTCT
+                    #
                     if ffpe_mismatch_ratio:
                         log_value_max = -6.4 - ((e.score + 6750.0) / (4000.0 - (e.score + 6750.0)))
                     else:
                         log_value_max = -4.7
                     log_value = math.log((float(e.mismatches) + 0.0000001) / float(e.alignment_score))
-                    if  log_value >= log_value_max:
+                    if log_value >= log_value_max:
                         status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
 
                     # @todo subfunc
