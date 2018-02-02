@@ -467,7 +467,7 @@ class DetectOutput:
             if score not in index:
                 index[score] = {}
 
-            key = str(q) + "|" + entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')_' + str(i)
+            key = str(i) + "|" + entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')_' + str(i)
             index[score][key] = entries
 
         with open(output_table, 'w') as fh_out:
