@@ -467,7 +467,7 @@ class DetectOutput:
             if score not in index:
                 index[score] = {}
 
-            key = str(i) + "|" + entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')_' + str(i)
+            key = entries[0].chrA + ':' + str(entries[0].posA) + '(' + entries[0].strandA + ')-' + entries[0].chrB + ':' + str(entries[0].posB) + '(' + entries[0].strandB + ')|' + str(i)
             index[score][key] = entries
 
         with open(output_table, 'w') as fh_out:
@@ -619,7 +619,10 @@ class DetectOutput:
             i = 1
             exported = set([])
             for score in sorted(idx2.keys(), reverse=True):
+                print score
                 for key in sorted(idx2[score].keys()):
+                    print "  - " , key
+                    print "    => ",len(idx2[score][key])
                     added = 0
                     for entry in idx2[score][key]:
                         if entry not in exported:

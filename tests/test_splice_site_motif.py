@@ -42,7 +42,7 @@ if not os.path.exists(T_TEST_DIR):
     os.makedirs(T_TEST_DIR)
 
 
-class TestIntronicBreakDetection(unittest.TestCase):
+class TestSpliceJunctions(unittest.TestCase):
     def test_sj_01(self):
         test_id = 'splice_site_motif_01'
 
