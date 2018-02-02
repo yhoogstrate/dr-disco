@@ -619,10 +619,7 @@ class DetectOutput:
             i = 1
             exported = set([])
             for score in sorted(idx2.keys(), reverse=True):
-                print score
                 for key in sorted(idx2[score].keys()):
-                    print "  - " , key
-                    print "    => ",len(idx2[score][key])
                     added = 0
                     for entry in idx2[score][key]:
                         if entry not in exported:
