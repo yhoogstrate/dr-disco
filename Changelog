@@ -1,3 +1,8 @@
+2018-02-01	Youri Hoogstrate	v0.15.3
+	 * Adds the exons before the break and exons after the break to the
+	   integrate results. Remark that the offset to match an exon is
+	   [-2,+2] because STAR may introduce slight offset errors.
+
 2018-02-01	Youri Hoogstrate	v0.15.2
 	 * Makes mismatches per base classification more stringent
 	   unless `--ffpe` is used. Using `--ffpe` the old behaviour

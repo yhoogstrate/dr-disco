@@ -472,7 +472,7 @@ class DetectOutput:
 
         with open(output_table, 'w') as fh_out:
             header = self.header.split("\t")
-            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2', 'splice-motif-edit-distance'] + header[-5:])
+            header = "\t".join(header[:-5] + ['full-gene-dysregulation', 'frameshift=0', 'frameshift=+1', 'frameshift=+2', 'splice-motif-edit-distance', "exons from (5')", "exons to (3')"] + header[-5:])
 
             fh_out.write("shared-id\tfusion\t" + header)
 
@@ -530,8 +530,8 @@ class DetectOutput:
 
                             done_breaks.add(params[0])
 
-                    e.exons_from = ",".join(sorted(exons_from))
-                    e.exons_to = ",".join(sorted(exons_to))
+                    e.exons_from = sorted(list(set(exons_from)))
+                    e.exons_to = sorted(list(set(exons_to)))
 
                     e.fgd = ','.join(sorted(list(set(fgd))))
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
@@ -622,7 +622,7 @@ class DetectOutput:
                     for entry in idx2[score][key]:
                         if entry not in exported:
                             acceptors_donors = entry.get_donors_acceptors(gene_annotation)
-                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2, entry.edit_dist_to_splice_motif] + entry.line[-5:]
+                            line = entry.line[:-5] + [entry.fgd, entry.frameshift_0, entry.frameshift_1, entry.frameshift_2, entry.edit_dist_to_splice_motif, ",".join(entry.exons_from), ",".join(entry.exons_to)] + entry.line[-5:]
 
                             fh_out.write(str(i) + "\t" + acceptors_donors + "\t" + "\t".join(line) + "\n")
                             exported.add(entry)

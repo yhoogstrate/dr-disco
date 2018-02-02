@@ -229,8 +229,8 @@ class DetectFrameShifts:
 
         results = {0: [], 1: [], 2: [], 'fgd': []}
 
-        all_from = sorted(list(set([_[0] for _ in from_l_fgd] + [_[0] for _ in from_l])))
-        all_to = sorted(list(set([_[0] for _ in to_l_fgd] + [_[0] for _ in to_l])))
+        all_from = sorted(list(set([_ for _ in from_l_fgd] + [_[0] for _ in from_l])))
+        all_to = sorted(list(set([_ for _ in to_l_fgd] + [_[0] for _ in to_l])))
 
         for from_l_i in from_l_fgd:
             for to_l_i in to_l_fgd:
