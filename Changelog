@@ -1,3 +1,6 @@
+2018-02-09	Youri Hoogstrate	v0.16.1
+	 * Improves filter for extremely high expressed exonic fusions
+
 2018-02-01	Youri Hoogstrate	v0.16.0
 	 * Adds the exons before the break and exons after the break to the
 	   integrate results. Remark that the offset to match an exon is
