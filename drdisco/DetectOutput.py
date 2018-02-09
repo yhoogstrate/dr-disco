@@ -369,7 +369,10 @@ class DetectOutput:
                     # @todo subfunc
                     # n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
                     n_disco_max = int(round(math.pow(22.0 * e.n_split_reads, 0.9) + 13))
-                    n_disco_min = int(round(math.pow(0.0195 * e.n_split_reads, 1.95)))
+                    if e.n_split_reads < 200:
+                        n_disco_min = int(round(math.pow(0.0195 * e.n_split_reads, 1.95)))
+                    else:
+                        n_disco_min = int(round((0.135 * (e.n_split_reads - 200.0)) + 14.0))
                     if e.n_discordant_reads > n_disco_max:
                         status.append("n_disco=" + str(e.n_discordant_reads) + ">" + str(n_disco_max))
                     if e.n_discordant_reads < n_disco_min:
@@ -377,7 +380,10 @@ class DetectOutput:
 
                     # @todo subfunc
                     n_split_min = int(round((0.32 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.15) - 4.0))
-                    n_split_max = int(round((0.978 * e.n_supporting_reads) - pow(0.014 * e.n_supporting_reads, 1.99 - ((1.0 / 15000.0) * e.n_supporting_reads))))
+                    if e.n_supporting_reads < 500:
+                        n_split_max = int(round((0.978 * e.n_supporting_reads) - pow(0.014 * e.n_supporting_reads, 1.99 - ((1.0 / 15000.0) * e.n_supporting_reads))))
+                    else:
+                        n_split_max = int(round(0.905 * (e.n_supporting_reads - 500.0) + 443.9624))
                     if e.n_split_reads < n_split_min:
                         status.append("n_split=" + str(e.n_split_reads) + "<" + str(n_split_min))
                     if e.n_split_reads > n_split_max:
