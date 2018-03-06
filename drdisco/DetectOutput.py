@@ -454,7 +454,10 @@ class DetectOutput:
                         status.append("chim_overhang=" + str(chim_overhang) + "<" + str(min_chim_overhang))
 
                     # @todo subfunc
-                    lr_intercept_max = (-31.0 * ((e.score + 100.0) / (1800.0 + e.score + 100.0))) + 85.5
+                    if e.score <= 150:
+                        lr_intercept_max = (-31.0 * ((e.score + 100.0) / (1800.0 + e.score + 100.0))) + 85.5
+                    else:
+                        lr_intercept_max = ((e.score - 150.0) * 0.0225) + 81.71951
                     if e.lr_A_intercept > lr_intercept_max:
                         status.append("lr_A_intercept=" + str(e.lr_A_intercept) + ">" + str(lr_intercept_max))
                     if e.lr_B_intercept > lr_intercept_max:
