@@ -369,8 +369,10 @@ class DetectOutput:
                     # @todo subfunc
                     # n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
                     n_disco_max = int(round(math.pow(22.0 * e.n_split_reads, 0.9) + 13))
-                    if e.n_split_reads < 200:
+                    if e.n_split_reads < 100:
                         n_disco_min = int(round(math.pow(0.0195 * e.n_split_reads, 1.95)))
+                    elif e.n_split_reads >= 100 and e.n_split_reads < 125:
+                        n_disco_min = 4
                     else:
                         n_disco_min = int(round((0.135 * (e.n_split_reads - 200.0)) + 14.0))
                     if e.n_discordant_reads > n_disco_max:
@@ -381,7 +383,7 @@ class DetectOutput:
                     # @todo subfunc
                     n_split_min = int(round((0.32 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.15) - 4.0))
                     if e.n_supporting_reads < 500:
-                        n_split_max = int(round((0.978 * e.n_supporting_reads) - pow(0.014 * e.n_supporting_reads, 1.99 - ((1.0 / 15000.0) * e.n_supporting_reads))))
+                        n_split_max = int(round((0.986 * e.n_supporting_reads) - pow(0.00535 * e.n_supporting_reads, 3.99 - ((1.0 / 15000.0) * e.n_supporting_reads))))
                     else:
                         n_split_max = int(round(0.905 * (e.n_supporting_reads - 500.0) + 443.9624))
                     if e.n_split_reads < n_split_min:
@@ -431,11 +433,11 @@ class DetectOutput:
                     #     G*TATAT*TCG                   TCGA*AGA*CTCT
                     #
                     if ffpe_mismatch_ratio:
-                        log_value_max = -6.4 - ((e.score + 6750.0) / (4000.0 - (e.score + 6750.0)))
+                        log_value_max = -6.45 - ((e.score + 6750.0) / (4400.0 - (e.score + 6750.0)))
                     else:
                         log_value_max = -4.7
                     log_value = math.log((float(e.mismatches) + 0.0000001) / float(e.alignment_score))
-                    if log_value >= log_value_max:
+                    if log_value > log_value_max:
                         status.append("many_muts=" + str(round(log_value, 2)) + ">" + str(round(log_value_max, 2)))
 
                     # @todo subfunc
@@ -452,7 +454,10 @@ class DetectOutput:
                         status.append("chim_overhang=" + str(chim_overhang) + "<" + str(min_chim_overhang))
 
                     # @todo subfunc
-                    lr_intercept_max = (-31.0 * ((e.score + 100.0) / (450.0 + e.score + 100.0))) + 85.25
+                    if e.score <= 150:
+                        lr_intercept_max = (-31.0 * ((e.score + 100.0) / (1800.0 + e.score + 100.0))) + 85.5
+                    else:
+                        lr_intercept_max = ((e.score - 150.0) * 0.0225) + 81.71951
                     if e.lr_A_intercept > lr_intercept_max:
                         status.append("lr_A_intercept=" + str(e.lr_A_intercept) + ">" + str(lr_intercept_max))
                     if e.lr_B_intercept > lr_intercept_max:
