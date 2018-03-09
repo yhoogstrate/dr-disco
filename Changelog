@@ -1,3 +1,7 @@
+2018-03-09	Youri Hoogstrate
+	 * Trigger Exception in `dr-disco integrate` when position of break
+	   is out of bound relative to `--fasta`.
+
 2018-03-06	Youri Hoogstrate	v0.16.2
 	 * Improved classification based on outliers
 
