@@ -112,6 +112,7 @@ class TestSpliceJunctions(unittest.TestCase):
         fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
 
         output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
 
         # sam -> fixed bam
         sam_to_fixed_bam(input_sam, input_bam, T_TEST_DIR)
@@ -126,9 +127,13 @@ class TestSpliceJunctions(unittest.TestCase):
         # dr-disco-detect (skip classify) -> dr-disco integrate
         cl = DetectOutput(input_file)
 
-        # simulates:
+        # originally, this triggered an exception, now we just log an error
         # cl.integrate(output_file, gtf_file, fasta_file)
-        self.assertRaises(Exception, cl.integrate, output_file, gtf_file, fasta_file)
+        # self.assertRaises(Exception, cl.integrate, output_file, gtf_file, fasta_file)
+
+        cl.integrate(output_file, gtf_file, fasta_file)
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 
 if __name__ == '__main__':
