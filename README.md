@@ -76,6 +76,11 @@ STAR does not seem to be able to appropriately determine Chimeric reads if the o
  - For *reverse*, *forward* you need to create and use the reverse complement of _R1 and o_R2.
  - For *reverse*, *reverse* you need to create and use the reverse complement of _R1 and the original of _R2 (but I am not aware of such data...).
 
+#### Illumina NextSeq data cleaning
+
+The illumina NextSeq is claimed to be responsible for measuring poly-G sequences (https://www.biostars.org/p/294612/) which may result in vast amounts of discordant reads aligned to poly-G regions in the genome.
+It is recommended to clean such datasets and erase poly-G suffixes, for instance with the tool fastp.
+
 ### Step 1: STAR
 
 Running RNA-STAR with fusion settings produces a file: ``<...>.Chimeric.out.sam``. This file contains discordant reads (split and spanning). It is recommended to run STAR with corresponding settings:
