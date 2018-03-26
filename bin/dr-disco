@@ -163,9 +163,9 @@ def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
     When both POS1 and POS2 are provided, also blacklisted junctions between POS1 and POS2 as provided in the blacklist_junctions file will be reported.
     
     Positions need to be formated as chr:pos:
-    chr1:1235
+    chr1:1235 or chr1:12,345
     
-    Positions can be made strand specific by adding them between curly brackets: chr1:12345(+) or chr2:12345(-)
+    Positions can be made strand specific by adding them between curly brackets: chr1:12,345(+) or chr2:12345(-)
     """
     if (not blacklist_junctions) and (not blacklist_regions):
         raise RuntimeError("Please provide at least one blacklist (--blacklist-regions or --blacklist-junctions)")
@@ -179,13 +179,25 @@ def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
         blacklist.add_regions_from_bed(blacklist_regions)
 
     if pos1 and pos2:
+        entries = set([])
+        
         pos1 = parse_pos(pos1)
         pos2 = parse_pos(pos2)
+        
+        pos1s = []
+        pos2s = []
+        raise Exception("Do cartesian product if not stranded")
+        
         print blacklist.is_blacklisted(pos1, pos2)
     else:
         pos1 = parse_pos(pos1)
-        print pos1
-        print blacklist.is_blacklisted(pos1, pos1)
+        if pos1[2] == '.': # unstranded
+            pos1[2] = '+'
+            pos2 = [pos1[0],pos1[1], '-']
+            print pos1,pos2
+            print blacklist.is_blacklisted_by_regions(pos1, pos2)
+        else:
+            print blacklist.is_blacklisted_by_regions(pos1, pos1)
 
 
 
