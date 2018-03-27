@@ -154,17 +154,17 @@ def CLI_integrate(table_input_file, table_output_file, gtf, fasta):
 
 @CLI.command(name='is-blacklisted', short_help='Quickly check whether a certain region or junction is blacklisted.')
 @click.argument('pos1', nargs=1)
-@click.argument('pos2', nargs=1,required=False)
+@click.argument('pos2', nargs=1, required=False)
 @click.option('--blacklist-regions')
 @click.option('--blacklist-junctions', help="Blacklist these region-to-region junctions (custom format, see files in ./share/)")
 def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
     """When only a single position is given, only matches with blacklisted regions from blacklist_regions will be reported.
-    
+
     When both POS1 and POS2 are provided, also blacklisted junctions between POS1 and POS2 as provided in the blacklist_junctions file will be reported.
-    
+
     Positions need to be formated as chr:pos:
     chr1:1235 or chr1:12,345
-    
+
     Positions can be made strand specific by adding them between curly brackets: chr1:12,345(+) or chr2:12345(-)
     """
     if (not blacklist_junctions) and (not blacklist_regions):
@@ -178,27 +178,42 @@ def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
     if blacklist_regions:
         blacklist.add_regions_from_bed(blacklist_regions)
 
+    entries = []
     if pos1 and pos2:
-        entries = set([])
-        
         pos1 = parse_pos(pos1)
         pos2 = parse_pos(pos2)
-        
+
         pos1s = []
         pos2s = []
-        raise Exception("Do cartesian product if not stranded")
-        
-        print blacklist.is_blacklisted(pos1, pos2)
+
+        if pos1[2] == '.':
+            pos1s.append([pos1[0], pos1[1], '+'])
+            pos1s.append([pos1[0], pos1[1], '-'])
+        else:
+            pos1s.append(pos1)
+
+        if pos2[2] == '.':
+            pos2s.append([pos2[0], pos2[1], '+'])
+            pos2s.append([pos2[0], pos2[1], '-'])
+        else:
+            pos2s.append(pos2)
+
+        for p1p in pos1s:
+            for p2p in pos2s:
+                entries += blacklist.is_blacklisted(p1p, p2p)
+        entries = set(entries)
     else:
         pos1 = parse_pos(pos1)
-        if pos1[2] == '.': # unstranded
+        if pos1[2] == '.':  # unstranded
             pos1[2] = '+'
-            pos2 = [pos1[0],pos1[1], '-']
-            print pos1,pos2
-            print blacklist.is_blacklisted_by_regions(pos1, pos2)
+            pos2 = [pos1[0], pos1[1], '-']
+            entries = blacklist.is_blacklisted_by_regions(pos1, pos2)
         else:
-            print blacklist.is_blacklisted_by_regions(pos1, pos1)
+            entries = blacklist.is_blacklisted_by_regions(pos1, pos1)
 
+    entries = sorted(list(entries))
+    for k in range(len(entries)):
+        print str(k + 1) + "\t" + entries[k]
 
 
 if __name__ == '__main__':

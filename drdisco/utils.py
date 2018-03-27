@@ -34,18 +34,20 @@ def is_gzip(filename):
 
 prog1 = re.compile('^([0-9]+)$')
 prog2 = re.compile('^([0-9]+)\(([+\-\.\?])\)$')
+
+
 def parse_pos(strpos):
     """
     chr1:12345 -> ['chr1', 12345, '.']
     chr1:12345(-) -> ['chr1', 12345, '-']
     """
     val = [None, None, '.']
-    strpos = strpos.replace(',','')
+    strpos = strpos.replace(',', '')
 
-    params = strpos.split(':',2)
+    params = strpos.split(':', 2)
     if len(params) != 2:
-        raise ValueError("Invalid pos: '"+strpos+"' needs to be formatted as 'chr1:12,345' or 'chr1:12345(+)'")
-    
+        raise ValueError("Invalid pos: '" + strpos + "' needs to be formatted as 'chr1:12,345' or 'chr1:12345(+)'")
+
     m1 = prog1.match(params[1])
     m2 = prog2.match(params[1])
     if m1:
@@ -54,8 +56,8 @@ def parse_pos(strpos):
     elif m2:
         val[0] = str(params[0])
         val[1] = int(m2.group(1))
-        val[2] = str(m2.group(2).replace('?','.'))
+        val[2] = str(m2.group(2).replace('?', '.'))
     else:
-        raise ValueError("Invalid pos: '"+strpos+"' needs to be formatted as 'chr1:12,345' or 'chr1:12345(+)'")
+        raise ValueError("Invalid pos: '" + strpos + "' needs to be formatted as 'chr1:12,345' or 'chr1:12345(+)'")
 
     return val
