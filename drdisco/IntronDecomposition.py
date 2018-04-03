@@ -1748,8 +1748,20 @@ class BAMExtract(object):
     # http://stackoverflow.com /questions /18679803 /python-calling-method-without-self
     @staticmethod
     def parse_SA(SA_tag):
+        """
+        old data struct: [chr, pos, cigar, mapq, strand, Nm]
+        new data struct: [chr, pos, strand, cigar, mapQ, Nm]
+        convert [n->o]:  [0,   1,   3,      4,     2,    5 ]
+
+        for backwards compatibility, keep old data structure internally in analysis code
+
+        hence, if sa_tag[2] == '+' or sa_tag[2] == '-', we have the new type and need to reconvert it
+        """
         sa_tags = SA_tag.split(";")
+
         for i in xrange(len(sa_tags)):
+            if sa_tags[i][2] == '+' or sa_tags[i][2] == '-':
+                sa_tags[i] = [sa_tags[i][0], sa_tags[i][1], sa_tags[i][3], sa_tags[i][4], sa_tags[i][2], sa_tags[i][5]]
             sa_tags[i] = sa_tags[i].split(",")
             sa_tags[i][1] = int(sa_tags[i][1])
 

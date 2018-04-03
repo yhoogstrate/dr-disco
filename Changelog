@@ -1,3 +1,11 @@
+2018-04-03	Youri Hoogstrate	v0.16.3
+	 * Fixes `SA:Z:` tags by swapping strand information with CIGAR and
+	   by replacing chromosomes to `=` if they are the same. This will
+	   solve prevent dissapearing pannels in IGV 2.4.1 - 2.4.10.
+	   A backwards incompatibility fix has directly been implemented and
+	   the changes do not affect the outcome and only improve
+	   visualization.
+
 2018-03-09	Youri Hoogstrate
 	 * Trigger Exception in `dr-disco integrate` when position of break
 	   is out of bound relative to `--fasta`.
