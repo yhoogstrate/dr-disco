@@ -1651,11 +1651,11 @@ class BAMExtract(object):
 
         log.debug("Parsing reads to obtain fusion gene and splice junctions")
         for read in self.pysam_fh.fetch():
+            _chr = self.pysam_fh.get_reference_name(read.reference_id)
             try:
-                sa = self.parse_SA(read.get_tag('SA'))
+                sa = self.parse_SA(read.get_tag('SA'), _chr)
             except Exception:
                 raise ValueError("Problems parsing SA tag for:\n\t%s", str(read))
-            _chr = self.pysam_fh.get_reference_name(read.reference_id)
             rg = JunctionTypeUtils.enum(read.get_tag('RG'))
 
             pos1, pos2 = None, None
@@ -1747,11 +1747,27 @@ class BAMExtract(object):
     # static is elegant for functions that do not use class properties
     # http://stackoverflow.com /questions /18679803 /python-calling-method-without-self
     @staticmethod
-    def parse_SA(SA_tag):
+    def parse_SA(SA_tag, _chr):
+        """
+        old data struct: [chr, pos, cigar, mapq, strand, Nm]
+        new data struct: [chr, pos, strand, cigar, mapQ, Nm]
+        convert [n->o]:  [0,   1,   3,      4,     2,    5 ]
+
+        for backwards compatibility, keep old data structure internally in analysis code
+
+        hence, if sa_tag[2] == '+' or sa_tag[2] == '-', we have the new type and need to reconvert it
+        """
         sa_tags = SA_tag.split(";")
+
         for i in xrange(len(sa_tags)):
             sa_tags[i] = sa_tags[i].split(",")
+
+            if sa_tags[i][2] == '+' or sa_tags[i][2] == '-':
+                sa_tags[i] = [sa_tags[i][0], sa_tags[i][1], sa_tags[i][3], sa_tags[i][4], sa_tags[i][2], sa_tags[i][5]]
             sa_tags[i][1] = int(sa_tags[i][1])
+
+            if sa_tags[i][0] == '=':
+                sa_tags[i][0] = _chr
 
         return sa_tags
 

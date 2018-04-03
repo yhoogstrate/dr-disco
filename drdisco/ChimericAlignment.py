@@ -105,8 +105,9 @@ class ChimericAlignment:
 
             sa_id = [bam_file.get_reference_name(read.reference_id),
                      read.reference_start,
+                     "-" if read.is_reverse else "+",
                      read.cigarstring,
-                     read.mapping_quality, "-" if read.is_reverse else "+",
+                     read.mapping_quality,
                      nm]
 
             # -- pysam 0.10.0 SPECIFIC --
@@ -114,11 +115,20 @@ class ChimericAlignment:
             # to get lost in memory after the set_tag?
             # i suppose set_tag does not change the object but generates
             # a new one
-            sa_ids[id(read)] = ",".join([str(x) for x in sa_id])
+            sa_ids[id(read)] = [str(x) for x in sa_id]
+
         for read in reads_updated:
             reads = [k for k in reads_updated if k != read]
 
-            sa_tags = [sa_ids[id(l)] for l in reads]
+            sa_tags = []
+
+            for l in reads:
+                if bam_file.get_reference_name(read.reference_id) == sa_ids[id(l)][0]:
+
+                    sa_tags.append(",".join(['='] + sa_ids[id(l)][1:]))
+                else:
+                    sa_tags.append(",".join(sa_ids[id(l)]))
+
             sa_tag = ';'.join(sa_tags)
             read.set_tag('SA', sa_tag)
 
