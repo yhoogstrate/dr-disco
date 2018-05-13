@@ -1354,7 +1354,8 @@ class BAMExtract(object):
         return bam_fh
 
     def extract_junctions(self, fusion_junctions, splice_junctions):
-        def read_to_junction(read, rg, parsed_SA_tag, specific_type=None):
+        def read_to_junction(read, rg, parsed_SA_tags, specific_type=None):
+            parsed_SA_tag = parsed_SA_tags[0]
             parsed_cigar_tuple = cigar_to_cigartuple(parsed_SA_tag[2])
             pos1, pos2, acceptor, donor = None, None, None, None
 
@@ -1632,9 +1633,40 @@ class BAMExtract(object):
             elif rg != JunctionTypes.silent_mate:  # pragma: no cover
                 raise Exception("Fatal Error, RG: %s" % JunctionTypeUtils.str(rg))
 
+            def is_hybridization_artifact(read, pos1, pos2, sa_tags):
+                """
+                Example 01:
+                
+                silent       hit
+                 mate       index=1
+                 
+                [=====>      <==:
+                 <==:
+
+                  hit
+                index=2
+                
+                assumption: HI:2 is messed up and inverted
+                """
+                state = False
+                if len(sa_tags) > 1 and \ # if silent mate exists
+                   pos1._chr == pos2._chr and \ #if intrachromosomal
+                   pos1.strand == pos2.strand and \ #if  (-- or ++):
+                   pos1.strand is not None: # and strands are actually determined
+                    print read,pos1,pos2,sa_tags
+                    
+                    #silent_mate = []
+                    if read.get_tag('HI') == 1:
+                        print pos2
+                    elif read.get_tag('HI') == 2:
+                        print pos1
+                        pass
+                
+                return state
+
             # @todo Shouldn't this return either and Edge or None
             # @todo only skip if type == DiscordantMates/Reads, if Spanning then always allow (example 072?)
-            if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE:
+            if abs(pos1.get_dist(pos2, False)) >= MAX_ACCEPTABLE_INSERT_SIZE and not is_hybridization_artifact(read, pos1, pos2, parsed_SA_tags):
                 n_match_p1, n_match_p2 = sum([x[1] for x in read.cigar if x[0] == 0]), sum([x[1] for x in parsed_cigar_tuple if x[0] == 0])
 
                 return (pos1, pos2,
@@ -1661,7 +1693,7 @@ class BAMExtract(object):
             pos1, pos2 = None, None
 
             if JunctionTypeUtils.is_fusion_junction(rg):
-                pos1, pos2, junction, ctps, acceptor, donor, n_match_p1, n_match_p2 = read_to_junction(read, rg, sa[0])
+                pos1, pos2, junction, ctps, acceptor, donor, n_match_p1, n_match_p2 = read_to_junction(read, rg, sa)
                 if pos1 is not None:
                     alignment_score = read.get_tag('AS')
                     # It happens that STAR assigns incorrenct alignment scores like -2147483577
