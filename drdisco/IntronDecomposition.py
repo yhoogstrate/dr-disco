@@ -1638,10 +1638,10 @@ class BAMExtract(object):
             def is_hybridization_artifact(read, pos1, pos2, sa_tags):
                 """
                 Example 01:
-                
+
                 silent       hit
                  mate       index=1
-                 
+
                 [=====>      <==:
                  [==>
 
@@ -1650,42 +1650,34 @@ class BAMExtract(object):
 
                 assumption: HI:2 is messed up AND INVERTED (relative to HI:1)
                 """
-                state = False
-                #if (len(sa_tags) > 1 and  \  # if silent mate exists
-                #   pos1._chr == pos2._chr and \ #if intrachromosomal
-                #   pos1.strand == pos2.strand and  \ #if  (-- or ++):
-                #   pos1.strand is not None): # and strands are actually determined
-
+                #  silent mate exists & intrachromosomal       & (-- or ++)                   &   strand is actually determined
                 if len(sa_tags) > 1 and pos1._chr == pos2._chr and pos1.strand == pos2.strand and pos1.strand is not None:
                     silent_mate = sa_tags[1]
                     # quick and dirty test if one of the positions is within silent mate
-                    #print silent_mate, pos1, bam_parse_alignment_offset(silent_mate[2])
-                    
+
                     if silent_mate[0] == pos1._chr:
-                        no_overlap_found = True
                         offset = 0
                         for chunk in cigar_to_cigartuple(silent_mate[2]):
-                            #print silent_mate[2],chunk
+                            # print silent_mate[2],chunk
                             if chunk[0] == 0:
-                                p1, p2 =  silent_mate[1] + offset , silent_mate[1] + offset + chunk[1]
-                                #print p1 , ' ... ' , p2
-                                if pos1.pos >= p1 and pos1.pos <= p2:
-                                    #print "  >", pos1 , " !!! "
+                                p1, p2 = silent_mate[1] + offset, silent_mate[1] + offset + chunk[1]
+                                # print p1 , ' ... ' , p2
+                                if pos1.pos > p1 and pos1.pos <= p2:
+                                    # print "  >", pos1 , " !!! "
                                     return True
 
-                                if pos2.pos >= p1 and pos2.pos <= p2:
-                                    #print "  >", pos1 , " iii "
+                                if pos2.pos > p1 and pos2.pos <= p2:
+                                    # print "  >", pos1 , " iii "
                                     return True
-                            if chunk[0] in [0, 2, 3, 7, 8]: # MX=ND
+                            if chunk[0] in [0, 2, 3, 7, 8]:  # CIGAR letters: MX=ND
                                 offset += chunk[1]
-                        print
-            
-                return state
+                return False
 
             # @todo Shouldn't this return either and Edge or None
             # @todo only skip if type == DiscordantMates/Reads, if Spanning then always allow (example 072?)
             if abs(pos1.get_dist(pos2, False)) < MAX_ACCEPTABLE_INSERT_SIZE:
                 self.overlapping_reads += 1
+                # print pos1, pos2, pos1.get_dist(pos2, False) , '<'  , MAX_ACCEPTABLE_INSERT_SIZE
             elif is_hybridization_artifact(read, pos1, pos2, parsed_SA_tags):
                 self.crosshybridization_artifacts += 1
             else:
@@ -1766,7 +1758,7 @@ class BAMExtract(object):
                         else:
                             fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)  # By insertion tags in cigar string
 
-        log.debug("Alignment data loaded - overlapping reads excluded: " + str( self.overlapping_reads ) + " - Putative crosshybridization artifact reads excluded: " + str( self.crosshybridization_artifacts ) )
+        log.debug("Alignment data loaded - overlapping reads excluded: " + str(self.overlapping_reads) + " - Putative crosshybridization artifact reads excluded: " + str(self.crosshybridization_artifacts))
 
     def parse_pos(self, str_pos):
         try:

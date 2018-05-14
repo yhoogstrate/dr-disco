@@ -1,0 +1,31 @@
+@HD	VN:1.4	SO:coordinate
+@SQ	SN:chr1	LN:248956422
+@SQ	SN:chr2	LN:242193529
+@SQ	SN:chr3	LN:198295559
+@SQ	SN:chr4	LN:190214555
+@SQ	SN:chr5	LN:181538259
+@SQ	SN:chr6	LN:170805979
+@SQ	SN:chr7	LN:159345973
+@SQ	SN:chr8	LN:145138636
+@SQ	SN:chr9	LN:138394717
+@SQ	SN:chr10	LN:133797422
+@SQ	SN:chr11	LN:135086622
+@SQ	SN:chr12	LN:133275309
+@SQ	SN:chr13	LN:114364328
+@SQ	SN:chr14	LN:107043718
+@SQ	SN:chr15	LN:101991189
+@SQ	SN:chr16	LN:90338345
+@SQ	SN:chr17	LN:83257441
+@SQ	SN:chr18	LN:80373285
+@SQ	SN:chr19	LN:58617616
+@SQ	SN:chr20	LN:64444167
+@SQ	SN:chr21	LN:46709983
+@SQ	SN:chr22	LN:50818468
+@SQ	SN:chrX	LN:156040895
+@SQ	SN:chrY	LN:57227415
+@SQ	SN:chrM	LN:16569
+@PG	ID:STAR	PN:STAR	VN:STAR_2.4.2a_modified	CL:protocol/STAR_2_4_2   --runThreadN 75   --genomeDir protocol/star_ref_hg38   --readFilesIn brca/fastq/poly-A_VCaP_R1.fastq.gz   brca/fastq/poly-A_VCaP_R2.fastq.gz      --readFilesCommand zcat      --outFileNamePrefix /poly-A_VCaP/   --outSAMtype BAM   SortedByCoordinate      --outSAMstrandField intronMotif   --outFilterIntronMotifs None   --alignIntronMax 200000   --alignMatesGapMax 200000   --alignSJDBoverhangMin 10   --alignEndsType Local   --chimSegmentMin 12   --chimJunctionOverhangMin 12   --twopass1readsN 18446744073709551615   --twopassMode Basic
+@CO	user command line: protocol/STAR_2_4_2 --genomeDir protocol/star_ref_hg38 --runThreadN 75 --outSAMtype BAM SortedByCoordinate --alignEndsType Local --alignIntronMax 200000 --alignMatesGapMax 200000 --alignSJDBoverhangMin 10 --chimJunctionOverhangMin 12 --chimSegmentMin 12 --outFilterIntronMotifs None --outSAMstrandField intronMotif --twopass1readsN -1 --twopassMode Basic --outFileNamePrefix /poly-A_VCaP/ --readFilesCommand zcat --readFilesIn brca/fastq/poly-A_VCaP_R1.fastq.gz brca/fastq/poly-A_VCaP_R2.fastq.gz
+HWI-dataset:1208:9980:129215	163	chr22	50282233	3	81M397N20M	=	50282738	567	AGGGGCTCCGCGATGACCACCATGGCAAACCTCTGGATCAGGCTGAAGCCCTGACCCGTGACGTTGATGCTGCGGCCACCACTGGCAAAGCTTCGTAGCGG	CC@FFFFFHHGDHEGIIIIJIJJJGEHGIGGEHHGHHICH=BCF8=F@3CEHGFFFHD<>ACDBBDBACACC38=BB>?BAB94<?C><>C:>:>?CD<9<	NH:i:2	HI:i:2	AS:i:161	nM:i:1	XS:A:-
+HWI-dataset:1208:9980:129215	321	chr22	50282156	3	39M62S	=	50282233	0	GGCAAACCTCTGGATCAGGCTGAAGCCCTGACCCGTGACGGGCCCCCCGTGCCCAACCCCGGCATCTTCTTCACCTACCGCGAAAACCCCGTACTGCGAGC	@@@DDDDDDFFDBFHE@?EEIIGH>3CCB@):?DDD0B8D>6'7AHHE4=<ABCC=?BB=@@3-03+:@C:A@CCCCAB-55<B7@>?<90&0<?######	NH:i:2	HI:i:1	AS:i:38	nM:i:0
+HWI-dataset:1208:9980:129215	83	chr22	50282738	3	62M39S	=	50282233	-567	GCTCGCAGTACGGGGTTTTCGCGGTAGGTGAAGAAGATGCCGGGGTTGGGCACGGGGGGCCCGTCACGGGTCAGGGCTTCAGCCTGATCCAGAGGTTTGCC	######?<0&09<?>@7B<55-BACCCC@A:C@:+30-3@@=BB?=CCBA<=4EHHA7'6>D8B0DDD?:)@BCC3>HGIIEE?@EHFBDFFDDDDDD@@@	NH:i:2	HI:i:2	AS:i:161	nM:i:1	XS:A:-

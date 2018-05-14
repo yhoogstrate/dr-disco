@@ -1,3 +1,7 @@
+2018-05-14	Youri Hoogstrate	v0.17.0
+	* Skips certain alignments that are putative cross-hybridization
+	   artifacts. Requires re-run of `dr-disco detect`.
+
 2018-04-03	Youri Hoogstrate	v0.16.3
 	 * Fixes `SA:Z:` tags by swapping strand information with CIGAR and
 	   by replacing chromosomes to `=` if they are the same. This will
