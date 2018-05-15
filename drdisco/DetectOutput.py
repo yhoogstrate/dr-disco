@@ -102,33 +102,38 @@ class DetectOutputEntry:
         self.bp_pos_stddev = float(self.line[27])
         self.entropy_disco_bps = self.line[28]
 
-        self.lr_A_slope = float(self.line[29])
-        self.lr_A_intercept = float(self.line[30])
-        self.lr_A_rvalue = float(self.line[31])
-        self.lr_A_pvalue = float(self.line[32])
-        self.lr_A_stderr = self.line[33]
+        self.stddev_disco_bps_B = float(self.line[29])
+        self.entropy_disco_bps_A = float(self.line[30])
+        self.stddev_disco_bps_B = float(self.line[31])
+        self.entropy_disco_bps_B = float(self.line[32])
 
-        self.lr_B_slope = float(self.line[34])
-        self.lr_B_intercept = float(self.line[35])
-        self.lr_B_rvalue = float(self.line[36])
-        self.lr_B_pvalue = float(self.line[37])
-        self.lr_B_stderr = self.line[38]
+        self.lr_A_slope = float(self.line[29 + 4])
+        self.lr_A_intercept = float(self.line[30 + 4])
+        self.lr_A_rvalue = float(self.line[31 + 4])
+        self.lr_A_pvalue = float(self.line[32 + 4])
+        self.lr_A_stderr = self.line[33 + 4]
 
-        self.disco_split = self.line[39]  # ratio1
-        self.clips_score = self.line[40]  # ratio2
-        self.nodes_edge = float(self.line[41])  # ratio3 -> 1.0 * (nodes_a + nodes_b) / len(self.edges)
+        self.lr_B_slope = float(self.line[34 + 4])
+        self.lr_B_intercept = float(self.line[35 + 4])
+        self.lr_B_rvalue = float(self.line[36 + 4])
+        self.lr_B_pvalue = float(self.line[37 + 4])
+        self.lr_B_stderr = self.line[38 + 4]
 
-        self.break_A_median_AS = int(self.line[42])
-        self.break_B_median_AS = int(self.line[43])
-        self.break_A_max_AS = int(self.line[44])
-        self.break_B_max_AS = int(self.line[45])
+        self.disco_split = self.line[39 + 4]  # ratio1
+        self.clips_score = self.line[40 + 4]  # ratio2
+        self.nodes_edge = float(self.line[41 + 4])  # ratio3 -> 1.0 * (nodes_a + nodes_b) / len(self.edges)
+
+        self.break_A_median_AS = int(self.line[42 + 4])
+        self.break_B_median_AS = int(self.line[43 + 4])
+        self.break_A_max_AS = int(self.line[44 + 4])
+        self.break_B_max_AS = int(self.line[45 + 4])
 
         self.edit_dist_to_splice_motif = ""
 
         self.exons_from = []
         self.exons_to = []
 
-        self.structure = self.line[46]
+        self.structure = self.line[46 + 4]
 
         inv = {'-': '+', '+': '-'}
         if self.acceptorA > self.donorA:
@@ -478,6 +483,15 @@ class DetectOutput:
                         status.append("lr_A_intercept=" + str(e.lr_A_intercept) + ">" + str(lr_intercept_max))
                     if e.lr_B_intercept > lr_intercept_max:
                         status.append("lr_B_intercept=" + str(e.lr_B_intercept) + ">" + str(lr_intercept_max))
+
+                    # @todo subfunc
+                    sqrt_entropy_bps_ab = pow(pow(e.entropy_disco_bps_A, 2) + pow(e.entropy_disco_bps_B, 2), 0.5)
+                    if e.entropy_all_edges <= 0.85:
+                        sqrt_entropy_bps_ab_max = 0.475
+                    else:
+                        sqrt_entropy_bps_ab_max = 3.4 * e.entropy_all_edges - 2.415
+                    if sqrt_entropy_bps_ab > sqrt_entropy_bps_ab_max:
+                        status.append("sqrt_entropy_bps_ab=" + str(sqrt_entropy_bps_ab) + ">" + str(sqrt_entropy_bps_ab_max))
 
                     if len(status) == 0:
                         e.status = 'valid'

@@ -182,7 +182,6 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         # self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
-
     def test_08(self):
         # True TMPRSS2-ERG inv/del; requires to pass, which is possible if stranding is taken into account correctly
 

@@ -1,3 +1,7 @@
+2018-05-15	Youri Hoogstrate	v0.17.1
+	* Adds certain classification features and a filter to remove
+	  possible artifacts.
+
 2018-05-14	Youri Hoogstrate	v0.17.0
 	* Skips certain alignments that are putative cross-hybridization
 	   artifacts. Requires re-run of `dr-disco detect`.

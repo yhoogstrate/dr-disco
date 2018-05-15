@@ -184,7 +184,7 @@ class TestFunctional_classify(unittest.TestCase):
                    input_file,
                    output_file]
 
-        self.assertEqual(subprocess.call(command), 0)
+        self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_classify_16__only_valid(self):
@@ -201,7 +201,7 @@ class TestFunctional_classify(unittest.TestCase):
                    input_file,
                    output_file]
 
-        self.assertEqual(subprocess.call(command), 0)
+        self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
 

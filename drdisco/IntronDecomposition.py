@@ -78,6 +78,22 @@ def entropy(frequency_table):
         return entropy / (math.log(n) / math.log(2.0))
 
 
+def stddev(vector):
+    """ Calculates the variance of the breakpoints post merge - low values indicate consistent results"""
+    n = len(vector)
+
+    if n > 1:
+        sq_dists = 0.0
+        mean = 1.0 * sum(vector) / len(vector)
+        for value in vector:
+            dist = value - mean
+            sq_dists += dist ** 2
+
+        return math.sqrt(sq_dists / (n - 1))
+    else:
+        return 0.0
+
+
 def merge_frequency_tables(frequency_tables):
     """
     Merges different frequency tables.
@@ -1130,6 +1146,11 @@ class SubGraph():
 
         return entropy(list_to_freq_table(as_list))
 
+    def get_unique_breakpoint_stats(self):
+        set1 = merge_frequency_tables([edge.unique_breakpoints[False][0] for edge in self.edges if len(edge.unique_breakpoints[False][0]) > 0])
+        set2 = merge_frequency_tables([edge.unique_breakpoints[False][1] for edge in self.edges if len(edge.unique_breakpoints[False][1]) > 0])
+        return stddev(freq_table_to_list(set1)), entropy(set1), stddev(freq_table_to_list(set2)), entropy(set2)
+
     def __str__(self):
         """Makes tabular output"""
         node_a, node_b = self.edges[0].origin, self.edges[0].target
@@ -1141,6 +1162,8 @@ class SubGraph():
         lregA = lin_regres_from_fq(self.edges[0].alignment_counter_positions[0])
         lregB = lin_regres_from_fq(self.edges[0].alignment_counter_positions[1])
         m_mm = self.calc_m_mm()
+
+        s1, s2, s3, s4 = self.get_unique_breakpoint_stats()
 
         return (
             "%s\t%i\t%s\t"
@@ -1154,6 +1177,7 @@ class SubGraph():
             "%i\t%i\t"
             "%.4f\t%.4f\t"
             "%.4f\t%.4f\t"
+            "%.4f\t%.4f\t%.4f\t%.4f\t"  # num_unique L, num_unique R, entropy L, entropy L, self.unique_breakpoints = {True: ({}, {}),  # discordant mates: (origin , target)  {False:}other types: (origin, target)
             "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-A
             "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t"  # lreg-B
             "%.4f\t%.4f\t%.4f\t"
@@ -1169,6 +1193,7 @@ class SubGraph():
                       len(self.left_splice_junctions), len(self.right_splice_junctions),
                       self.edges[0].get_entropy_of_alignments(), self.get_overall_entropy(),  # Entropy stats
                       self.get_breakpoint_stddev(), self.get_breakpoint_disco_entropy(),
+                      s1, s2, s3, s4,
                       lregA[0], lregA[1], lregA[2], lregA[3], lregA[4],
                       lregB[0], lregB[1], lregB[2], lregB[3], lregB[4],
                       1.0 * self.get_n_discordant_reads() / max(self.get_n_split_reads(), 0.1),
@@ -2018,6 +2043,7 @@ class IntronDecomposition:
                 "n-splice-junc-A"  "\t" "n-splice-junc-B"   "\t"
                 "entropy-bp-edge"  "\t" "entropy-all-edges" "\t"
                 "bp-pos-stddev"    "\t" "entropy-disco-bps" "\t"
+                "unique-bp-stddev-A" "\t" "entropy-disco-bps-A" "\t" "unique-bp-stddev-B" "\t" "entropy-disco-bps-B" "\t"
                 "lr-A-slope"       "\t" "lr-A-intercept"    "\t" "lr-A-rvalue"   "\t" "lr-A-pvalue"        "\t" "lr-A-stderr" "\t"
                 "lr-B-slope"       "\t" "lr-B-intercept"    "\t" "lr-B-rvalue"   "\t" "lr-B-pvalue"        "\t" "lr-B-stderr" "\t"
                 "disco/split"      "\t" "clips/score"       "\t" "nodes/edge"    "\t"
