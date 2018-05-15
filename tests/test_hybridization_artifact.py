@@ -122,6 +122,88 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_05(self):
+        test_id = 'artifact_reads_05'
+
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
+
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
+
+        fh = open(output_file, "w")
+        ic.export(fh)
+        fh.close()
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_06(self):
+        test_id = 'artifact_reads_06'
+
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
+
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
+
+        fh = open(output_file, "w")
+        ic.export(fh)
+        fh.close()
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    # def test_07__should_be_excluded_one_day(self):
+        # # this is the most nasty type of hybridization artifact
+        # # there seems no simple rule to exclude these guys
+        # # this probably requires implementation of splicing
+        # test_id = 'artifact_reads_07'
+
+        # input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        # fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        # test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        # output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        # sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
+
+        # ic = IntronDecomposition(fixed_bam)
+        # ic.decompose(0)
+
+        # fh = open(output_file, "w")
+        # ic.export(fh)
+        # fh.close()
+
+        # self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+
+    def test_08(self):
+        # True TMPRSS2-ERG inv/del; requires to pass, which is possible if stranding is taken into account correctly
+
+        test_id = 'artifact_reads_08'
+
+        input_file_a = TEST_DIR + "test_" + test_id + ".sam"
+        fixed_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        sam_to_fixed_bam(input_file_a, fixed_bam, T_TEST_DIR)
+
+        ic = IntronDecomposition(fixed_bam)
+        ic.decompose(0)
+
+        fh = open(output_file, "w")
+        ic.export(fh)
+        fh.close()
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
 
 if __name__ == '__main__':
     main()

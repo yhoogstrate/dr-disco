@@ -1653,24 +1653,76 @@ class BAMExtract(object):
                 #  silent mate exists & intrachromosomal       & (-- or ++)                   &   strand is actually determined
                 if len(sa_tags) > 1 and pos1._chr == pos2._chr and pos1.strand == pos2.strand and pos1.strand is not None:
                     silent_mate = sa_tags[1]
-                    # quick and dirty test if one of the positions is within silent mate
+                    read_strand = '-' if read.is_reverse else '+'
 
                     if silent_mate[0] == pos1._chr:
-                        offset = 0
-                        for chunk in cigar_to_cigartuple(silent_mate[2]):
-                            # print silent_mate[2],chunk
-                            if chunk[0] == 0:
-                                p1, p2 = silent_mate[1] + offset, silent_mate[1] + offset + chunk[1]
-                                # print p1 , ' ... ' , p2
-                                if pos1.pos > p1 and pos1.pos <= p2:
-                                    # print "  >", pos1 , " !!! "
-                                    return True
+                        offset1 = sa_tags[1][1]
+                        for chunk1 in cigar_to_cigartuple(sa_tags[1][2]):
+                            if chunk1[0] == 0:
+                                range1 = offset1, chunk1[1] + offset1
 
-                                if pos2.pos > p1 and pos2.pos <= p2:
-                                    # print "  >", pos1 , " iii "
-                                    return True
-                            if chunk[0] in [0, 2, 3, 7, 8]:  # CIGAR letters: MX=ND
-                                offset += chunk[1]
+                                # 01 - is silent mate (sa_tags[1]) overlappnig the other split read (sa_tags[0])
+                                if sa_tags[1][4] == sa_tags[0][4]:
+                                    offset2 = sa_tags[0][1]
+                                    for chunk2 in cigar_to_cigartuple(sa_tags[0][2]):
+                                        if chunk2[0] == 0:
+                                            range2 = offset2, chunk2[1] + offset2
+                                            # print range1 , ' * ' , range2
+                                            # print 1,range1
+                                            # print 2,range2
+
+                                            if range1[0] <= range2[1] and range2[0] <= range1[1]:
+                                                # print " overlap!?"
+                                                return True
+
+                                        if chunk2[0] in [0, 2, 3, 7, 8]:  # CIGAR letters: MX=ND
+                                            offset2 += chunk2[1]
+
+                                # 01 - is silent mate (sa_tags[1]) overlappnig the current split read (read)
+                                if sa_tags[1][4] == read_strand:
+                                    offset2 = read.pos
+                                    for chunk2 in read.cigar:
+                                        if chunk2[0] == 0:
+                                            range2 = offset2, chunk2[1] + offset2
+                                            # print range1 , ' * ' , range2
+                                            # print 1,range1
+                                            # print 2,range2
+
+                                            if range1[0] <= range2[1] and range2[0] <= range1[1]:
+                                                # print " overlap!?"
+                                                return True
+
+                                        if chunk2[0] in [0, 2, 3, 7, 8]:  # CIGAR letters: MX=ND
+                                            offset2 += chunk2[1]
+
+                            if chunk1[0] in [0, 2, 3, 7, 8]:  # CIGAR letters: MX=ND
+                                offset1 += chunk1[1]
+
+                    # als HI:i:1 en HI:i:2 in tegengestelde strand zijn EN elkaar overlappen?
+                    if read_strand != sa_tags[0][4]:
+                        offset1 = sa_tags[0][1]
+
+                        for chunk1 in cigar_to_cigartuple(sa_tags[0][2]):
+                            if chunk1[0] == 0:
+                                range1 = offset1, chunk1[1] + offset1
+
+                                offset2 = read.pos
+                                for chunk2 in read.cigar:
+                                    if chunk2[0] == 0:
+                                        range2 = offset2, chunk2[1] + offset2
+                                        # print range1 , ' * ' , range2
+
+                                        if range1[0] <= range2[1] and range2[0] <= range1[1]:
+                                            # print " overlap!?"
+                                            return True
+
+                                    if chunk2[0] in [0, 2, 3, 7, 8]:  # CIGAR letters: MX=ND
+                                        offset2 += chunk2[1]
+
+                            if chunk1[0] in [0, 2, 3, 7, 8]:  # CIGAR letters: MX=ND
+                                offset1 += chunk1[1]
+                        # print "\n ---"
+
                 return False
 
             # @todo Shouldn't this return either and Edge or None
