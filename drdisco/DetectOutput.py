@@ -369,7 +369,7 @@ class DetectOutput:
 
                     # all_entropy_min_f1 = 0.705 + (math.atan((e.score - 150.0) * 0.005) * 0.035)
                     # all_entropy_min_f2 = -0.1375 * math.tanh((e.score - 2250.0) / 900.0) + 0.6175
-                    all_entropy_min = -0.24 * math.tanh((e.score - 50.0) / 35.0) + 0.63
+                    all_entropy_min = -0.26 * math.tanh((e.score - 25.0) / 20.0) + 0.6225
                     all_entropy_max = -1.0 * (max(e.score, 171) - 175.0) / (5.0 + max(e.score, 171) - 175.0) + (1.0 + 0.965)
                     if e.entropy_all_edges < all_entropy_min:
                         status.append("entropy=" + str(e.entropy_bp_edge) + '<' + str(round(all_entropy_min, 4)))

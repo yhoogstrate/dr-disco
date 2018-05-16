@@ -1,3 +1,6 @@
+2018-05-16	Youri Hoogstrate	v0.17.2
+	* Milder entropy filter
+
 2018-05-15	Youri Hoogstrate	v0.17.1
 	* Adds certain classification features and a filter to remove
 	  possible artifacts.
