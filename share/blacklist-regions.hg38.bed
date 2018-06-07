@@ -3636,18 +3636,40 @@ chr7	96743583	96743584	-	15 recurrent entries in a single sample
 chr7	96743583	96743584	+	15 recurrent entries in a single sample
 chr9	98133716	98133717	-	22 recurrent entries in a single sample
 chr9	98133716	98133717	+	22 recurrent entries in a single sample
+chr1	18359248	18359551	-	low entropy
+chr1	18359248	18359551	+	low entropy
+chr1	186597287	186597501	-	low entropy
+chr1	186597287	186597501	+	low entropy
+chr1	205411531	205411775	-	low entropy region
+chr1	205411531	205411775	+	low entropy region
 chr12	43236	43361	-	poly-A
 chr12	43236	43361	+	poly-A
+chr12	49372929	49373035	-	poly-TG
+chr12	49372929	49373035	+	poly-TG
 chr12	50931079	50931118	-	poly-T
 chr12	50931079	50931118	+	poly-T
 chr12	50931700	50931773	-	poly-A
 chr12	50931700	50931773	+	poly-A
+chr12	69353066	69354267	-	unlikely and short poly-T
+chr12	69353066	69354267	+	unlikely and short poly-T
+chr14	31276640	31276804	-	low entropy
+chr14	31276640	31276804	+	low entropy
+chr15	58472529	58472602	-	poly-A
+chr15	58472529	58472602	+	poly-A
+chr15	70679386	70679485	-	poly-AAAT
+chr15	70679386	70679485	+	poly-AAAT
 chr16	69374599	69374694	-	poly-A
 chr16	69374599	69374694	+	poly-A
+chr17	16580901	16581023	-	poly-CAAA
+chr17	16580901	16581023	+	poly-CAAA
 chr2	132198230	132198373	-	low entropy (CTT)
 chr2	132198230	132198373	+	low entropy (CTT)
 chr2	180872678	180872822	-	multi-map region
 chr2	180872678	180872822	+	multi-map region
+chr22	39208713	39208781	-	poly-TTTC
+chr22	39208713	39208781	+	poly-TTTC
+chr22	46174146	46174291	-	low entropy
+chr22	46174146	46174291	+	low entropy
 chr3	95687019	95687132	-	poly-A
 chr3	95687019	95687132	+	poly-A
 chr4	164695235	164695294	-	poly-A
@@ -3656,23 +3678,40 @@ chr4	164742393	164742506	-	poly-A
 chr4	164742393	164742506	+	poly-A
 chr4	1697142	1697201	-	poly-A
 chr4	1697142	1697201	+	poly-A
+chr4	71075933	71076023	-	poly-AAAT
+chr4	71075933	71076023	+	poly-AAAT
+chr5	107283665	107283839	-	poly-AC/GA
+chr5	107283665	107283839	+	poly-AC/GA
 chr5	166382590	166382705	-	poly-A
 chr5	166382590	166382705	+	poly-A
 chr5	179724689	179724793	-	poly-AG
 chr5	179724689	179724793	+	poly-AG
 chr5	181236926	181236965	-	poly-T
 chr5	181236926	181236965	+	poly-T
+chr6	150168505	150168617	-	poly-CAAA
+chr6	150168505	150168617	+	poly-CAAA
 chr6	32862643	32862784	-	poly-A
 chr6	32862643	32862784	+	poly-A
 chr8	3660462	3660564	-	poly-T
 chr8	3660462	3660564	+	poly-T
-chr15	58472529	58472602	+	poly-A
-chr15	58472529	58472602	-	poly-A
-chr22	39208713	39208781	+	poly-TTTC
-chr22	39208713	39208781	-	poly-TTTC
-chr12	69353066	69354267	+	unlikely and short poly-T
-chr12	69353066	69354267	-	unlikely and short poly-T
-chr9	103536176	103536305	+	poly-A
 chr9	103536176	103536305	-	poly-A
-chr1	205411531	205411775	+	low entropy region
-chr1	205411531	205411775	-	low entropy region
+chr9	103536176	103536305	+	poly-A
+chr5	131516010	131516126	+	poly-T
+chr5	131516010	131516126	-	poly-T
+chr12	52744089	52744549	+	low entropy region
+chr12	52744089	52744549	-	low entropy region
+chr16	88256766	88256939	+	low entropy region
+chr16	88256766	88256939	-	low entropy region
+chr1	41562432	41562684	+	low entropy region
+chr1	41562432	41562684	-	low entropy region
+chrX	32554799	32555024	+	low entropy region
+chrX	32554799	32555024	-	low entropy region
+chr10	27446721	27447054	+	low entropy region
+chr10	27446721	27447054	-	low entropy region
+chr17	48204901	48205241	+	low entropy region
+chr17	48204901	48205241	-	low entropy region
+chr2	50277314	50277650	+	low entropy region
+chr2	50277314	50277650	-	low entropy region
+chr17	10739177	10739330	+	low entropy region
+chr17	10739177	10739330	-	low entropy region
+
