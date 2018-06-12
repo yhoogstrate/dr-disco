@@ -4080,3 +4080,4 @@ chr18	12490944	12491619	+	chrX	11935006	11935254	+	common alignment artifact
 chr1	244843051	244843294	-	chr10	68632605	68632876	+	common alignment artifact
 chr5	77786253	77786372	+	chr7	5527110	5527906	+	common alignment artifact
 chr1	115095054	115095161	-	chr2	99884516	99885448	+	common alignment artifact
+chr2	211980567	211981418	-	chrX	23457805	23458012	+	recurrent alignment issue

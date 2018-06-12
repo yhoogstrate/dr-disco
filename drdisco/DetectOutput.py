@@ -252,11 +252,12 @@ motif:
             def calc_dist(pat, subseq):
                 d = 0
 
-                if len(pat) != len(subseq):
-                    raise Exception("invalid pattern size")
-                for i in range(len(pat)):
-                    if subseq[i] not in pat[i]:
-                        d += 1
+                if len(pat) != len(subseq):  # may happen at beginning and end of chromosomes (suchs as chrM)
+                    return max(len(pat), len(subseq))
+                else:
+                    for i in range(len(pat)):
+                        if subseq[i] not in pat[i]:
+                            d += 1
 
                 return d
 
