@@ -853,19 +853,14 @@ class Graph:
 
         self.edge_idx = [edge[0] for edge in sorted(edges_tuple, key=operator.itemgetter(1, 2), reverse=False)]
 
-    def prune(self):
+    def prune(self, pbarx):
         """Does some 'clever' tricks to merge edges together and reduce data points
         """
         # self.print_chain()
 
-        self.generate_edge_idx()
-        #log.info("Finding and merging other edges in close proximity (insert size)")
-
-        self.check_symmetry()
-
         candidates = []
 
-        #previous = len(self.edge_idx)
+        previous = len(self.edge_idx)
         #with tqdm(total=previous) as pbar:
         while self.edge_idx:
             candidate = self.edge_idx.pop()
@@ -874,8 +869,9 @@ class Graph:
             candidates.append(candidate)
 
             self.remove_edge(candidate)  # do not remove if splice junc exists?
-                #pbar.update(previous - len(self.edge_idx))
-                #previous = len(self.edge_idx)
+
+            pbarx.update(previous - len(self.edge_idx))
+            previous = len(self.edge_idx)
 
         #log.info("Pruned into " + str(len(candidates)) + " candidate edge(s)")
         return candidates
@@ -2038,31 +2034,58 @@ class IntronDecomposition:
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
 
-        self.results = []
+        # Calc progress bar
+        iterations = 0
         for chr1 in fusion_junctions:
             for chr2 in fusion_junctions[chr1]:
+                #print [fusion_junctions[chr1][chr2]]
+                fusion_junctions[chr1][chr2].generate_edge_idx()
+                fusion_junctions[chr1][chr2].check_symmetry()
+                iterations += len(fusion_junctions[chr1][chr2].edge_idx)
+
+        # prune
+        log.info("Merging edges by splice junctions")
+        with tqdm(total=iterations) as pbar:
+            thicker_edges = {}
+            for chr1 in fusion_junctions:
+                thicker_edges[chr1] = {}
+                for chr2 in fusion_junctions[chr1]:
+                    thicker_edges[chr1][chr2] = fusion_junctions[chr1][chr2].prune(pbar)  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
+
+        iterations = 0
+        log.info("rejoining sj and reinstering edges")
+        subnets = {}
+        for chr1 in tqdm(fusion_junctions):
+            subnets[chr1] = {}
+            for chr2 in tqdm(fusion_junctions[chr1]):
                 unique_chrs = list(set([chr1, chr2]))
-                thicker_edges = fusion_junctions[chr1][chr2].prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
-        
                 fusion_junctions[chr1][chr2].rejoin_splice_juncs(splice_junctions, unique_chrs)  # Merges edges by splice junctions and other junctions
-                fusion_junctions[chr1][chr2].reinsert_edges(thicker_edges)  # @todo move function into statuc function in this class
+                fusion_junctions[chr1][chr2].reinsert_edges(thicker_edges[chr1][chr2])  # @todo move function into statuc function in this class
 
                 # fusion_junctions.print_chain()
 
                 fusion_junctions[chr1][chr2].reindex_sj()
-                
-                # unclear why graph is combined with thicker edges - makes no sense as this may duplice things at first glance?
-                subnets = fusion_junctions[chr1][chr2].extract_subnetworks_by_splice_junctions(thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
-        
-                # this needs to be de-nested 
-                results = self.merge_overlapping_subnets(subnets)
-                for _ in results:
-                    _.classify_intronic_exonic(splice_junctions, unique_chrs)
-                self.results += results
+                subnets[chr1][chr2] = fusion_junctions[chr1][chr2].extract_subnetworks_by_splice_junctions(thicker_edges[chr1][chr2], MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
+                iterations += len(subnets[chr1][chr2])
+
+        log.info("merging subnets")
+        with tqdm(total=iterations) as pbar:
+            self.results = []
+            for chr1 in fusion_junctions:
+                for chr2 in fusion_junctions[chr1]:
+                    # unclear why graph is combined with thicker edges - makes no sense as this may duplice things at first glance?
+                    
+            
+                    # this needs to be de-nested 
+                    results = self.merge_overlapping_subnets(subnets[chr1][chr2], pbar)
+                    for _ in results:
+                        _.classify_intronic_exonic(splice_junctions, unique_chrs)
+                    self.results += results
 
         return len(self.results)
 
     def export(self, fh):
+        log.info("Exporting results")
         fh.write(str(self))
 
     def __str__(self):
@@ -2090,7 +2113,7 @@ class IntronDecomposition:
                 "data-structure"   "\n"
                 "%s" % (''.join([str(subnet) for subnet in ordered])))
 
-    def merge_overlapping_subnets(self, subnets):
+    def merge_overlapping_subnets(self, subnets, pbar):
         """Merges very closely adjacent subnets based on the smallest
         internal distance. E.g. if we have a subnet having 1 and one
         having 2 edges:
@@ -2168,8 +2191,8 @@ class IntronDecomposition:
         new_subnets = []
         subnets.reverse()
 
-        #previous = len(subnets)
-        #with tqdm(total=previous) as pbar:
+        #print ""
+        previous = len(subnets)
         while subnets:
             subnet = subnets.pop()
             tree_remove(idx_l, subnet)
@@ -2248,8 +2271,9 @@ class IntronDecomposition:
 
             new_subnets.append(subnet)
 
-                #pbar.update(previous - len(subnets))
-                #previous = len(subnets)
+            #print previous, '->' , len(subnets) , '    =  -',(previous - len(subnets))
+            pbar.update(previous - len(subnets))
+            previous = len(subnets)
 
         #log.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(new_subnets)) + " merged subnetwork(s)")
         return new_subnets
