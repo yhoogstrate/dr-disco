@@ -8,6 +8,8 @@ from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR,
 import math
 import operator
 
+from tqdm import tqdm
+
 import pysam
 import HTSeq
 
@@ -863,13 +865,16 @@ class Graph:
 
         candidates = []
 
-        while self.edge_idx:
-            candidate = self.edge_idx.pop()
+        n = len(self.edge_idx)
+        with tqdm(total=n) as pbar: #  unit='B', unit_scale=True, unit_divisor=1024
+            while self.edge_idx:
+                candidate = self.edge_idx.pop()
 
-            self.prune_edge(candidate)
-            candidates.append(candidate)
+                self.prune_edge(candidate)
+                candidates.append(candidate)
 
-            self.remove_edge(candidate)  # do not remove if splice junc exists?
+                self.remove_edge(candidate)  # do not remove if splice junc exists?
+                pbar.update(n - len(self.edge_idx))
 
         log.info("Pruned into " + str(len(candidates)) + " candidate edge(s)")
         return candidates
@@ -2077,7 +2082,7 @@ class IntronDecomposition:
 
             merge all subnets in M into i, and remove the former subnets
         """
-        log.info("initiated")
+        log.info("Merging subnets based on genomic distance")
 
         def sq_dist(vec):
             sum_of_squares = sum(pow(x, 2) for x in vec)

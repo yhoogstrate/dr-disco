@@ -6,3 +6,4 @@ numpy
 pysam==0.10.0
 scipy
 pyfaidx==0.5.1
+tqdm
