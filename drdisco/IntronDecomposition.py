@@ -918,7 +918,7 @@ class Graph:
                         if edge != edge_to_prune and edge.target.position.strand == pos2.strand and edge.target.position.pos >= pos2_min and edge.target.position.pos <= pos2_max:
                             yield edge
 
-    def rejoin_splice_juncs(self, splice_junctions, chrs):
+    def rejoin_splice_juncs(self, splice_junctions_all, chrs):
         """thicker edges go across the break point:
 
 thick edges:
@@ -946,36 +946,38 @@ thick edges:
 
         splice_edges_had = set()
 
-        for node in splice_junctions:
-            if node.position._chr in chrs:
-                for splice_junction in node.edges.values():
-                    if splice_junction not in splice_edges_had:
-                        for lnode in search(splice_junction.origin.position):
-                            for rnode in search(splice_junction.target.position):
-                                if lnode.position.strand == rnode.position.strand and lnode != rnode:
-                                    d1 = abs(splice_junction.origin.position.get_dist(lnode.position, False))
-                                    d2 = abs(splice_junction.target.position.get_dist(rnode.position, False))
-                                    dist = d1 + d2
-                                    if dist <= MAX_ACCEPTABLE_INSERT_SIZE:
-                                        if lnode.position < rnode.position and rnode in lnode.splice_edges[STRAND_FORWARD]:
-                                            insert = dist < lnode.splice_edges[STRAND_FORWARD][rnode][0]
-                                        elif rnode.position < lnode.position and rnode in lnode.splice_edges[STRAND_REVERSE]:
-                                            insert = dist < lnode.splice_edges[STRAND_REVERSE][rnode][0]
-                                        else:
-                                            insert = True
-
-                                        if insert:
-                                            if rnode.position < lnode.position:  # inversed
-                                                rnode.splice_edges[STRAND_FORWARD][lnode] = (dist, splice_junction)
-                                                lnode.splice_edges[STRAND_REVERSE][rnode] = (dist, splice_junction)
+        for _chr in chrs:
+            if _chr in splice_junctions_all:
+                splice_junctions = splice_junctions_all[_chr]
+                for node in splice_junctions:
+                    for splice_junction in node.edges.values():
+                        if splice_junction not in splice_edges_had:
+                            for lnode in search(splice_junction.origin.position):
+                                for rnode in search(splice_junction.target.position):
+                                    if lnode.position.strand == rnode.position.strand and lnode != rnode:
+                                        d1 = abs(splice_junction.origin.position.get_dist(lnode.position, False))
+                                        d2 = abs(splice_junction.target.position.get_dist(rnode.position, False))
+                                        dist = d1 + d2
+                                        if dist <= MAX_ACCEPTABLE_INSERT_SIZE:
+                                            if lnode.position < rnode.position and rnode in lnode.splice_edges[STRAND_FORWARD]:
+                                                insert = dist < lnode.splice_edges[STRAND_FORWARD][rnode][0]
+                                            elif rnode.position < lnode.position and rnode in lnode.splice_edges[STRAND_REVERSE]:
+                                                insert = dist < lnode.splice_edges[STRAND_REVERSE][rnode][0]
                                             else:
-                                                lnode.splice_edges[STRAND_FORWARD][rnode] = (dist, splice_junction)
-                                                rnode.splice_edges[STRAND_REVERSE][lnode] = (dist, splice_junction)
+                                                insert = True
 
-                                            k += 1
+                                            if insert:
+                                                if rnode.position < lnode.position:  # inversed
+                                                    rnode.splice_edges[STRAND_FORWARD][lnode] = (dist, splice_junction)
+                                                    lnode.splice_edges[STRAND_REVERSE][rnode] = (dist, splice_junction)
+                                                else:
+                                                    lnode.splice_edges[STRAND_FORWARD][rnode] = (dist, splice_junction)
+                                                    rnode.splice_edges[STRAND_REVERSE][lnode] = (dist, splice_junction)
 
-                        splice_edges_had.add(splice_junction)
-                        splice_edges_had.add(splice_junction.get_complement())
+                                                k += 1
+
+                            splice_edges_had.add(splice_junction)
+                            splice_edges_had.add(splice_junction.get_complement())
 
         #log.info("Linked " + str(k) + " splice junction(s)")
 
@@ -1121,13 +1123,16 @@ class SubGraph():
                 else:
                     raise Exception("error")
 
-    def classify_intronic_exonic(self, splice_junctions):
+    def classify_intronic_exonic(self, splice_junctions_all, chrs):
         for pos in [self.edges[0].origin.position, self.edges[0].target.position]:
-            for step in splice_junctions.idxtree[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR), max(1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR + 1))].steps():
-                if step[1]:
-                    for strand in step[1]:
-                        self.xonic = 1
-                        return self.xonic
+            for _chr in chrs:
+                if _chr in splice_junctions_all:
+                    splice_junctions = splice_junctions_all[_chr]
+                    for step in splice_junctions.idxtree[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_ALIGNMENT_ERROR), max(1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR + 1))].steps():
+                        if step[1]:
+                            for strand in step[1]:
+                                self.xonic = 1
+                                return self.xonic
         self.xonic = 2
 
     def get_breakpoint_stddev(self):
@@ -1852,9 +1857,15 @@ class BAMExtract(object):
                         if i_pos1 is not None:
                             if internal_edge[2] == JunctionTypes.cigar_splice_junction:
                                 # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
-                                splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)
+                                if _chr not in splice_junctions:
+                                    splice_junctions[_chr] = Graph()
+                                splice_junctions[_chr].insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)
                             else:
-                                fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)  # By insertion tags in cigar string
+                                if _chr not in fusion_junctions:
+                                    fusion_junctions[_chr] = {}
+                                if _chr not in fusion_junctions[_chr]:
+                                    fusion_junctions[_chr][_chr] = Graph()
+                                fusion_junctions[_chr][_chr].insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)  # By insertion tags in cigar string
 
                 pbar.update(1)
 
@@ -2022,48 +2033,32 @@ class IntronDecomposition:
         alignment = BAMExtract(self.alignment_file, True)
 
         # initally worked, but slow because of same insane nodes
-        #fusion_junctions = Graph()
         fusion_junctions = {} # fusion_junctions['chr1']['chr3'] = Graph() - where first chr < second chr
-        splice_junctions = Graph()
+        splice_junctions = {} # [chr1] = Graph, etc.
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
 
-        import threading
-        jobs = []
-
-        # fusion_junctions.print_chain()
-        thicker_edges, subnets = {}, {}
         self.results = []
         for chr1 in fusion_junctions:
-            thicker_edges[chr1], subnets[chr1] = {}, {}
             for chr2 in fusion_junctions[chr1]:
-                def process(chr1, chr2):
-                    thicker_edges[chr1][chr2] = fusion_junctions[chr1][chr2].prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
-            
-                    fusion_junctions[chr1][chr2].rejoin_splice_juncs(splice_junctions, list(set([chr1, chr2])))  # Merges edges by splice junctions and other junctions
-                    fusion_junctions[chr1][chr2].reinsert_edges(thicker_edges[chr1][chr2])  # @todo move function into statuc function in this class
+                unique_chrs = list(set([chr1, chr2]))
+                thicker_edges = fusion_junctions[chr1][chr2].prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
+        
+                fusion_junctions[chr1][chr2].rejoin_splice_juncs(splice_junctions, unique_chrs)  # Merges edges by splice junctions and other junctions
+                fusion_junctions[chr1][chr2].reinsert_edges(thicker_edges)  # @todo move function into statuc function in this class
 
-                    # fusion_junctions.print_chain()
+                # fusion_junctions.print_chain()
 
-                    fusion_junctions[chr1][chr2].reindex_sj()
-                    
-                    # unclear why graph is combined with thicker edges - makes no sense as this may duplice things at first glance?
-                    subnets[chr1][chr2] = fusion_junctions[chr1][chr2].extract_subnetworks_by_splice_junctions(thicker_edges[chr1][chr2], MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
-            
-                    # this needs to be de-nested 
-                    self.results += self.merge_overlapping_subnets(subnets[chr1][chr2])
+                fusion_junctions[chr1][chr2].reindex_sj()
                 
-                thread = threading.Thread(target=process(chr1, chr2))
-                jobs.append(thread)
-
-        for j in jobs:
-            j.start()
-        for j in jobs:
-            j.join()
-
-        for subnet in self.results:
-            subnet.classify_intronic_exonic(splice_junctions)
-        #del(splice_junctions)
+                # unclear why graph is combined with thicker edges - makes no sense as this may duplice things at first glance?
+                subnets = fusion_junctions[chr1][chr2].extract_subnetworks_by_splice_junctions(thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
+        
+                # this needs to be de-nested 
+                results = self.merge_overlapping_subnets(subnets)
+                for _ in results:
+                    _.classify_intronic_exonic(splice_junctions, unique_chrs)
+                self.results += results
 
         return len(self.results)
 
