@@ -866,7 +866,7 @@ class Graph:
         candidates = []
 
         previous = len(self.edge_idx)
-        with tqdm(total=previous) as pbar: #  unit='B', unit_scale=True, unit_divisor=1024
+        with tqdm(total=previous) as pbar:
             while self.edge_idx:
                 candidate = self.edge_idx.pop()
 
@@ -1779,67 +1779,71 @@ class BAMExtract(object):
             return (None, None, None, None, None, None, None, None)
 
         log.debug("Parsing reads to obtain fusion gene and splice junctions")
-        for read in self.pysam_fh.fetch():
-            _chr = self.pysam_fh.get_reference_name(read.reference_id)
-            try:
-                sa = self.parse_SA(read.get_tag('SA'), _chr)
-            except Exception:
-                raise ValueError("Problems parsing SA tag for:\n\t%s", str(read))
-            rg = JunctionTypeUtils.enum(read.get_tag('RG'))
+        
+        with tqdm(total=self.pysam_fh.mapped) as pbar:
+            for read in self.pysam_fh.fetch():
+                _chr = self.pysam_fh.get_reference_name(read.reference_id)
+                try:
+                    sa = self.parse_SA(read.get_tag('SA'), _chr)
+                except Exception:
+                    raise ValueError("Problems parsing SA tag for:\n\t%s", str(read))
+                rg = JunctionTypeUtils.enum(read.get_tag('RG'))
 
-            pos1, pos2 = None, None
+                pos1, pos2 = None, None
 
-            if JunctionTypeUtils.is_fusion_junction(rg):
-                pos1, pos2, junction, ctps, acceptor, donor, n_match_p1, n_match_p2 = read_to_junction(read, rg, sa)
-                if pos1 is not None:
-                    alignment_score = read.get_tag('AS')
-                    # It happens that STAR assigns incorrenct alignment scores like -2147483577
-                    # If this happens we set it to 12 as some kind of wild guess
-                    if alignment_score < 0:
-                        alignment_score = 12
-                    fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score, n_match_p1, n_match_p2)
+                if JunctionTypeUtils.is_fusion_junction(rg):
+                    pos1, pos2, junction, ctps, acceptor, donor, n_match_p1, n_match_p2 = read_to_junction(read, rg, sa)
+                    if pos1 is not None:
+                        alignment_score = read.get_tag('AS')
+                        # It happens that STAR assigns incorrenct alignment scores like -2147483577
+                        # If this happens we set it to 12 as some kind of wild guess
+                        if alignment_score < 0:
+                            alignment_score = 12
+                        fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score, n_match_p1, n_match_p2)
 
-            elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
-                pass
+                elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
+                    pass
 
-            else:  # pragma: no cover
-                raise Exception("Unknown type read: %s. Was the alignment fixed with a more up to date version of Dr.Disco?" % JunctionTypeUtils.str(rg))
-
-            # Detect introns, clipping and insertions /deletions by SAM flags
-            for internal_edge in self.find_cigar_edges(read):
-                i_pos1, i_pos2 = None, None
-
-                if internal_edge[2] in [JunctionTypes.cigar_splice_junction, JunctionTypes.cigar_deletion]:  # , JunctionType.cigar_deletion
-                    i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
-                    i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
-
-                    if internal_edge[2] in [JunctionTypes.cigar_deletion] and i_pos1.get_dist(i_pos2, False) < MAX_ACCEPTABLE_INSERT_SIZE:
-                        i_pos1, i_pos2 = None, None
-
-                elif internal_edge[2] in [JunctionTypes.cigar_soft_clip]:
-                    if pos1 is None or rg in [JunctionTypes.spanning_paired_1_s, JunctionTypes.spanning_paired_2_s]:
-                        pass
-                    elif JunctionTypeUtils.is_fusion_junction(rg):
-                        i_pos1 = BreakPosition(_chr, internal_edge[0], pos2.strand)
-                        i_pos2 = BreakPosition(_chr, internal_edge[1], pos1.strand)
-                    else:  # pragma: no cover
-                        raise Exception("what todo here %s " + JunctionTypeUtils.str(rg))
                 else:  # pragma: no cover
-                    raise Exception("Edge type not implemented: %s\n\n%s", internal_edge, str(read))
+                    raise Exception("Unknown type read: %s. Was the alignment fixed with a more up to date version of Dr.Disco?" % JunctionTypeUtils.str(rg))
 
-                if internal_edge[2] in [JunctionTypes.cigar_soft_clip, JunctionTypes.cigar_hard_clip]:
-                    if i_pos1 is not None:
-                        node = fusion_junctions.get_node_reference(i_pos2)
-                        if node is not None:
-                            node.add_clip()
-                        # else condition happens when clips are found on positions that are not junctions
-                else:
-                    if i_pos1 is not None:
-                        if internal_edge[2] == JunctionTypes.cigar_splice_junction:
-                            # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
-                            splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)
-                        else:
-                            fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)  # By insertion tags in cigar string
+                # Detect introns, clipping and insertions /deletions by SAM flags
+                for internal_edge in self.find_cigar_edges(read):
+                    i_pos1, i_pos2 = None, None
+
+                    if internal_edge[2] in [JunctionTypes.cigar_splice_junction, JunctionTypes.cigar_deletion]:  # , JunctionType.cigar_deletion
+                        i_pos1 = BreakPosition(_chr, internal_edge[0], STRAND_FORWARD)
+                        i_pos2 = BreakPosition(_chr, internal_edge[1], STRAND_REVERSE)
+
+                        if internal_edge[2] in [JunctionTypes.cigar_deletion] and i_pos1.get_dist(i_pos2, False) < MAX_ACCEPTABLE_INSERT_SIZE:
+                            i_pos1, i_pos2 = None, None
+
+                    elif internal_edge[2] in [JunctionTypes.cigar_soft_clip]:
+                        if pos1 is None or rg in [JunctionTypes.spanning_paired_1_s, JunctionTypes.spanning_paired_2_s]:
+                            pass
+                        elif JunctionTypeUtils.is_fusion_junction(rg):
+                            i_pos1 = BreakPosition(_chr, internal_edge[0], pos2.strand)
+                            i_pos2 = BreakPosition(_chr, internal_edge[1], pos1.strand)
+                        else:  # pragma: no cover
+                            raise Exception("what todo here %s " + JunctionTypeUtils.str(rg))
+                    else:  # pragma: no cover
+                        raise Exception("Edge type not implemented: %s\n\n%s", internal_edge, str(read))
+
+                    if internal_edge[2] in [JunctionTypes.cigar_soft_clip, JunctionTypes.cigar_hard_clip]:
+                        if i_pos1 is not None:
+                            node = fusion_junctions.get_node_reference(i_pos2)
+                            if node is not None:
+                                node.add_clip()
+                            # else condition happens when clips are found on positions that are not junctions
+                    else:
+                        if i_pos1 is not None:
+                            if internal_edge[2] == JunctionTypes.cigar_splice_junction:
+                                # splice_junctions.insert_splice_edge(i_pos1, i_pos2, internal_edge[2], None)
+                                splice_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)
+                            else:
+                                fusion_junctions.insert_edge(i_pos1, i_pos2, internal_edge[2], None, None, None, None, 0, 0, -1, -1)  # By insertion tags in cigar string
+
+                pbar.update(1)
 
         log.debug("Alignment data loaded - overlapping reads excluded: " + str(self.overlapping_reads) + " - Putative crosshybridization artifact reads excluded: " + str(self.crosshybridization_artifacts))
 
@@ -2134,83 +2138,89 @@ class IntronDecomposition:
         k = 0
         new_subnets = []
         subnets.reverse()
-        while subnets:
-            subnet = subnets.pop()
-            tree_remove(idx_l, subnet)
-            tree_remove(idx_r, subnet)
 
-            to_be_merged_with = set()
-            candidates = set()
+        previous = len(subnets)
+        with tqdm(total=previous) as pbar:
+            while subnets:
+                subnet = subnets.pop()
+                tree_remove(idx_l, subnet)
+                tree_remove(idx_r, subnet)
 
-            for edge in subnet.edges:
-                # based on l-node to be close
-                pos = edge.origin.position
-                for step in idx_l[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
-                    if step[1] and pos.strand in step[1]:
-                        for candidate_subnet in step[1][pos.strand]:
-                            if subnet != candidate_subnet:
-                                candidates.add(candidate_subnet)
+                to_be_merged_with = set()
+                candidates = set()
 
-                pos = edge.target.position
-                for step in idx_r[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
-                    if step[1] and pos.strand in step[1]:
-                        for candidate_subnet in step[1][pos.strand]:
-                            if subnet != candidate_subnet:
-                                candidates.add(candidate_subnet)
+                for edge in subnet.edges:
+                    # based on l-node to be close
+                    pos = edge.origin.position
+                    for step in idx_l[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                        if step[1] and pos.strand in step[1]:
+                            for candidate_subnet in step[1][pos.strand]:
+                                if subnet != candidate_subnet:
+                                    candidates.add(candidate_subnet)
 
-            for candidate_subnet in candidates:
-                new_merged = False
-                l_dists, r_dists = subnet.find_distances(candidate_subnet)
+                    pos = edge.target.position
+                    for step in idx_r[HTSeq.GenomicInterval(pos._chr, max(0, pos.pos - MAX_ACCEPTABLE_INSERT_SIZE), pos.pos + MAX_ACCEPTABLE_INSERT_SIZE)].steps():
+                        if step[1] and pos.strand in step[1]:
+                            for candidate_subnet in step[1][pos.strand]:
+                                if subnet != candidate_subnet:
+                                    candidates.add(candidate_subnet)
 
-                if l_dists:
-                    n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
-                    n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
+                for candidate_subnet in candidates:
+                    new_merged = False
+                    l_dists, r_dists = subnet.find_distances(candidate_subnet)
 
-                    rmsq_l_dist = sq_dist(l_dists)
-                    rmsq_r_dist = sq_dist(r_dists)
+                    if l_dists:
+                        n_l_dist = sum([1 for x in l_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
+                        n_r_dist = sum([1 for x in r_dists if x < MAX_ACCEPTABLE_INSERT_SIZE])
 
-                    """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
-                        if product > (8*k):
-                            # Average gene size = 10-15kb
-                            # rmse <= 125000 - 120000/2^( product / 1200)
-                            # if rmse < max_rmse: valid data point
-                            max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
-                            return (rmse <= max_rmse)
-                    """
+                        rmsq_l_dist = sq_dist(l_dists)
+                        rmsq_r_dist = sq_dist(r_dists)
 
-                    if n_l_dist > 0 and n_r_dist > 0:
-                        new_merged = True
-                    else:  # @todo revise if / else / elif logic, and use linear regression or sth like that
-                        if n_l_dist > 0:
-                            l_dist_ins_ratio = 1.0 * n_l_dist / len(l_dists)
-                            if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
-                                new_merged = True
-                            elif l_dist_ins_ratio > 0.7 and rmsq_r_dist < 10000:
-                                new_merged = True
-                            elif l_dist_ins_ratio > 0.3 and rmsq_r_dist < 5000:
-                                new_merged = True
+                        """ @todo work with polynomial asymptotic equasion based on rmse, product and k, determine a True or False
+                            if product > (8*k):
+                                # Average gene size = 10-15kb
+                                # rmse <= 125000 - 120000/2^( product / 1200)
+                                # if rmse < max_rmse: valid data point
+                                max_rmse = 125000.0 - (120000/pow(2, float(product) / 1200.0))
+                                return (rmse <= max_rmse)
+                        """
 
-                        if n_r_dist > 0:
-                            r_dist_ins_ratio = 1.0 * n_r_dist / len(r_dists)
-                            if r_dist_ins_ratio == 1.0 and rmsq_l_dist < 15000:
-                                new_merged = True
-                            elif r_dist_ins_ratio > 0.7 and rmsq_l_dist < 10000:
-                                new_merged = True
-                            elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
-                                new_merged = True
+                        if n_l_dist > 0 and n_r_dist > 0:
+                            new_merged = True
+                        else:  # @todo revise if / else / elif logic, and use linear regression or sth like that
+                            if n_l_dist > 0:
+                                l_dist_ins_ratio = 1.0 * n_l_dist / len(l_dists)
+                                if l_dist_ins_ratio == 1.0 and rmsq_r_dist < 15000:
+                                    new_merged = True
+                                elif l_dist_ins_ratio > 0.7 and rmsq_r_dist < 10000:
+                                    new_merged = True
+                                elif l_dist_ins_ratio > 0.3 and rmsq_r_dist < 5000:
+                                    new_merged = True
 
-                    if new_merged:
-                        to_be_merged_with.add(candidate_subnet)
+                            if n_r_dist > 0:
+                                r_dist_ins_ratio = 1.0 * n_r_dist / len(r_dists)
+                                if r_dist_ins_ratio == 1.0 and rmsq_l_dist < 15000:
+                                    new_merged = True
+                                elif r_dist_ins_ratio > 0.7 and rmsq_l_dist < 10000:
+                                    new_merged = True
+                                elif r_dist_ins_ratio > 0.3 and rmsq_l_dist < 5000:
+                                    new_merged = True
 
-            for candidate_subnet in to_be_merged_with:
-                subnet.merge(candidate_subnet)
-                tree_remove(idx_l, candidate_subnet)
-                tree_remove(idx_r, candidate_subnet)
-                subnets.remove(candidate_subnet)  # [subnets.index(candidate_subnet)] = None# @todo inverse subnets and use .pop() and .remove()
-                del(candidate_subnet)
-                k += 1
+                        if new_merged:
+                            to_be_merged_with.add(candidate_subnet)
 
-            new_subnets.append(subnet)
+                for candidate_subnet in to_be_merged_with:
+                    subnet.merge(candidate_subnet)
+                    tree_remove(idx_l, candidate_subnet)
+                    tree_remove(idx_r, candidate_subnet)
+                    subnets.remove(candidate_subnet)  # [subnets.index(candidate_subnet)] = None# @todo inverse subnets and use .pop() and .remove()
+                    del(candidate_subnet)
+                    k += 1
+
+                new_subnets.append(subnet)
+
+                pbar.update(previous - len(subnets))
+                previous = len(subnets)
 
         log.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(new_subnets)) + " merged subnetwork(s)")
         return new_subnets
