@@ -1,3 +1,9 @@
+2018-05-16	Youri Hoogstrate	v0.17.3
+	* Quicker + tqdm() + certain hard/softclips per base are different
+	  if this involves edges from/to different chromosomes + order
+	  of lines in output file may change if score and entropy are
+	  identical
+
 2018-05-16	Youri Hoogstrate	v0.17.2
 	* Milder entropy filter
 
