@@ -1799,7 +1799,17 @@ class BAMExtract(object):
                         # If this happens we set it to 12 as some kind of wild guess
                         if alignment_score < 0:
                             alignment_score = 12
-                        fusion_junctions.insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score, n_match_p1, n_match_p2)
+
+                        p1, p2 = pos1._chr, pos2._chr
+                        if p1 > p2:
+                            p2, p1 = p1, p2
+
+                        if p1 not in fusion_junctions:
+                            fusion_junctions[p1] = {}
+                        if p2 not in fusion_junctions[p1]:
+                            fusion_junctions[p1][p2] = Graph()
+                                
+                        fusion_junctions[p1][p2].insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score, n_match_p1, n_match_p2)
 
                 elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
                     pass
@@ -1831,7 +1841,9 @@ class BAMExtract(object):
 
                     if internal_edge[2] in [JunctionTypes.cigar_soft_clip, JunctionTypes.cigar_hard_clip]:
                         if i_pos1 is not None:
-                            node = fusion_junctions.get_node_reference(i_pos2)
+                            #print(p1, p2)
+                            node = fusion_junctions[p1][p2].get_node_reference(i_pos2)
+                            #print("node", node)
                             if node is not None:
                                 node.add_clip()
                             # else condition happens when clips are found on positions that are not junctions
@@ -2008,24 +2020,35 @@ class IntronDecomposition:
     def decompose(self, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS):
         alignment = BAMExtract(self.alignment_file, True)
 
-        fusion_junctions = Graph()
+        # initally worked, but slow because of same insane nodes
+        #fusion_junctions = Graph()
+        fusion_junctions = {} # fusion_junctions['chr1']['chr3'] = Graph() - where first chr < second chr
         splice_junctions = Graph()
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
 
         # fusion_junctions.print_chain()
+        thicker_edges, subnets = {}, {}
+        self.results = []
+        for chr1 in fusion_junctions:
+            thicker_edges[chr1], subnets[chr1] = {}, {}
+            for chr2 in fusion_junctions[chr1]:
+                thicker_edges[chr1][chr2] = fusion_junctions[chr1][chr2].prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
+        
+                fusion_junctions[chr1][chr2].rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions
+                fusion_junctions[chr1][chr2].reinsert_edges(thicker_edges[chr1][chr2])  # @todo move function into statuc function in this class
 
-        thicker_edges = fusion_junctions.prune()  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
-        fusion_junctions.rejoin_splice_juncs(splice_junctions)  # Merges edges by splice junctions and other junctions
+                # fusion_junctions.print_chain()
 
-        fusion_junctions.reinsert_edges(thicker_edges)  # @todo move function into statuc function in this class
+                fusion_junctions[chr1][chr2].reindex_sj()
+                
+                # unclear why graph is combined with thicker edges - makes no sense as this may duplice things at first glance?
+                subnets[chr1][chr2] = fusion_junctions[chr1][chr2].extract_subnetworks_by_splice_junctions(thicker_edges[chr1][chr2], MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
+        
+                # this needs to be de-nested 
+                self.results += self.merge_overlapping_subnets(subnets[chr1][chr2])
 
-        # fusion_junctions.print_chain()
-
-        fusion_junctions.reindex_sj()
-
-        subnets = fusion_junctions.extract_subnetworks_by_splice_junctions(thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
-        self.results = self.merge_overlapping_subnets(subnets)
+        #print(self.results)
 
         for subnet in self.results:
             subnet.classify_intronic_exonic(splice_junctions)
