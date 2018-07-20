@@ -865,8 +865,8 @@ class Graph:
 
         candidates = []
 
-        n = len(self.edge_idx)
-        with tqdm(total=n) as pbar: #  unit='B', unit_scale=True, unit_divisor=1024
+        previous = len(self.edge_idx)
+        with tqdm(total=previous) as pbar: #  unit='B', unit_scale=True, unit_divisor=1024
             while self.edge_idx:
                 candidate = self.edge_idx.pop()
 
@@ -874,7 +874,8 @@ class Graph:
                 candidates.append(candidate)
 
                 self.remove_edge(candidate)  # do not remove if splice junc exists?
-                pbar.update(n - len(self.edge_idx))
+                pbar.update(previous - len(self.edge_idx))
+                previous = len(self.edge_idx)
 
         log.info("Pruned into " + str(len(candidates)) + " candidate edge(s)")
         return candidates
