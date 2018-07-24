@@ -834,8 +834,6 @@ class Graph:
         print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
     def generate_edge_idx(self):
-        #log.info("Creating edge index before pruning")
-
         edges = set()
         edges_tuple = []
         order = 0
@@ -861,7 +859,6 @@ class Graph:
         candidates = []
 
         previous = len(self.edge_idx)
-        #with tqdm(total=previous) as pbar:
         while self.edge_idx:
             candidate = self.edge_idx.pop()
 
@@ -873,7 +870,6 @@ class Graph:
             pbarx.update(previous - len(self.edge_idx))
             previous = len(self.edge_idx)
 
-        #log.info("Pruned into " + str(len(candidates)) + " candidate edge(s)")
         return candidates
 
     def prune_edge(self, edge):
@@ -930,7 +926,6 @@ thick edges:
 
         the goal is to add the splice juncs between the nodes
         """
-        #log.debug("Initiated")
         k = 0
 
         def search(pos1):
@@ -975,7 +970,7 @@ thick edges:
                             splice_edges_had.add(splice_junction)
                             splice_edges_had.add(splice_junction.get_complement())
 
-        #log.info("Linked " + str(k) + " splice junction(s)")
+        return k
 
     def extract_subnetworks_by_splice_junctions(self, thicker_edges, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS):
         """ Deze functie haalt recursief per edge een set van edges op die
@@ -990,8 +985,6 @@ junction staan beschreven; 1 naar posities die kleiner zijn dan zichzelf
 en 1 met posities die groter zijn dan zichzelf. Hierdoor is een recursief
 terugloop probleem redelijk opgelost.
             """
-        #log.info("Initiated [MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS=%i]" % MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
-
         thicker_edges.reverse()
         q = 0
         subnetworks = []
@@ -1032,7 +1025,6 @@ terugloop probleem redelijk opgelost.
             subnetworks.append(SubGraph(q, subedges, left_splice_junctions, right_splice_junctions))
             self.remove_edge(start_point)
 
-        #log.info("Extracted %i subnetwork(s)" % len(subnetworks))
         return subnetworks
 
 
@@ -1375,7 +1367,7 @@ class BAMExtract(object):
             bam_fh.fetch()
         except Exception:  # pragma: no cover
             fname = bam_fh.filename
-            #log.info('Indexing BAM file with pysam: ' + fname)  # create index if it does not exist
+            log.info('Indexing BAM file with pysam: ' + fname)  # create index if it does not exist
             bam_fh.close()
 
             pysam.index(fname)
@@ -1780,8 +1772,8 @@ class BAMExtract(object):
 
             return (None, None, None, None, None, None, None, None)
 
-        #log.debug("Parsing reads to obtain fusion gene and splice junctions")
-        
+        log.debug("Parsing reads to obtain fusion gene and splice junctions")
+
         with tqdm(total=self.pysam_fh.mapped) as pbar:
             for read in self.pysam_fh.fetch():
                 _chr = self.pysam_fh.get_reference_name(read.reference_id)
@@ -1810,7 +1802,7 @@ class BAMExtract(object):
                             fusion_junctions[p1] = {}
                         if p2 not in fusion_junctions[p1]:
                             fusion_junctions[p1][p2] = Graph()
-                                
+
                         fusion_junctions[p1][p2].insert_edge(pos1, pos2, rg, junction, ctps, acceptor, donor, read.get_tag('nM'), alignment_score, n_match_p1, n_match_p2)
 
                 elif rg == JunctionTypes.silent_mate:  # Not yet implemented, may be useful for determining type of junction (exonic / intronic)
@@ -1843,9 +1835,7 @@ class BAMExtract(object):
 
                     if internal_edge[2] in [JunctionTypes.cigar_soft_clip, JunctionTypes.cigar_hard_clip]:
                         if i_pos1 is not None:
-                            #print(p1, p2)
                             node = fusion_junctions[p1][p2].get_node_reference(i_pos2)
-                            #print("node", node)
                             if node is not None:
                                 node.add_clip()
                             # else condition happens when clips are found on positions that are not junctions
@@ -1865,7 +1855,7 @@ class BAMExtract(object):
 
                 pbar.update(1)
 
-        #log.debug("Alignment data loaded - overlapping reads excluded: " + str(self.overlapping_reads) + " - Putative crosshybridization artifact reads excluded: " + str(self.crosshybridization_artifacts))
+        log.debug("Alignment data loaded - overlapping reads excluded: " + str(self.overlapping_reads) + " - Putative crosshybridization artifact reads excluded: " + str(self.crosshybridization_artifacts))
 
     def parse_pos(self, str_pos):
         try:
@@ -2029,8 +2019,8 @@ class IntronDecomposition:
         alignment = BAMExtract(self.alignment_file, True)
 
         # initally worked, but slow because of same insane nodes
-        fusion_junctions = {} # fusion_junctions['chr1']['chr3'] = Graph() - where first chr < second chr
-        splice_junctions = {} # [chr1] = Graph, etc.
+        fusion_junctions = {}  # fusion_junctions['chr1']['chr3'] = Graph() - where first chr < second chr
+        splice_junctions = {}  # [chr1] = Graph, etc.
 
         alignment.extract_junctions(fusion_junctions, splice_junctions)
 
@@ -2038,12 +2028,12 @@ class IntronDecomposition:
         iterations = 0
         for chr1 in fusion_junctions:
             for chr2 in fusion_junctions[chr1]:
-                #print [fusion_junctions[chr1][chr2]]
                 fusion_junctions[chr1][chr2].generate_edge_idx()
                 fusion_junctions[chr1][chr2].check_symmetry()
                 iterations += len(fusion_junctions[chr1][chr2].edge_idx)
 
         # prune
+        k = 0
         log.info("Merging edges by splice junctions")
         with tqdm(total=iterations) as pbar:
             thicker_edges = {}
@@ -2051,15 +2041,18 @@ class IntronDecomposition:
                 thicker_edges[chr1] = {}
                 for chr2 in fusion_junctions[chr1]:
                     thicker_edges[chr1][chr2] = fusion_junctions[chr1][chr2].prune(pbar)  # Makes edge thicker by lookin in the ins. size - make a sorted data structure for quicker access - i.e. sorted list
+                    k += len(thicker_edges[chr1][chr2])
+        log.info("Pruned into " + str(k) + " candidate edge(s)")
 
         iterations = 0
-        log.info("rejoining sj and reinstering edges")
+        log.info("Rejoining splice junctions & re-insterting edges in order to extract subgraphs [MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS=%i]" % MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
         subnets = {}
+        k = 0
         for chr1 in tqdm(fusion_junctions):
             subnets[chr1] = {}
-            for chr2 in tqdm(fusion_junctions[chr1]):
+            for chr2 in tqdm(fusion_junctions[chr1], position=0):  # if position is not set to 0, it indents and overlaps with the log.info messages
                 unique_chrs = list(set([chr1, chr2]))
-                fusion_junctions[chr1][chr2].rejoin_splice_juncs(splice_junctions, unique_chrs)  # Merges edges by splice junctions and other junctions
+                k += fusion_junctions[chr1][chr2].rejoin_splice_juncs(splice_junctions, unique_chrs)  # Merges edges by splice junctions and other junctions
                 fusion_junctions[chr1][chr2].reinsert_edges(thicker_edges[chr1][chr2])  # @todo move function into statuc function in this class
 
                 # fusion_junctions.print_chain()
@@ -2067,20 +2060,24 @@ class IntronDecomposition:
                 fusion_junctions[chr1][chr2].reindex_sj()
                 subnets[chr1][chr2] = fusion_junctions[chr1][chr2].extract_subnetworks_by_splice_junctions(thicker_edges[chr1][chr2], MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS)
                 iterations += len(subnets[chr1][chr2])
+        log.info("Rejoined " + str(k) + " splice junction(s)")
+        log.info("Extracted %i subnetwork(s)" % iterations)
 
-        log.info("merging subnets")
+        k, m = 0, 0
+        log.info("Merging overlapping subgraphs based on genomic distance")
         with tqdm(total=iterations) as pbar:
             self.results = []
             for chr1 in fusion_junctions:
                 for chr2 in fusion_junctions[chr1]:
-                    # unclear why graph is combined with thicker edges - makes no sense as this may duplice things at first glance?
-                    
-            
-                    # this needs to be de-nested 
+                    #  @todo unclear why graph is combined with thicker edges - makes no sense as this may duplice things at first glance?
                     results = self.merge_overlapping_subnets(subnets[chr1][chr2], pbar)
+                    k += results[0]
+                    results = results[1]
+                    m += len(results)
                     for _ in results:
                         _.classify_intronic_exonic(splice_junctions, unique_chrs)
                     self.results += results
+        log.info("Merged " + str(k) + " of the " + str(iterations) + " into " + str(m) + " merged subnetwork(s)")
 
         return len(self.results)
 
@@ -2139,7 +2136,6 @@ class IntronDecomposition:
 
             merge all subnets in M into i, and remove the former subnets
         """
-        #log.info("Merging subnets based on genomic distance")
 
         def sq_dist(vec):
             sum_of_squares = sum(pow(x, 2) for x in vec)
@@ -2177,8 +2173,6 @@ class IntronDecomposition:
                     if subnet in sset:
                         sset.remove(subnet)
 
-        n = len(subnets)
-
         idx_l = HTSeq.GenomicArrayOfSets("auto", stranded=False)
         idx_r = HTSeq.GenomicArrayOfSets("auto", stranded=False)
 
@@ -2191,7 +2185,6 @@ class IntronDecomposition:
         new_subnets = []
         subnets.reverse()
 
-        #print ""
         previous = len(subnets)
         while subnets:
             subnet = subnets.pop()
@@ -2271,9 +2264,7 @@ class IntronDecomposition:
 
             new_subnets.append(subnet)
 
-            #print previous, '->' , len(subnets) , '    =  -',(previous - len(subnets))
             pbar.update(previous - len(subnets))
             previous = len(subnets)
 
-        #log.info("Merged " + str(k) + " of the " + str(n) + " into " + str(len(new_subnets)) + " merged subnetwork(s)")
-        return new_subnets
+        return (k, new_subnets)
