@@ -1,3 +1,6 @@
+2018-08-03	Youri Hoogstrate	v0.17.4
+	* Improved filter / classification
+
 2018-05-16	Youri Hoogstrate	v0.17.3
 	* Quicker + tqdm() + certain hard/softclips per base are different
 	  if this involves edges from/to different chromosomes + order

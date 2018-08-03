@@ -389,14 +389,15 @@ class DetectOutput:
                         status.append("n_support=" + str(e.n_supporting_reads) + "<" + str(n_support_min))
 
                     # @todo subfunc
-                    # n_disco_max = int(round(35 + (0.55 * e.n_split_reads)))
                     n_disco_max = int(round(math.pow(22.0 * e.n_split_reads, 0.9) + 13))
                     if e.n_split_reads < 100:
                         n_disco_min = int(round(math.pow(0.0195 * e.n_split_reads, 1.95)))
                     elif e.n_split_reads >= 100 and e.n_split_reads < 125:
                         n_disco_min = 4
-                    else:
+                    elif e.n_split_reads >= 125 and e.n_split_reads < 325:
                         n_disco_min = int(round((0.135 * (e.n_split_reads - 200.0)) + 14.0))
+                    else:
+                        n_disco_min = int(round(30.875 + (e.n_split_reads - 325) * 0.024))
                     if e.n_discordant_reads > n_disco_max:
                         status.append("n_disco=" + str(e.n_discordant_reads) + ">" + str(n_disco_max))
                     if e.n_discordant_reads < n_disco_min:
@@ -404,10 +405,10 @@ class DetectOutput:
 
                     # @todo subfunc
                     n_split_min = int(round((0.32 * e.n_supporting_reads) - pow((0.1 * e.n_supporting_reads), 1.15) - 4.0))
-                    if e.n_supporting_reads < 500:
+                    if e.n_supporting_reads < 385:
                         n_split_max = int(round((0.986 * e.n_supporting_reads) - pow(0.00535 * e.n_supporting_reads, 3.99 - ((1.0 / 15000.0) * e.n_supporting_reads))))
                     else:
-                        n_split_max = int(round(0.905 * (e.n_supporting_reads - 500.0) + 443.9624))
+                        n_split_max = int(round(0.94 * e.n_supporting_reads))
                     if e.n_split_reads < n_split_min:
                         status.append("n_split=" + str(e.n_split_reads) + "<" + str(n_split_min))
                     if e.n_split_reads > n_split_max:
