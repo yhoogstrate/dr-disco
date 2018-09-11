@@ -276,12 +276,13 @@ motif:
 
 5' exon: -------------------------------->> 3'
 [ . . . ] {G}{T} . . . . . {A}{G} [ . . . ]
-
+  . . .    G  T  . . . . .  A  G    . . .   DNA
 
 inversed, like TMPRSS2-ERG:
 
-3' <<----------------------------------- 5'
-[ . . . ] {C}{T} . . . . . {A}{C} [ . . . ]
+3' <<----------------------------------- 5'  
+[ . . . ] {C}{T} . . . . . {A}{C} [ . . . ] RNA
+  . . .    G  A  . . . . .  T  G    . . .   DNA
         """
 
         pos5_in_exon_length = 0
@@ -289,9 +290,6 @@ inversed, like TMPRSS2-ERG:
 
         pos3_pre_exon_length = 2
         pos3_in_exon_length = 0
-
-        import sys
-        print >> sys.stderr, "hello?", self.donorA ,' >', self.donorB
 
         if self.donorA > self.donorB:
             pos5p = [self.chrA, self.posA, self.strandA]
@@ -302,31 +300,26 @@ inversed, like TMPRSS2-ERG:
         else:
             pos5p = None
 
-        print >> sys.stderr, pos5p ,'    ' , pos3p
-
         if pos5p:
             if pos5p[2] == '-':
-                print >> sys.stderr, "case1?"
                 try:
-                    seq_in_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
+                    seq_in_5p_exon = '' # str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
                     seq_post_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
                 except ValueError:
                     log.error("[1] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_in_exon_length) + "-" + str(pos5p[1] + pos5_post_exon_length) + ". Skipping this for splice junction site estimation.")
                     return ""
             else:
-                print >> sys.stderr, "case2?"
                 try:
                     seq_in_5p_exon = '' # reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
                     seq_post_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
                 except ValueError:
-                    #log.error("[1/2] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1]) + "-" + str(pos5p[1] + pos5_in_exon_length) + ". Skipping this for splice junction site estimation.")
-                    log.error("[2/2] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_post_exon_length) + "-" + str(pos5p[1]) + ". Skipping this for splice junction site estimation.")
+                    log.error("[2] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_post_exon_length) + "-" + str(pos5p[1]) + ". Skipping this for splice junction site estimation.")
                     return ""
 
             if pos3p[2] == '+':
                 try:
                     seq_pre_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
-                    seq_in_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
+                    seq_in_3p_exon = '' # str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
                 except ValueError:
                     log.error("[3] Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_pre_exon_length) + "-" + str(pos3p[1] + pos3_in_exon_length) + ". Skipping this for splice junction site estimation.")
                     return ""
@@ -350,14 +343,10 @@ inversed, like TMPRSS2-ERG:
 
                 return d
 
-            print >> sys.stderr, "alive?"
-
-            import sys
             dist = 0 + calc_dist(["G", "T"], seq_post_5p_exon) + calc_dist(["A", "G"], seq_pre_3p_exon) + 0
-            print >> sys.stderr, "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ] ---> " + str(dist)
-            self.edit_dist_to_splice_motif = str(dist)
+            self.edit_dist_to_splice_motif = str(dist) + "|" + seq_post_5p_exon + "->" + seq_pre_3p_exon 
 
-            return dist
+            return self.edit_dist_to_splice_motif
         else:
             return ""
 
