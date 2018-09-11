@@ -43,98 +43,97 @@ if not os.path.exists(T_TEST_DIR):
 
 
 class TestSpliceJunctions(unittest.TestCase):
-    # def test_sj_01(self):
-        # test_id = 'splice_site_motif_01'
+    def test_sj_01(self):
+        test_id = 'splice_site_motif_01'
 
-        # input_sam = TEST_DIR + "test_" + test_id + ".in.sam"
-        # input_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
-        # input_file = T_TEST_DIR + "test_" + test_id + ".dbed"
+        input_sam = TEST_DIR + "test_" + test_id + ".in.sam"
+        input_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        input_file = T_TEST_DIR + "test_" + test_id + ".dbed"
 
-        # gtf_file = None
-        # fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
+        gtf_file = None
+        fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
 
-        # output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
-        # test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
 
-        # # sam -> fixed bam
-        # sam_to_fixed_bam(input_sam, input_bam, T_TEST_DIR)
+        # sam -> fixed bam
+        sam_to_fixed_bam(input_sam, input_bam, T_TEST_DIR)
 
-        # # fixed bam -> dr-disco detect
-        # ic = IntronDecomposition(input_bam)
-        # ic.decompose(0)
-        # fh = open(input_file, "w")
-        # ic.export(fh)
-        # fh.close()
+        # fixed bam -> dr-disco detect
+        ic = IntronDecomposition(input_bam)
+        ic.decompose(0)
+        fh = open(input_file, "w")
+        ic.export(fh)
+        fh.close()
 
-        # # dr-disco-detect (skip classify) -> dr-disco integrate
-        # cl = DetectOutput(input_file)
+        # dr-disco-detect (skip classify) -> dr-disco integrate
+        cl = DetectOutput(input_file)
+        cl.integrate(output_file, gtf_file, fasta_file)
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_sj_02(self):
+        test_id = 'splice_site_motif_02'
+
+        input_sam = TEST_DIR + "test_" + test_id + ".in.sam"
+        input_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        input_file = T_TEST_DIR + "test_" + test_id + ".dbed"
+
+        gtf_file = None
+        fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
+
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        # sam -> fixed bam
+        sam_to_fixed_bam(input_sam, input_bam, T_TEST_DIR)
+
+        # fixed bam -> dr-disco detect
+        ic = IntronDecomposition(input_bam)
+        ic.decompose(0)
+        fh = open(input_file, "w")
+        ic.export(fh)
+        fh.close()
+
+        # dr-disco-detect (skip classify) -> dr-disco integrate
+        cl = DetectOutput(input_file)
+        cl.integrate(output_file, gtf_file, fasta_file)
+
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+    def test_sj_03__go_out_of_bound_in_the_fasta_file(self):
+        test_id = 'splice_site_motif_03'
+
+        input_sam = TEST_DIR + "test_" + test_id + ".in.sam"
+        input_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
+        input_file = T_TEST_DIR + "test_" + test_id + ".dbed"
+
+        gtf_file = None
+        fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
+
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
+        test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
+
+        # sam -> fixed bam
+        sam_to_fixed_bam(input_sam, input_bam, T_TEST_DIR)
+
+        # fixed bam -> dr-disco detect
+        ic = IntronDecomposition(input_bam)
+        ic.decompose(0)
+        fh = open(input_file, "w")
+        ic.export(fh)
+        fh.close()
+
+        # dr-disco-detect (skip classify) -> dr-disco integrate
+        cl = DetectOutput(input_file)
+
+        # originally, this triggered an exception, now we just log an error
         # cl.integrate(output_file, gtf_file, fasta_file)
+        # self.assertRaises(Exception, cl.integrate, output_file, gtf_file, fasta_file)
 
-        # self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        cl.integrate(output_file, gtf_file, fasta_file)
 
-    # def test_sj_02(self):
-        # test_id = 'splice_site_motif_02'
-
-        # input_sam = TEST_DIR + "test_" + test_id + ".in.sam"
-        # input_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
-        # input_file = T_TEST_DIR + "test_" + test_id + ".dbed"
-
-        # gtf_file = None
-        # fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
-
-        # output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
-        # test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
-
-        # # sam -> fixed bam
-        # sam_to_fixed_bam(input_sam, input_bam, T_TEST_DIR)
-
-        # # fixed bam -> dr-disco detect
-        # ic = IntronDecomposition(input_bam)
-        # ic.decompose(0)
-        # fh = open(input_file, "w")
-        # ic.export(fh)
-        # fh.close()
-
-        # # dr-disco-detect (skip classify) -> dr-disco integrate
-        # cl = DetectOutput(input_file)
-        # cl.integrate(output_file, gtf_file, fasta_file)
-
-        # self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
-    # def test_sj_03__go_out_of_bound_in_the_fasta_file(self):
-        # test_id = 'splice_site_motif_03'
-
-        # input_sam = TEST_DIR + "test_" + test_id + ".in.sam"
-        # input_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
-        # input_file = T_TEST_DIR + "test_" + test_id + ".dbed"
-
-        # gtf_file = None
-        # fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
-
-        # output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
-        # test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
-
-        # # sam -> fixed bam
-        # sam_to_fixed_bam(input_sam, input_bam, T_TEST_DIR)
-
-        # # fixed bam -> dr-disco detect
-        # ic = IntronDecomposition(input_bam)
-        # ic.decompose(0)
-        # fh = open(input_file, "w")
-        # ic.export(fh)
-        # fh.close()
-
-        # # dr-disco-detect (skip classify) -> dr-disco integrate
-        # cl = DetectOutput(input_file)
-
-        # # originally, this triggered an exception, now we just log an error
-        # # cl.integrate(output_file, gtf_file, fasta_file)
-        # # self.assertRaises(Exception, cl.integrate, output_file, gtf_file, fasta_file)
-
-        # cl.integrate(output_file, gtf_file, fasta_file)
-
-        # self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_sj_04__CA_GT_d4(self):
         test_id = 'splice_site_motif_04'
@@ -169,42 +168,6 @@ class TestSpliceJunctions(unittest.TestCase):
         cl.integrate(output_file, gtf_file, fasta_file)
 
         self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
-
-    # def test_sj_05__GT_AG_d0(self):
-        # test_id = 'splice_site_motif_05'
-
-        # input_sam = TEST_DIR + "test_" + test_id + ".in.sam"
-        # input_bam = T_TEST_DIR + "test_" + test_id + ".fixed.bam"
-        # input_file = T_TEST_DIR + "test_" + test_id + ".dbed"
-
-        # gtf_file = None
-        # fasta_file = TEST_DIR + "test_" + test_id + ".in.fa"
-
-        # output_file = T_TEST_DIR + "test_" + test_id + ".out.dbed"
-        # test_file = TEST_DIR + "test_" + test_id + ".out.dbed"
-
-        # # sam -> fixed bam
-        # sam_to_fixed_bam(input_sam, input_bam, T_TEST_DIR)
-
-        # # fixed bam -> dr-disco detect
-        # ic = IntronDecomposition(input_bam)
-        # ic.decompose(0)
-        # fh = open(input_file, "w")
-        # ic.export(fh)
-        # fh.close()
-
-        # # dr-disco-detect (skip classify) -> dr-disco integrate
-        # cl = DetectOutput(input_file)
-
-        # # originally, this triggered an exception, now we just log an error
-        # # cl.integrate(output_file, gtf_file, fasta_file)
-        # # self.assertRaises(Exception, cl.integrate, output_file, gtf_file, fasta_file)
-
-        # cl.integrate(output_file, gtf_file, fasta_file)
-
-        # self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
-
 
 
 if __name__ == '__main__':

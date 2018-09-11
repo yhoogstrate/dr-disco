@@ -271,7 +271,6 @@ motif:
 
     def is_on_splice_junction_motif(self, fasta_fh):
         """
-
 motif:
 
 5' exon: -------------------------------->> 3'
@@ -280,7 +279,7 @@ motif:
 
 inversed, like TMPRSS2-ERG:
 
-3' <<----------------------------------- 5'  
+3' <<----------------------------------- 5'
 [ . . . ] {C}{T} . . . . . {A}{C} [ . . . ] RNA
   . . .    G  A  . . . . .  T  G    . . .   DNA
         """
@@ -303,14 +302,14 @@ inversed, like TMPRSS2-ERG:
         if pos5p:
             if pos5p[2] == '-':
                 try:
-                    seq_in_5p_exon = '' # str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
+                    # seq_in_5p_exon = ''  str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
                     seq_post_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
                 except ValueError:
                     log.error("[1] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_in_exon_length) + "-" + str(pos5p[1] + pos5_post_exon_length) + ". Skipping this for splice junction site estimation.")
                     return ""
             else:
                 try:
-                    seq_in_5p_exon = '' # reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
+                    # seq_in_5p_exon = '' reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
                     seq_post_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
                 except ValueError:
                     log.error("[2] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_post_exon_length) + "-" + str(pos5p[1]) + ". Skipping this for splice junction site estimation.")
@@ -319,13 +318,13 @@ inversed, like TMPRSS2-ERG:
             if pos3p[2] == '+':
                 try:
                     seq_pre_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
-                    seq_in_3p_exon = '' # str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
+                    # seq_in_3p_exon = ''  str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
                 except ValueError:
                     log.error("[3] Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_pre_exon_length) + "-" + str(pos3p[1] + pos3_in_exon_length) + ". Skipping this for splice junction site estimation.")
                     return ""
             else:
                 try:
-                    seq_in_3p_exon = '' # reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
+                    # seq_in_3p_exon = ''  reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
                     seq_pre_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_pre_exon_length]))
                 except ValueError:
                     log.error("[4] Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_in_exon_length) + "-" + str(pos3p[1] + pos3_pre_exon_length) + ". Skipping this for splice junction site estimation.")
@@ -344,7 +343,7 @@ inversed, like TMPRSS2-ERG:
                 return d
 
             dist = 0 + calc_dist(["G", "T"], seq_post_5p_exon) + calc_dist(["A", "G"], seq_pre_3p_exon) + 0
-            self.edit_dist_to_splice_motif = str(dist) + "|" + seq_post_5p_exon + "->" + seq_pre_3p_exon 
+            self.edit_dist_to_splice_motif = str(dist) + "|" + seq_post_5p_exon + "->" + seq_pre_3p_exon
 
             return self.edit_dist_to_splice_motif
         else:
