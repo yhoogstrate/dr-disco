@@ -3726,3 +3726,63 @@ chr9	41055138	41055386	+	low entropy region
 chr9	41055138	41055386	-	low entropy region
 chr4	127851222	127851276	+	low entropy region
 chr4	127851222	127851276	-	low entropy region
+chr6	42647393	42647477	+	poly-A region
+chr6	42647393	42647477	-	poly-A region
+chr2	180868829	180868893	+	poly-A region
+chr2	180868829	180868893	-	poly-A region
+chr11	78450629	78450718	+	low entropy region
+chr11	78450629	78450718	-	low entropy region
+chr11	76802117	76802264	+	low entropy region
+chr11	76802117	76802264	-	low entropy region
+chr11	76800148	76800313	+	low entropy region
+chr11	76800148	76800313	-	low entropy region
+chr2	43535149	43535218	+	poly-T
+chr2	43535149	43535218	-	poly-T
+chr4	75916768	75916822	+	poly-T
+chr4	75916768	75916822	-	poly-T
+chr7	74878146	74878210	+	low entropy region
+chr7	74878146	74878210	-	low entropy region
+chr3	15738505	15738745	+	regiom with many genomic copies
+chr3	15738505	15738745	-	regiom with many genomic copies
+chr11	62841619	62841783	+	regiom with many genomic copies
+chr11	62841619	62841783	-	regiom with many genomic copies
+chr17	17383828	17384064	+	regiom with genomic copies
+chr17	17383828	17384064	-	regiom with genomic copies
+chr6	56895989	56896163	+	low entropy region
+chr6	56895989	56896163	-	low entropy region
+chr2	176200882	176201279	+	regiom with genomic copies
+chr2	176200882	176201279	-	regiom with genomic copies
+chr11	93721632	93721724	+	low entropy region
+chr11	93721632	93721724	-	low entropy region
+chr1	108954794	108954867	+	low entropy region
+chr1	108954794	108954867	-	low entropy region
+chr11	65440438	65440534	+	poly-A
+chr11	65440438	65440534	-	poly-A
+chr4	118810053	118810164	+	low entropy region
+chr4	118810053	118810164	-	low entropy region
+chr21	21009869	21009934	+	low entropy region
+chr21	21009869	21009934	-	low entropy region
+chr11	65429455	65429548	+	low entropy region
+chr11	65429455	65429548	-	low entropy region
+chr16	85571997	85572609	+	low entropy region
+chr16	85571997	85572609	-	low entropy region
+chr1	150693724	150693886	+	low entropy region
+chr1	150693724	150693886	-	low entropy region
+chr19	4247541	4247743	+	low entropy region
+chr19	4247541	4247743	-	low entropy region
+chr13	77071249	77071336	+	low entropy region
+chr13	77071249	77071336	-	low entropy region
+chr4	147741755	147741840	+	low entropy region
+chr4	147741755	147741840	-	low entropy region
+chr11	65444247	65444336	+	low entropy region
+chr11	65444247	65444336	-	low entropy region
+chrX	44924613	44924722	+	low entropy region
+chrX	44924613	44924722	-	low entropy region
+chr7	67028224	67028263	+	poly-A
+chr7	67028224	67028263	-	poly-A
+chr1	46073777	46073816	+	poly-T
+chr1	46073777	46073816	-	poly-T
+chr21	46305286	46305363	+	poly-T
+chr21	46305286	46305363	-	poly-T
+chr17	17383822	17384064	+	region with genomic copies
+chr17	17383822	17384064	-	region with genomic copies
