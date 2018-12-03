@@ -1,3 +1,6 @@
+2018-09-12	Youri Hoogstrate	v0.17.6
+	* Updates to blacklist
+
 2018-09-12	Youri Hoogstrate	v0.17.5
 	* `dr-disco integrate` now checks for the canonical splice junction
 	   motif: ..]GT..->..AG[.. and returns edit distance + motif
