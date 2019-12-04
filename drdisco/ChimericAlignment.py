@@ -508,11 +508,6 @@ class ChimericAlignment:
         log.info("Fixing sam file")
         sam_file_discordant = pysam.AlignmentFile(basename + ".name-sorted.bam", "rb")
         header = sam_file_discordant.header.to_dict()
-        print("----------------------")
-        print(type(header))
-        print("----------------------")
-        print(header)
-        print("----------------------")
         header['RG'] = [
             {'ID': 'discordant_mates', 'DS': 'This read has discordant mate pair'},
             {'ID': 'silent_mate', 'DS': 'Reads of this type are not discordant while their mate is'},

@@ -424,7 +424,7 @@ class DetectOutput:
         if self.is_gzip:
             with gzip.open(self.input_alignment_file, 'rb') as fh_in:
                 for line in fh_in:
-                    return line
+                    return line.decode("utf-8")
         else:
             with open(self.input_alignment_file, 'r') as fh_in:
                 for line in fh_in:
@@ -435,10 +435,10 @@ class DetectOutput:
         header = True
 
         if self.is_gzip:
-            with gzip.open(self.input_alignment_file, 'rb') as fh_in:
+            with gzip.open(self.input_alignment_file, 'r') as fh_in:
                 for line in fh_in:
                     if not header:
-                        yielde = DetectOutputEntry(line)
+                        e = DetectOutputEntry(line.decode("utf-8"))
                         yield e
                     else:
                         header = False
@@ -457,10 +457,9 @@ class DetectOutput:
         k = 0
 
         with open(output_file, 'w') as fh:
-            fh.write(self.get_header())
+            fh.write(str(self.get_header()))
 
             for e in self:
-                print(type(e))
                 if isinstance(e, str):
                     fh.write(e)
                 else:
@@ -589,9 +588,9 @@ class DetectOutput:
                     else:
                         lr_intercept_max = ((e.score - 150.0) * 0.0225) + 81.71951
                     if e.lr_A_intercept > lr_intercept_max:
-                        status.append("lr_A_intercept=" + str(e.lr_A_intercept) + ">" + str(lr_intercept_max))
+                        status.append("lr_A_intercept=" + str(e.lr_A_intercept) + ">" + "{:.12g}".format(lr_intercept_max))
                     if e.lr_B_intercept > lr_intercept_max:
-                        status.append("lr_B_intercept=" + str(e.lr_B_intercept) + ">" + str(lr_intercept_max))
+                        status.append("lr_B_intercept=" + str(e.lr_B_intercept) + ">" + "{:.12g}".format(lr_intercept_max))
 
                     # @todo subfunc
                     sqrt_entropy_bps_ab = pow(pow(e.entropy_disco_bps_A, 2) + pow(e.entropy_disco_bps_B, 2), 0.5)
@@ -600,7 +599,7 @@ class DetectOutput:
                     else:
                         sqrt_entropy_bps_ab_max = 3.4 * e.entropy_all_edges - 2.415
                     if sqrt_entropy_bps_ab > sqrt_entropy_bps_ab_max:
-                        status.append("sqrt_entropy_bps_ab=" + str(round(sqrt_entropy_bps_ab, 12)) + ">" + str(sqrt_entropy_bps_ab_max))
+                        status.append("sqrt_entropy_bps_ab=" + "{:.12g}".format(sqrt_entropy_bps_ab) + ">" + str(round(sqrt_entropy_bps_ab_max,5)))
 
                     if len(status) == 0:
                         e.status = 'valid'
