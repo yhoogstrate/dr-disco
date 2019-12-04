@@ -22,7 +22,7 @@
 
 import unittest
 from subprocess import Popen, PIPE
-from utils import main
+from tests.utils import main
 
 # Nosetests doesn't use main()
 

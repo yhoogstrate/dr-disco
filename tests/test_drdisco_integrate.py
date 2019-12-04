@@ -28,7 +28,7 @@ import filecmp
 import os
 import subprocess
 from drdisco.DetectOutput import DetectOutput
-from utils import main, get_diff
+from tests.utils import main, get_diff
 
 
 TEST_DIR = "tests/integrate/"

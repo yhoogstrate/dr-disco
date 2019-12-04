@@ -25,7 +25,7 @@ import filecmp
 import pysam
 import os
 import subprocess
-from utils import main, sam_to_fixed_bam, get_diff
+from tests.utils import main, sam_to_fixed_bam, get_diff
 
 # Nosetests doesn't use main()
 

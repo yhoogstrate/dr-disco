@@ -31,7 +31,7 @@ import os
 from drdisco.IntronDecomposition import IntronDecomposition
 from drdisco.DetectOutput import DetectOutput
 from drdisco.Classify import Blacklist
-from utils import main, sam_to_fixed_bam, get_diff
+from tests.utils import main, sam_to_fixed_bam, get_diff
 
 
 TEST_DIR = "tests/chim_overhang/"

@@ -30,7 +30,7 @@ import filecmp
 import os
 import subprocess
 from drdisco.DetectOutput import DetectOutput
-from utils import main, sam_to_fixed_bam, get_diff
+from tests.utils import main, sam_to_fixed_bam, get_diff
 
 
 TEST_DIR = "tests/splice_site_motif/"

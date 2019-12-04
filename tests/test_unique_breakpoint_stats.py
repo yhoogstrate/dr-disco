@@ -30,7 +30,7 @@ from drdisco.Classify import Blacklist
 from drdisco.DetectOutput import DetectOutput
 from drdisco.IntronDecomposition import IntronDecomposition
 
-from utils import main, sam_to_fixed_bam
+from tests.utils import main, sam_to_fixed_bam
 
 
 TEST_DIR = "tests/unique-breakpoint-stats/"

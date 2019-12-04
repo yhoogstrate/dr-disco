@@ -27,7 +27,7 @@ import filecmp
 import pysam
 import os
 
-from utils import main, get_diff
+from tests.utils import main, get_diff
 
 
 TEST_DIR = "tests/bam-extract/"

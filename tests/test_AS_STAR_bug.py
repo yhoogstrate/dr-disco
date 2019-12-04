@@ -29,7 +29,7 @@ import unittest
 import subprocess
 import filecmp
 import os
-from utils import main, sam_to_fixed_bam, get_diff
+from tests.utils import main, sam_to_fixed_bam, get_diff
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])

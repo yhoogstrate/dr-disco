@@ -33,7 +33,7 @@ from drdisco.Classify import Blacklist
 from drdisco.DetectOutput import DetectOutput
 from drdisco.utils import str_to_bytearray
 
-from utils import main, get_diff
+from tests.utils import main, get_diff
 
 
 D_TEST_DIR = "tests/detect-intronic/"

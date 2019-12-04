@@ -24,7 +24,7 @@ import os
 import unittest
 import subprocess
 import filecmp
-from utils import main, get_diff
+from tests.utils import main, get_diff
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
