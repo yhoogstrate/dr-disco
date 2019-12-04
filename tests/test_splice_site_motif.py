@@ -30,7 +30,7 @@ import filecmp
 import os
 import subprocess
 from drdisco.DetectOutput import DetectOutput
-from utils import main, sam_to_fixed_bam
+from utils import main, sam_to_fixed_bam, get_diff
 
 
 TEST_DIR = "tests/splice_site_motif/"
@@ -70,7 +70,7 @@ class TestSpliceJunctions(unittest.TestCase):
         cl = DetectOutput(input_file)
         cl.integrate(output_file, gtf_file, fasta_file)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_sj_02(self):
         test_id = 'splice_site_motif_02'
@@ -99,7 +99,7 @@ class TestSpliceJunctions(unittest.TestCase):
         cl = DetectOutput(input_file)
         cl.integrate(output_file, gtf_file, fasta_file)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_sj_03__go_out_of_bound_in_the_fasta_file(self):
         test_id = 'splice_site_motif_03'
@@ -133,7 +133,7 @@ class TestSpliceJunctions(unittest.TestCase):
 
         cl.integrate(output_file, gtf_file, fasta_file)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_sj_04__CA_GT_d4(self):
         test_id = 'splice_site_motif_04'
@@ -167,7 +167,7 @@ class TestSpliceJunctions(unittest.TestCase):
 
         cl.integrate(output_file, gtf_file, fasta_file)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 if __name__ == '__main__':

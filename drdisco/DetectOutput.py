@@ -197,82 +197,82 @@ class DetectOutputEntry:
         else:
             return genesB + '<->' + genesA
 
-    def is_on_splice_junction_motif_long(self, fasta_fh):
-        """
+    # def is_on_splice_junction_motif_long(self, fasta_fh):
+        # """
 
-motif:
+# motif:
 
-5' exon:
+# 5' exon:
 
-[ ...{AC}{A}{G} ] {G}{T}{AG}{A}{G}{T} . . . {C}{A}{G} [ {G}... ]
+# [ ...{AC}{A}{G} ] {G}{T}{AG}{A}{G}{T} . . . {C}{A}{G} [ {G}... ]
 
-        """
+        # """
 
-        pos5_in_exon_length = 3
-        pos5_post_exon_length = 6
+        # pos5_in_exon_length = 3
+        # pos5_post_exon_length = 6
 
-        pos3_pre_exon_length = 3
-        pos3_in_exon_length = 1
+        # pos3_pre_exon_length = 3
+        # pos3_in_exon_length = 1
 
-        if self.donorA > self.donorB:
-            pos5p = [self.chrA, self.posA, self.strandA]
-            pos3p = [self.chrB, self.posB, self.strandB]
-        elif self.donorA < self.donorB:
-            pos5p = [self.chrB, self.posB, self.strandB]
-            pos3p = [self.chrA, self.posA, self.strandA]
-        else:
-            pos5p = None
+        # if self.donorA > self.donorB:
+            # pos5p = [self.chrA, self.posA, self.strandA]
+            # pos3p = [self.chrB, self.posB, self.strandB]
+        # elif self.donorA < self.donorB:
+            # pos5p = [self.chrB, self.posB, self.strandB]
+            # pos3p = [self.chrA, self.posA, self.strandA]
+        # else:
+            # pos5p = None
 
-        if pos5p:
-            if pos5p[2] == '-':
-                try:
-                    seq_in_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
-                    seq_post_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
-                except ValueError:
-                    log.error("Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_in_exon_length) + "-" + str(pos5p[1] + pos5_post_exon_length) + ". Skipping this for splice junction site estimation.")
-                    return ""
-            else:
-                try:
-                    seq_in_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
-                    seq_post_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
-                except ValueError:
-                    log.error("Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_post_exon_length) + "-" + str(pos5p[1] + pos5_in_exon_length) + ". Skipping this for splice junction site estimation.")
-                    return ""
+        # if pos5p:
+            # if pos5p[2] == '-':
+                # try:
+                    # seq_in_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
+                    # seq_post_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
+                # except ValueError:
+                    # log.error("Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_in_exon_length) + "-" + str(pos5p[1] + pos5_post_exon_length) + ". Skipping this for splice junction site estimation.")
+                    # return ""
+            # else:
+                # try:
+                    # seq_in_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
+                    # seq_post_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
+                # except ValueError:
+                    # log.error("Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_post_exon_length) + "-" + str(pos5p[1] + pos5_in_exon_length) + ". Skipping this for splice junction site estimation.")
+                    # return ""
 
-            if pos3p[2] == '+':
-                try:
-                    seq_pre_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
-                    seq_in_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
-                except ValueError:
-                    log.error("Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_pre_exon_length) + "-" + str(pos3p[1] + pos3_in_exon_length) + ". Skipping this for splice junction site estimation.")
-                    return ""
-            else:
-                try:
-                    seq_in_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
-                    seq_pre_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_pre_exon_length]))
-                except ValueError:
-                    log.error("Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_in_exon_length) + "-" + str(pos3p[1] + pos3_pre_exon_length) + ". Skipping this for splice junction site estimation.")
-                    return ""
+            # if pos3p[2] == '+':
+                # try:
+                    # seq_pre_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
+                    # seq_in_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
+                # except ValueError:
+                    # log.error("Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_pre_exon_length) + "-" + str(pos3p[1] + pos3_in_exon_length) + ". Skipping this for splice junction site estimation.")
+                    # return ""
+            # else:
+                # try:
+                    # seq_in_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
+                    # seq_pre_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_pre_exon_length]))
+                # except ValueError:
+                    # log.error("Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_in_exon_length) + "-" + str(pos3p[1] + pos3_pre_exon_length) + ". Skipping this for splice junction site estimation.")
+                    # return ""
 
-            def calc_dist(pat, subseq):
-                d = 0
+            # def calc_dist(pat, subseq):
+                # d = 0
 
-                if len(pat) != len(subseq):  # may happen at beginning and end of chromosomes (suchs as chrM)
-                    return max(len(pat), len(subseq))
-                else:
-                    for i in range(len(pat)):
-                        if subseq[i] not in pat[i]:
-                            d += 1
+                # if len(pat) != len(subseq):  # may happen at beginning and end of chromosomes (suchs as chrM)
+                    # return max(len(pat), len(subseq))
+                # else:
+                    # for i in range(len(pat)):
+                        # if subseq[i] not in pat[i]:
+                            # d += 1
 
-                return d
+                # return d
 
-            dist = calc_dist(["AC", "A", "G"], seq_in_5p_exon) + calc_dist(["G", "T", "AG", "A", "G", "T"], seq_post_5p_exon) + calc_dist(["C", "A", "G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon)
-            # print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ] ---> " + str(dist)
-            self.edit_dist_to_splice_motif = str(dist)
+            # dist = calc_dist(["AC", "A", "G"], seq_in_5p_exon) + calc_dist(["G", "T", "AG", "A", "G", "T"], seq_post_5p_exon) + calc_dist(["C", "A", "G"], seq_pre_3p_exon) + calc_dist(["G"], seq_in_3p_exon)
+            # # print "[ ... " + seq_in_5p_exon + " ] " + seq_post_5p_exon + " ... ... " + seq_pre_3p_exon + " [ " + seq_in_3p_exon + " ... ] ---> " + str(dist)
+            # self.edit_dist_to_splice_motif = str(dist)
 
-            return dist
-        else:
-            return ""
+            # return dist
+        # else:
+            # return ""
 
     def is_on_splice_junction_motif(self, fasta_fh):
         """
@@ -309,14 +309,25 @@ inversed, like TMPRSS2-ERG:
                 try:
                     # seq_in_5p_exon = ''  str(fasta_fh[pos5p[0]][pos5p[1] - pos5_in_exon_length:pos5p[1]]).upper()
                     seq_post_5p_exon = str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_post_exon_length]).upper()
-                except ValueError:
+
+                    if len(seq_post_5p_exon) != pos5_post_exon_length:
+                        log.error("[1] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_in_exon_length) + "-" + str(pos5p[1] + pos5_post_exon_length) + ". Skipping this for splice junction site estimation.")
+                        return ""
+
+                except (ValueError, KeyError):
                     log.error("[1] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_in_exon_length) + "-" + str(pos5p[1] + pos5_post_exon_length) + ". Skipping this for splice junction site estimation.")
                     return ""
             else:
                 try:
                     # seq_in_5p_exon = '' reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1]:pos5p[1] + pos5_in_exon_length]))
                     seq_post_5p_exon = reverse_complement(str(fasta_fh[pos5p[0]][pos5p[1] - pos5_post_exon_length:pos5p[1]]))
-                except ValueError:
+
+                    # Later versions of pyfaidx return empty array without value error if out of bound
+                    if len(seq_post_5p_exon) != pos5_post_exon_length:
+                        log.error("[2] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_post_exon_length) + "-" + str(pos5p[1]) + ". Skipping this for splice junction site estimation.")
+                        return ""
+
+                except (ValueError, KeyError):
                     log.error("[2] Accessing region that mismatches FASTA file: " + pos5p[0] + ":" + str(pos5p[1] - pos5_post_exon_length) + "-" + str(pos5p[1]) + ". Skipping this for splice junction site estimation.")
                     return ""
 
@@ -324,14 +335,24 @@ inversed, like TMPRSS2-ERG:
                 try:
                     seq_pre_3p_exon = str(fasta_fh[pos3p[0]][pos3p[1] - pos3_pre_exon_length:pos3p[1]]).upper()
                     # seq_in_3p_exon = ''  str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_in_exon_length]).upper()
-                except ValueError:
+
+                    if len(seq_pre_3p_exon) != pos3_pre_exon_length:
+                        log.error("[3] Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_pre_exon_length) + "-" + str(pos3p[1] + pos3_in_exon_length) + ". Skipping this for splice junction site estimation.")
+                        return ""
+
+                except (ValueError, KeyError):
                     log.error("[3] Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_pre_exon_length) + "-" + str(pos3p[1] + pos3_in_exon_length) + ". Skipping this for splice junction site estimation.")
                     return ""
             else:
                 try:
                     # seq_in_3p_exon = ''  reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1] - pos3_in_exon_length:pos3p[1]]))
                     seq_pre_3p_exon = reverse_complement(str(fasta_fh[pos3p[0]][pos3p[1]:pos3p[1] + pos3_pre_exon_length]))
-                except ValueError:
+
+                    if len(seq_pre_3p_exon) != pos3_pre_exon_length:
+                        log.error("[4] Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_in_exon_length) + "-" + str(pos3p[1] + pos3_pre_exon_length) + ". Skipping this for splice junction site estimation.")
+                        return ""
+
+                except (ValueError, KeyError):
                     log.error("[4] Accessing region that mismatches FASTA file: " + pos3p[0] + ":" + str(pos3p[1] - pos3_in_exon_length) + "-" + str(pos3p[1] + pos3_pre_exon_length) + ". Skipping this for splice junction site estimation.")
                     return ""
 
@@ -691,6 +712,9 @@ class DetectOutput:
 
                 insert((e.chrA, e.posA, e.strandA), e)
                 insert((e.chrB, e.posB, e.strandB), e)
+
+            if ffs != None:
+                ffs.close()
 
             # Reorder
             idx2 = {}
