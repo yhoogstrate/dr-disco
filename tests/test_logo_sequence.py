@@ -24,7 +24,7 @@ import os
 import unittest
 import subprocess
 import filecmp
-from utils import main
+from utils import main, get_diff
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
@@ -47,17 +47,12 @@ class TestLogoSequence(unittest.TestCase):
         test_file_p = TEST_DIR + "test_01.logo-p.fa"
 
         command = ['dr-disco', 'logo-sequence', 'chr1:25', input_file, '-n', '5', '-p', '5', output_file_n, output_file_p]
-        print " ".join(command)
+        print (" ".join(command))
         self.assertEqual(subprocess.call(command), 0)  # Ensure error code is 0 - no exceptions have been thrown
 
-        if not filecmp.cmp(output_file_n, test_file_n):
-            print 'diff \'' + output_file_n + '\' \'' + test_file_n + '\''
 
-        if not filecmp.cmp(output_file_p, test_file_p):
-            print 'diff \'' + output_file_p + '\' \'' + test_file_p + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_n, test_file_n))
-        self.assertTrue(filecmp.cmp(output_file_p, test_file_p))
+        self.assertTrue(filecmp.cmp(test_file_n, output_file_n), msg=get_diff(test_file_n, output_file_n))
+        self.assertTrue(filecmp.cmp(test_file_p, output_file_p), msg=get_diff(test_file_p, output_file_p))
 
     def test_02(self):
         input_file = TEST_DIR + "test_01.ref.fa"
@@ -67,17 +62,11 @@ class TestLogoSequence(unittest.TestCase):
         test_file_p = TEST_DIR + "test_02.logo-p.fa"
 
         command = ['dr-disco', 'logo-sequence', 'chr2:3', input_file, '-n', '4', '-p', '4', output_file_n, output_file_p]
-        print " ".join(command)
+        print (" ".join(command))
         self.assertEqual(subprocess.call(command), 0)  # Ensure error code is 0 - no exceptions have been thrown
 
-        if not filecmp.cmp(output_file_n, test_file_n):
-            print 'diff \'' + output_file_n + '\' \'' + test_file_n + '\''
-
-        if not filecmp.cmp(output_file_p, test_file_p):
-            print 'diff \'' + output_file_p + '\' \'' + test_file_p + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_n, test_file_n))
-        self.assertTrue(filecmp.cmp(output_file_p, test_file_p))
+        self.assertTrue(filecmp.cmp(test_file_n, output_file_n), msg=get_diff(test_file_n, output_file_n))
+        self.assertTrue(filecmp.cmp(test_file_p, output_file_p), msg=get_diff(test_file_p, output_file_p))
 
 
 if __name__ == '__main__':

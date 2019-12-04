@@ -222,8 +222,9 @@ def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
             entries = blacklist.is_blacklisted_by_regions(pos1, pos1)
 
     entries = sorted(list(entries))
+
     for k in range(len(entries)):
-        print str(k + 1) + "\t" + entries[k]
+        print (str(k + 1) + "\t" + entries[k])
 
 
 if __name__ == '__main__':
