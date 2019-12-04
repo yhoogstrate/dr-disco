@@ -39,8 +39,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '1\tr-0-chrM\n2\tr-1-chrM\n')
@@ -56,8 +55,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '1\tr-0-chrM\n')
@@ -73,8 +71,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '1\tr-1-chrM\n')
@@ -91,8 +88,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos1, test_pos2]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '1\tj-0\n')
@@ -109,8 +105,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos1, test_pos2]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '')
@@ -127,8 +122,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos1, test_pos2]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '')
@@ -145,8 +139,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos1, test_pos2]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '')
@@ -163,8 +156,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos1, test_pos2]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '1\tj-0\n')
@@ -182,8 +174,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos1, test_pos2]
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '1\tr-1-chrM\n')
@@ -201,8 +192,7 @@ class TestIsBlacklisted(unittest.TestCase):
                    test_pos2, test_pos1]  # swap
 
         p = Popen(command, stdin=PIPE, stdout=PIPE)
-        stdout = p.stdout.read()
-        p.communicate()
+        stdout = p.communicate()[0].decode("utf-8")
 
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '1\tr-1-chrM\n')
