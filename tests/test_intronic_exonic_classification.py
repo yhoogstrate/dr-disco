@@ -31,7 +31,7 @@ import subprocess
 from drdisco.Classify import Blacklist
 from drdisco.DetectOutput import DetectOutput
 
-from utils import main
+from utils import main, get_diff
 
 
 TEST_DIR = "tests/intronic-exonic-classification/"
@@ -54,7 +54,8 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist(), 1, True)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 if __name__ == '__main__':
