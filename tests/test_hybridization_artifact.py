@@ -28,7 +28,7 @@ import unittest
 import subprocess
 import filecmp
 import os
-from utils import main, sam_to_fixed_bam
+from utils import main, sam_to_fixed_bam, get_diff
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
@@ -60,7 +60,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_02(self):
         # should not exclude and result in 1 junction/edge
@@ -80,7 +80,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_03(self):
         # exact determination of boundary
@@ -100,7 +100,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_04(self):
         # exact determination of boundary
@@ -120,7 +120,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_05(self):
         test_id = 'artifact_reads_05'
@@ -139,7 +139,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_06(self):
         test_id = 'artifact_reads_06'
@@ -158,7 +158,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     # def test_07__should_be_excluded_one_day(self):
         # # this is the most nasty type of hybridization artifact
@@ -201,7 +201,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 if __name__ == '__main__':

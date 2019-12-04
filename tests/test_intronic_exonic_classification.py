@@ -54,7 +54,6 @@ class TestIDetectOutputCalssification(unittest.TestCase):
         cl = DetectOutput(input_file)
         cl.classify(output_file, False, Blacklist(), 1, True)
 
-        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
         self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
