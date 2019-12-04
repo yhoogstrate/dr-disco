@@ -2095,6 +2095,8 @@ class IntronDecomposition:
         ordered = []
         for subnet in self.results:
             ordered.append((subnet, subnet.total_score, subnet.get_overall_entropy()))
+        
+        # keys = total_score, overall_entropy
         ordered = [subnet[0] for subnet in sorted(ordered, key=operator.itemgetter(1, 2), reverse=True)]
 
         return ("chr-A"            "\t" "pos-A"             "\t" "direction-A"   "\t"

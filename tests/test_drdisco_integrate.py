@@ -3,7 +3,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 """
-Dr. Disco - testing fix-chimeric
+Dr. Disco - testing integrate
 
 [License: GNU General Public License v3 (GPLv3)]
 
@@ -28,7 +28,7 @@ import filecmp
 import os
 import subprocess
 from drdisco.DetectOutput import DetectOutput
-from utils import main
+from utils import main, get_diff
 
 
 TEST_DIR = "tests/integrate/"
@@ -53,7 +53,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
             cl = DetectOutput(input_file)
             cl.integrate(output_file, gtf_file, None)
 
-            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
+            #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_s041_nocrash(self):
         test_id = 'terg_s041_b'
@@ -66,7 +67,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cl = DetectOutput(input_file)
         cl.integrate(output_file, gtf_file, None)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
+        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
     def test_s041_no_gtf(self):
         test_id = 'terg_s041_b'
@@ -79,7 +81,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
         cl = DetectOutput(input_file)
         cl.integrate(output_file, gtf_file, None)
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_in_frame_non_hybrid_protein(self):
         test_id = 'in_frame_non_hybrid_protein'
@@ -96,7 +99,8 @@ class TestIntronicBreakDetection(unittest.TestCase):
             cl = DetectOutput(input_file)
             cl.integrate(output_file, gtf_file, None)
 
-            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+            #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 if __name__ == '__main__':
