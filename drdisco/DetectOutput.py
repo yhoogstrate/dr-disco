@@ -49,6 +49,12 @@ class DetectOutputEntry:
         self.line = line_in_results_file.strip("\r\n").split("\t")
         self.parse()
 
+    def __lt__(self, other_doe):
+        return str(self) < str(other_doe)
+
+    def __gt__(self, other_doe):
+        return str(self) > str(other_doe)
+
     def parse(self):
         """
             0. chr-A

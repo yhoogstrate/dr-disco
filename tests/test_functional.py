@@ -25,7 +25,7 @@ import filecmp
 import pysam
 import os
 import subprocess
-from utils import main, sam_to_fixed_bam
+from utils import main, sam_to_fixed_bam, get_diff
 
 # Nosetests doesn't use main()
 
@@ -66,10 +66,11 @@ class TestFunctional_bam_extract(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        #if not filecmp.cmp(output_file_s, test_file):
+        #    print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
+        #self.assertTrue(filecmp.cmp(test_file, output_file_s))
+        
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
 
 class TestFunctional_fix_chimeric(unittest.TestCase):
@@ -102,10 +103,10 @@ class TestFunctional_fix_chimeric(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
+#        if not filecmp.cmp(output_file_s, test_file):
+#            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
 
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
 
 class TestFunctional_detect(unittest.TestCase):
@@ -137,7 +138,7 @@ class TestFunctional_detect(unittest.TestCase):
                    output_file]
 
         self.assertEqual(subprocess.call(command), 0)
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_detect_02(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
@@ -158,7 +159,7 @@ class TestFunctional_detect(unittest.TestCase):
                    output_file]
 
         self.assertEqual(subprocess.call(command), 0)
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 class TestFunctional_classify(unittest.TestCase):
@@ -185,7 +186,7 @@ class TestFunctional_classify(unittest.TestCase):
                    output_file]
 
         self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_classify_16__only_valid(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
@@ -202,7 +203,7 @@ class TestFunctional_classify(unittest.TestCase):
                    output_file]
 
         self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 class TestFunctional_integrate(unittest.TestCase):
@@ -232,8 +233,7 @@ class TestFunctional_integrate(unittest.TestCase):
                    output_file]
 
         self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
-
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_02_s041_no_gtf(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
@@ -251,7 +251,7 @@ class TestFunctional_integrate(unittest.TestCase):
 
         self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 class TestFrameShiftPrediction(unittest.TestCase):
@@ -292,7 +292,7 @@ class TestFrameShiftPrediction(unittest.TestCase):
 
             self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
 
-            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
             # must statisfy:
             # self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 0), ('HES4(ENST00000304952.10)-ensembl_havana', 0))]")
@@ -318,7 +318,7 @@ class TestFrameShiftPrediction(unittest.TestCase):
 
             self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
 
-            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
     def test_02(self):  # 0, +2
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
@@ -340,7 +340,7 @@ class TestFrameShiftPrediction(unittest.TestCase):
 
             self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
 
-            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
             # must statisfy:
             # self.assertEqual(len(frameshift_annotation[0]), 0)
@@ -368,7 +368,7 @@ class TestFrameShiftPrediction(unittest.TestCase):
 
             self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
 
-            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
             # must statisfy:
             # self.assertEqual(str(frameshift_annotation[0]), "[(('AGRN(ENST00000620552.4)-ensembl', 1), ('HES4(ENST00000304952.10)-ensembl_havana', 2))]")
@@ -427,7 +427,7 @@ class TestFunctional_integrate_splice_site_motif(unittest.TestCase):
 
         self.assertEqual(subprocess.call(command), 0, msg=" ".join([str(x) for x in command]))
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 if __name__ == '__main__':
