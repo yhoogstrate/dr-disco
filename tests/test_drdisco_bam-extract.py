@@ -27,7 +27,7 @@ import filecmp
 import pysam
 import os
 
-from utils import main
+from utils import main, get_diff
 
 
 TEST_DIR = "tests/bam-extract/"
@@ -56,10 +56,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_02_a(self):
         input_file = TEST_DIR + "test_terg_02.bam"
@@ -75,10 +72,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_02_b(self):
         input_file = TEST_DIR + "test_terg_02.bam"
@@ -94,10 +88,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_02_c(self):
         input_file = TEST_DIR + "test_terg_02.bam"
@@ -113,10 +104,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_02_d(self):
         input_file = TEST_DIR + "test_terg_02.bam"
@@ -132,10 +120,7 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_02_e(self):
         input_file = TEST_DIR + "test_terg_02.bam"
@@ -150,9 +135,11 @@ class TestIntronicBreakDetection(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
+        file_created = False
         with open(output_file_s, "r") as fh:
+            file_created = True
             self.assertEqual(fh.read(), "")  # empty file check
-
+        self.assertEqual(file_created, True)  # check presence of fily anyway
 
 if __name__ == '__main__':
     main()
