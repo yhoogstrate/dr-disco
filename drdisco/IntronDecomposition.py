@@ -1372,7 +1372,7 @@ class BAMExtract(object):
         try:  # pragma: no cover
             bam_fh.fetch()
         except Exception:  # pragma: no cover
-            fname = bam_fh.filename.decode("utf-8") 
+            fname = bam_fh.filename.decode("utf-8")
             log.info('Indexing BAM file with pysam: ' + fname)  # create index if it does not exist
             bam_fh.close()
 

@@ -30,7 +30,7 @@ import subprocess
 import filecmp
 import pysam
 import os
-from utils import main
+from utils import main, get_diff
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
@@ -59,7 +59,8 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_02(self):
         if not os.path.exists("tmp"):
@@ -79,10 +80,7 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        if not filecmp.cmp(output_file_s, test_file):
-            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
-
-        self.assertTrue(filecmp.cmp(output_file_s, test_file))
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_03(self):
         if not os.path.exists("tmp"):
@@ -102,7 +100,8 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_04(self):
         # It used to be problematic if 2 mates have exactly the same SA tag (chr, pos, cigar)
@@ -123,7 +122,8 @@ class TestChimericAlignment(unittest.TestCase):
         fhq.write(pysam.view(output_file))
         fhq.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" + test_file + "' '" + output_file_s + "':\n" + subprocess.Popen(['diff', test_file, output_file_s], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
 
     def test_05(self):
         # It used to be problematic if 2 mates have exactly the same SA tag (chr, pos, cigar)

@@ -147,7 +147,7 @@ class ChimericAlignment:
             a.cigartuples = aligned_segment.cigartuples
             a.template_length = aligned_segment.template_length
             a.query_qualities = aligned_segment.query_qualities
-            a.set_tags(aligned_segment.get_tags())
+            a.set_tags(aligned_segment.get_tags(with_value_type=True))
 
             a.next_reference_id = position[0]
             a.next_reference_start = position[1]
