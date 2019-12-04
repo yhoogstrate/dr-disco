@@ -3,7 +3,7 @@
 # -- vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
-from __init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MAX_SIZE_CIRCULAR_RNA
+from drdisco.__init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MAX_SIZE_CIRCULAR_RNA
 
 import math
 import operator
@@ -826,12 +826,12 @@ class Graph:
         del(node)
 
     def print_chain(self):  # pragma: no cover
-        print "**************************************************************"
+        print("**************************************************************")
         for node in self:
             _str = str(node)
             if len(_str.strip()) > 0:
-                print _str
-        print "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+                print(_str)
+        print("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
     def generate_edge_idx(self):
         edges = set()
@@ -875,16 +875,22 @@ class Graph:
     def prune_edge(self, edge):
         #  @todo double check if this is strand specific
 
+        to_merge = []
+
         for edge_m in self.search_edges_between(edge):
             d1 = edge.origin.position.get_dist(edge_m.origin.position, True)
             d2 = edge.target.position.get_dist(edge_m.target.position, True)
             d = abs(d1) + abs(d2)
 
             if d <= MAX_ACCEPTABLE_INSERT_SIZE:
-                edge.merge_edge(edge_m)
+                to_merge.append(edge_m)
 
-                self.remove_edge(edge_m)
-                self.edge_idx.remove(edge_m)
+        for edge_m in to_merge:
+            edge.merge_edge(edge_m)
+
+            self.remove_edge(edge_m)
+            self.edge_idx.remove(edge_m)
+
 
     def search_edges_between(self, edge_to_prune):
         """searches for other junctions in-between edge+insert size:"""
@@ -1902,7 +1908,7 @@ class BAMExtract(object):
         """
         sa_tags = SA_tag.split(";")
 
-        for i in xrange(len(sa_tags)):
+        for i in range(len(sa_tags)):
             sa_tags[i] = sa_tags[i].split(",")
 
             if sa_tags[i][2] == '+' or sa_tags[i][2] == '-':

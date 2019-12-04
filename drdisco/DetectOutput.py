@@ -12,6 +12,11 @@ import HTSeq
 from pyfaidx import Fasta
 
 
+# python2 devision compatibility
+import decimal
+decimal.getcontext().rounding = decimal.ROUND_HALF_UP
+
+
 """[License: GNU General Public License v3 (GPLv3)]
 
     Dr. Disco: fusion gene detection in random hexamer RNA-seq data
@@ -412,7 +417,7 @@ class DetectOutput:
             with gzip.open(self.input_alignment_file, 'rb') as fh_in:
                 for line in fh_in:
                     if not header:
-                        e = DetectOutputEntry(line)
+                        yielde = DetectOutputEntry(line)
                         yield e
                     else:
                         header = False
@@ -434,7 +439,8 @@ class DetectOutput:
             fh.write(self.get_header())
 
             for e in self:
-                if isinstance(e, basestring):
+                print(type(e))
+                if isinstance(e, str):
                     fh.write(e)
                 else:
                     def classify_intronic_exonic():
@@ -573,7 +579,7 @@ class DetectOutput:
                     else:
                         sqrt_entropy_bps_ab_max = 3.4 * e.entropy_all_edges - 2.415
                     if sqrt_entropy_bps_ab > sqrt_entropy_bps_ab_max:
-                        status.append("sqrt_entropy_bps_ab=" + str(sqrt_entropy_bps_ab) + ">" + str(sqrt_entropy_bps_ab_max))
+                        status.append("sqrt_entropy_bps_ab=" + str(round(sqrt_entropy_bps_ab, 12)) + ">" + str(sqrt_entropy_bps_ab_max))
 
                     if len(status) == 0:
                         e.status = 'valid'

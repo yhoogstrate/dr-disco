@@ -61,3 +61,11 @@ def parse_pos(strpos):
         raise ValueError("Invalid pos: '" + strpos + "' needs to be formatted as 'chr1:12,345' or 'chr1:12345(+)'")
 
     return val
+
+
+def str_to_bytearray(s):
+	b = bytearray()
+	b.extend(map(ord, s))
+	return b
+
+

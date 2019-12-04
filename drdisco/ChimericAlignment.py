@@ -15,6 +15,7 @@ import pysam
 
 from drdisco import __version__
 from drdisco import log
+from drdisco.utils import str_to_bytearray
 
 """[License: GNU General Public License v3 (GPLv3)]
 
@@ -89,7 +90,7 @@ class ChimericAlignment:
             raise Exception("Not all reads belong to the same QNAME")
         else:
             qname = qnames[0]
-            for i in xrange(len(all_reads_updated)):
+            for i in range(len(all_reads_updated)):
                 all_reads_updated[i].set_tag('LB', qname.replace(":", "."))
 
         return all_reads_updated
@@ -492,7 +493,7 @@ class ChimericAlignment:
             return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(n))
 
         h = hashlib.new('sha256')
-        h.update(self.input_alignment_file)
+        h.update(str_to_bytearray(self.input_alignment_file))
         uid = h.hexdigest() + randstr(24)
 
         basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
@@ -506,7 +507,12 @@ class ChimericAlignment:
 
         log.info("Fixing sam file")
         sam_file_discordant = pysam.AlignmentFile(basename + ".name-sorted.bam", "rb")
-        header = sam_file_discordant.header
+        header = sam_file_discordant.header.to_dict()
+        print("----------------------")
+        print(type(header))
+        print("----------------------")
+        print(header)
+        print("----------------------")
         header['RG'] = [
             {'ID': 'discordant_mates', 'DS': 'This read has discordant mate pair'},
             {'ID': 'silent_mate', 'DS': 'Reads of this type are not discordant while their mate is'},

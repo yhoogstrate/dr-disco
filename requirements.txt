@@ -1,9 +1,9 @@
 click
 nose
 fuma==3.0.5
-HTSeq==0.6.1
+HTSeq
 numpy
-pysam==0.10.0
+pysam
 scipy
-pyfaidx==0.5.1
+pyfaidx
 tqdm

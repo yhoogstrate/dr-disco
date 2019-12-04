@@ -64,6 +64,16 @@ def CLI_fix_chimeric_alignment(temp_dir, input_alignment_file, output_alignment_
     alignment_handle.convert(output_alignment_file, temp_dir)
 
 
+@CLI.command(name="subtract", short_help="Subtract chimeric SAM/BAM alignment produced by RNA-STAR v2.6 or higher")
+@click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
+@click.argument('input_alignment_file', type=click.Path(exists=True))
+@click.argument('output_alignment_file')
+def CLI_subtract_chimeric_reads(temp_dir, input_alignment_file, output_alignment_file):
+    alignment_handle = ChimericAlignment(input_alignment_file)
+    alignment_handle.convert(output_alignment_file, temp_dir)
+
+
+
 @CLI.command(name="unfix", short_help="Tries to restore the BAM file")
 @click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
 @click.argument('input_alignment_file', type=click.Path(exists=True))

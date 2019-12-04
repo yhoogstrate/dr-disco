@@ -75,5 +75,11 @@ def bam_diff(f1, f2, T_TEST_DIR):
     return filecmp.cmp(f1sam, f2sam), f1sam, f2sam
 
 
+def get_diff(test_file, output_file):
+	out = "diff '" + test_file + "' '" + output_file + "':\n"
+	p = subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE)
+	s = str(p.communicate()[0])
+	return out + s
+
 def main():
     unittest.main()

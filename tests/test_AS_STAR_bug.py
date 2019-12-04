@@ -29,7 +29,7 @@ import unittest
 import subprocess
 import filecmp
 import os
-from utils import main, sam_to_fixed_bam
+from utils import main, sam_to_fixed_bam, get_diff
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
@@ -61,7 +61,8 @@ class TestNegativeAlignmentScoreBugByStar(unittest.TestCase):
         ic.export(fh)
         fh.close()
 
-        self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        #self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+        self.assertTrue(filecmp.cmp(test_file, output_file), msg=get_diff(test_file, output_file))
 
 
 if __name__ == '__main__':
