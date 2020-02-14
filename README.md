@@ -27,20 +27,20 @@ However, using virtual environments gives more control over dependencies and loc
 ```
 git clone https://github.com/yhoogstrate/dr-disco.git
 cd dr-disco
-virtualenv -p python2 .venv
+virtualenv -p python3 .venv
 source .venv/bin/activate
 python setup.py install
 ```
 
 ### Local installation
 
-Dr. Disco makes use of python2. A typical system wide installation could be achieved as follows:
+Dr. Disco makes use of python3. A typical system wide installation could be achieved as follows:
 
 ```
 git clone https://github.com/yhoogstrate/dr-disco.git
 cd dr-disco
-pip install -r requirements.txt ; # Use pip2 in case you have a py3 system
-python2 setup.py install --user
+pip install -r requirements.txt ;
+python3 setup.py install --user
 ```
 
 ### System installation
@@ -48,8 +48,8 @@ python2 setup.py install --user
 ```
 git clone https://github.com/yhoogstrate/dr-disco.git
 cd dr-disco
-sudo pip install -r requirements.txt ; # Use pip2 in case you have a py3 system
-sudo python2 setup.py install --user
+sudo pip install -r requirements.txt ; 
+sudo python3 setup.py install --user
 ```
 
 ### Pre-compiled
