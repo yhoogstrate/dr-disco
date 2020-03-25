@@ -1,3 +1,6 @@
+2020-03-25	Youri Hoogstrate	v0.18.1
+	* blacklist regions and junctions 'chr' prefix insensitive
+
 2019-12-04	Youri Hoogstrate	v0.18.0
 	* Ported to python3
 

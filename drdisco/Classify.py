@@ -72,7 +72,7 @@ class Blacklist:
 
         log.info("Added " + str(self.r) + " regions to the blacklist")
 
-    def add_region(self, _chr, _pos_s, _pos_e, _strand, id_suffix):
+    def add_region(self, _chr, _pos_s, _pos_e, _strand, id_suffix, rr = None):
         uid = 'r-' + str(self.r)
         if id_suffix:
             uid += '-' + str(id_suffix)
@@ -82,7 +82,11 @@ class Blacklist:
         except Exception:
             raise ValueError("Invalid entry in region file:", uid, ":", _chr, _pos_s, _pos_e, _strand, id_suffix)
 
-        self.r += 1
+        if _chr[0:3] == "chr":
+            self.add_region( _chr[3:], _pos_s, _pos_e, _strand, id_suffix, self.r)
+
+        if rr is None:
+            self.r += 1
 
     def add_junctions_from_file(self, junction_file):
         log.info("Parsing junction blacklist file: " + str(junction_file))
@@ -117,7 +121,7 @@ class Blacklist:
 
         log.info("Added " + str(self.j) + " junctions to the blacklist")
 
-    def add_junction(self, reg1, reg2, id_suffix):
+    def add_junction(self, reg1, reg2, id_suffix, jj = None):
         uid = 'j-' + str(self.j)
         if id_suffix:
             uid += '-' + str(id_suffix)
@@ -128,7 +132,19 @@ class Blacklist:
         except Exception:
             raise ValueError("Invalid entry in junction file:", uid, ":", reg1, reg2, id_suffix)
 
-        self.j += 1
+
+        if reg1[0][0:3] == "chr" and reg2[0][0:3]:
+            self.add_junction(
+                        [
+                            reg1[0][3:], reg1[1], reg1[2], reg1[3]
+                        ],
+                        [
+                            reg2[0][3:], reg2[1], reg2[2], reg2[3]
+                        ],
+                        id_suffix, self.j)
+
+        if jj is None:
+            self.j += 1
 
     def is_blacklisted_by_junctions(self, pos1, pos2):
         if (pos2[0] < pos1[0]) or (pos1[0] == pos2[0] and pos2[1] < pos1[1]):

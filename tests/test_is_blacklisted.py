@@ -44,6 +44,23 @@ class TestIsBlacklisted(unittest.TestCase):
         self.assertEqual(p.returncode, 0)
         self.assertEqual(stdout, '1\tr-0-chrM\n2\tr-1-chrM\n')
 
+    def test_is_blacklisted_1pos_unstranded__no_chr_prefix(self):
+        test_pos = 'M:12345'
+        regions_file = 'share/blacklist-regions.hg38.bed'
+        # junctions_file = 'share/blacklist-junctions.hg38.txt'
+
+        command = ["bin/dr-disco",
+                   "is-blacklisted",
+                   '--blacklist-regions', regions_file,
+                   test_pos]
+
+        p = Popen(command, stdin=PIPE, stdout=PIPE)
+        stdout = p.communicate()[0].decode("utf-8")
+
+        self.assertEqual(p.returncode, 0)
+        self.assertEqual(stdout, '1\tr-0-chrM\n2\tr-1-chrM\n')
+
+
     def test_is_blacklisted_1pos_pos(self):
         test_pos = 'chrM:12345(+)'
         regions_file = 'share/blacklist-regions.hg38.bed'
