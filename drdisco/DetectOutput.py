@@ -614,13 +614,36 @@ class DetectOutput:
             # Find 'duplicates' or fusions that belong to each other
             log.info("Searching for intronic and exonic breaks that belong to the same event")
             for e in self:
-                if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
-                    done_breaks = set([])
+                if dfs and e.RNAstrandA == '.' and e.RNAstrandB == '.':
+                    
+                    exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, '-'], [e.chrB, e.posB, '+'], 2)
+                    e.exons_from += exons_from
+                    e.exons_to += exons_to
 
+                    exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, '+'], [e.chrB, e.posB, '+'], 2)
+                    e.exons_from += exons_from
+                    e.exons_to += exons_to
+
+                    exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, '+'], [e.chrA, e.posA, '-'], 2)
+                    e.exons_from += exons_from
+                    e.exons_to += exons_to
+
+                    exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, '+'], [e.chrA, e.posA, '+'], 2)
+                    e.exons_from += exons_from
+                    e.exons_to += exons_to
+
+                    e.exons_from = sorted(list(set(exons_from)))
+                    e.exons_to = sorted(list(set(exons_to)))
+
+
+                elif dfs:
                     if e.donorA > e.donorB:
                         exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
                     else:
                         exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, e.RNAstrandB], [e.chrA, e.posA, e.RNAstrandA], 2)
+
+                    
+                    done_breaks = set([])
 
                     done_breaks.add(e.chrA + ':' + str(e.posA) + '/' + str(e.posA + 1) + '(' + e.strandA + ')->' + e.chrB + ':' + str(e.posB) + '/' + str(e.posB + 1) + '(' + e.strandB + ')')
 
