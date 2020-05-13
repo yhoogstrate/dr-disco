@@ -143,13 +143,14 @@ def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regi
 @click.argument('table_output_file')
 @click.option('--gtf', help="Use gene annotation for estimating fusion genes and improve classification of exonic (GTF file)")
 @click.option('--fasta', help="Use reference sequences to estimate edit distances to splice junction motifs (FASTA file)")
-def CLI_integrate(table_input_file, table_output_file, gtf, fasta):
+@click.option('--unstranded', help="For unstranded RNA seq data")
+def CLI_integrate(table_input_file, table_output_file, gtf, fasta, unstranded):
     cl = DetectOutput(table_input_file)
 
     gtf = str(gtf) if gtf else None
     fasta = str(fasta) if fasta else None
 
-    cl.integrate(table_output_file, gtf, fasta)
+    cl.integrate(table_output_file, gtf, fasta, unstranded)
 
 
 @CLI.command(name='is-blacklisted', short_help='Quickly check whether a certain region or junction is blacklisted.')

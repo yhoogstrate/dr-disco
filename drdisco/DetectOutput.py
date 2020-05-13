@@ -585,7 +585,7 @@ class DetectOutput:
 
         log.info("Classified " + str(k) + "/" + str(n) + " as valid")
 
-    def integrate(self, output_table, gtf_file, fasta_file):
+    def integrate(self, output_table, gtf_file, fasta_file, unstranded = False):
         def insert_in_index(index, entries, score, i):
             if score not in index:
                 index[score] = {}
@@ -614,9 +614,26 @@ class DetectOutput:
             # Find 'duplicates' or fusions that belong to each other
             log.info("Searching for intronic and exonic breaks that belong to the same event")
             for e in self:
-                if dfs and e.RNAstrandA == '.' and e.RNAstrandB == '.':
+                if dfs and (e.RNAstrandA == '.' and e.RNAstrandB == '.') or unstranded:
                     
                     exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, '-'], [e.chrB, e.posB, '+'], 2)
+                    e.exons_from += exons_from
+                    e.exons_to += exons_to
+
+                    exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, '+'], [e.chrB, e.posB, '-'], 2)
+                    e.exons_from += exons_from
+                    e.exons_to += exons_to
+
+                    #exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, '+'], [e.chrA, e.posA, '-'], 2)
+                    #e.exons_from += exons_from
+                    #e.exons_to += exons_to
+
+                    #exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, '-'], [e.chrA, e.posA, '+'], 2)
+                    #e.exons_from += exons_from
+                    #e.exons_to += exons_to
+
+                    # in unstranded the orientation may be inversed
+                    exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, '-'], [e.chrB, e.posB, '-'], 2)
                     e.exons_from += exons_from
                     e.exons_to += exons_to
 
@@ -624,16 +641,16 @@ class DetectOutput:
                     e.exons_from += exons_from
                     e.exons_to += exons_to
 
-                    exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, '+'], [e.chrA, e.posA, '-'], 2)
-                    e.exons_from += exons_from
-                    e.exons_to += exons_to
+                    #exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, '-'], [e.chrA, e.posA, '-'], 2)
+                    #e.exons_from += exons_from
+                    #e.exons_to += exons_to
 
-                    exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, '+'], [e.chrA, e.posA, '+'], 2)
-                    e.exons_from += exons_from
-                    e.exons_to += exons_to
+                    #exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrB, e.posB, '+'], [e.chrA, e.posA, '+'], 2)
+                    #e.exons_from += exons_from
+                    #e.exons_to += exons_to
 
-                    e.exons_from = sorted(list(set(exons_from)))
-                    e.exons_to = sorted(list(set(exons_to)))
+                    e.exons_from = sorted(list(set(e.exons_from)))
+                    e.exons_to = sorted(list(set(e.exons_to)))
 
 
                 elif dfs:

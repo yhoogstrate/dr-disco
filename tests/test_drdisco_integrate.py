@@ -98,6 +98,52 @@ class TestIntronicBreakDetection(unittest.TestCase):
 
             self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
 
+    def test_equal_acc_dono_reads_unstranded(self):
+        test_id = 'acc_dono_reads_unstranded'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        gtf_files = [TEST_DIR + "test_" + test_id + ".ACTR3B.gtf"]
+        test_file = TEST_DIR + "test_" + test_id + ".out.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out.txt"
+
+        for gtf_file in gtf_files:
+            cl = DetectOutput(input_file)
+            cl.integrate(output_file, gtf_file, None)
+
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+
+    def test_equal_acc_dono_reads_unstranded(self):
+        test_id = 'acc_dono_reads_unstranded2'
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        gtf_files = [TEST_DIR + "test_" + test_id + ".PDZRN3.gtf"]
+        test_file = TEST_DIR + "test_" + test_id + ".out-stranded.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out-stranded.txt"
+
+        for gtf_file in gtf_files:
+            cl = DetectOutput(input_file)
+            cl.integrate(output_file, gtf_file, None)
+
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+
+        # unnstranded
+
+        input_file = TEST_DIR + "test_" + test_id + ".in.dbed"
+        gtf_files = [TEST_DIR + "test_" + test_id + ".PDZRN3.gtf"]
+        #gtf_files = ["/tmp/3.gtf"]
+        test_file = TEST_DIR + "test_" + test_id + ".out-unstranded.txt"
+        output_file = T_TEST_DIR + "test_" + test_id + ".out-unstranded.txt"
+
+        for gtf_file in gtf_files:
+            cl = DetectOutput(input_file)
+            cl.integrate(output_file, gtf_file, None, True)
+
+            self.assertTrue(filecmp.cmp(test_file, output_file), msg="diff '" + test_file + "' '" + output_file + "':\n" + subprocess.Popen(['diff', test_file, output_file], stdout=subprocess.PIPE).stdout.read())
+
+
+
 
 if __name__ == '__main__':
     main()
