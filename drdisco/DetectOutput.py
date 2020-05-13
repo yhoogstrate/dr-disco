@@ -653,7 +653,7 @@ class DetectOutput:
                     e.exons_to = sorted(list(set(e.exons_to)))
 
 
-                elif dfs:
+                if dfs and (e.RNAstrandA != '.' and e.RNAstrandB != '.'):
                     if e.donorA > e.donorB:
                         exons_from, exons_to, frame_shifts = dfs.evaluate([e.chrA, e.posA, e.RNAstrandA], [e.chrB, e.posB, e.RNAstrandB], 2)
                     else:
@@ -694,9 +694,10 @@ class DetectOutput:
 
                             done_breaks.add(params[0])
 
-                    e.exons_from = sorted(list(set(exons_from)))
-                    e.exons_to = sorted(list(set(exons_to)))
-                    del(exons_from, exons_to)
+                    if e.RNAstrandA != '.' and e.RNAstrandB != '.' and unstranded == False:
+                        e.exons_from = sorted(list(set(exons_from)))
+                        e.exons_to = sorted(list(set(exons_to)))
+                        del(exons_from, exons_to)
 
                     e.fgd = ','.join(sorted(list(set(fgd))))
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
