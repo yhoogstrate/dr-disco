@@ -143,7 +143,7 @@ def CLI_classify(table_input_file, table_output_file, only_valid, blacklist_regi
 @click.argument('table_output_file')
 @click.option('--gtf', help="Use gene annotation for estimating fusion genes and improve classification of exonic (GTF file)")
 @click.option('--fasta', help="Use reference sequences to estimate edit distances to splice junction motifs (FASTA file)")
-@click.option('--unstranded', help="For unstranded RNA seq data")
+@click.option('--unstranded', is_flag=True, default=False, help="For unstranded RNA seq data")
 def CLI_integrate(table_input_file, table_output_file, gtf, fasta, unstranded):
     cl = DetectOutput(table_input_file)
 
