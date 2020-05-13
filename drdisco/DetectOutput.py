@@ -694,10 +694,9 @@ class DetectOutput:
 
                             done_breaks.add(params[0])
 
-                    if e.RNAstrandA != '.' and e.RNAstrandB != '.' and unstranded == False:
-                        e.exons_from = sorted(list(set(exons_from)))
-                        e.exons_to = sorted(list(set(exons_to)))
-                        del(exons_from, exons_to)
+                    e.exons_from = sorted(list(set(e.exons_from + exons_from)))
+                    e.exons_to = sorted(list(set(e.exons_to + exons_to)))
+                    del(exons_from, exons_to)
 
                     e.fgd = ','.join(sorted(list(set(fgd))))
                     e.frameshift_0 = ','.join(sorted(list(set(frameshifts_0))))
