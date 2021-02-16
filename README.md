@@ -6,6 +6,9 @@
  
  - Free software: GNU General Public License v3 (GPLv3)
 
+
+----------
+
 ## IMPORTANT NOTE
 
 ### Dr. Disco was developed with STAR 2.4. STAR did not assign SA tags back then, which has been resolved over time. The arguments of later versions of STAR have also changed over time. We therefore provide the old instructions (STAR 2.4) and the latest instructions (STAR 2.7). The versions tested with are:
@@ -22,7 +25,6 @@ samtools view -H Aligned.out.sorted.bam | grep "PN:STAR" | grep -P "VN:[^\\s]+"
 
 ----------
 
-----------
 
 ## Introduction
 
