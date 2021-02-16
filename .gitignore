@@ -36,5 +36,6 @@ truncated.*
 .~lock.*
 /classification
 ignore
-/*.bam
+*.bam
 /*.sam
+*.ods
