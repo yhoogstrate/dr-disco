@@ -8,11 +8,16 @@
 
 ## IMPORTANT NOTE
 
-### Dr. Disco was developed with STAR 2.4. STAR did not assign SA tags back then, which has been resolved over time. The arguments of later versions of STAR have also changed over time. We therefore provide the old instructions (STAR 2.4) and the latest instructions (STAR 2.7). The versions we tested with are:
+### Dr. Disco was developed with STAR 2.4. STAR did not assign SA tags back then, which has been resolved over time. The arguments of later versions of STAR have also changed over time. We therefore provide the old instructions (STAR 2.4) and the latest instructions (STAR 2.7). The versions tested with are:
 
  - STAR 2.4.2 [V:020201]
  - STAR 2.7.7.a [Mon Dec 28 13:38:40 EST 2020 compiled]
- 
+
+
+### I HAVE A SAM FILE AND FORGOT ABOUT THE STAR VERSION!?!?!?!
+
+samtools view -H Aligned.out.sorted.bam | grep "PN:STAR" | grep -P "VN:[^\\s]+"
+
 
 ## Introduction
 
@@ -89,25 +94,34 @@ STAR does not seem to be able to appropriately determine Chimeric reads if the o
 The illumina NextSeq is claimed to be responsible for measuring poly-G sequences (https://www.biostars.org/p/294612/) which may result in vast amounts of discordant reads aligned to poly-G regions in the genome.
 It is recommended to clean such datasets and erase poly-G suffixes, for instance with the tool fastp.
 
-### Step 0: Build reference index
+### Step 0: Build reference index [2.4 + 2.7]
 
+```
+./STAR \
+    --runThreadN 7 \
+    --runMode genomeGenerate \
+    --genomeDir index/ \
+    --genomeFastaFiles ../GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
+    --sjdbGTFfile ../gencode.v34.primary_assembly.annotation.gtf
+```
 
-#### STAR 2.7:
+### Step 1: STAR [2.4]
 
-
+```
 nice ./STAR \
     --runThreadN 8 \
     --runMode genomeGenerate \
     --genomeDir index/ \
     --genomeFastaFiles ../GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
     --sjdbGTFfile ../gencode.v34.primary_assembly.annotation.gtf
-
+```
 
 ### Step 1: STAR [2.4]
 
 Running RNA-STAR with fusion settings produces a file: ``<...>.Chimeric.out.sam``. This file contains discordant reads (split and spanning). It is recommended to run STAR with corresponding settings:
 
 ```
+mkdir -p '{$prefix}/'
 STAR --genomeDir ${star_index_dir} \  
      --readFilesIn ${left_fq_filenames} ${right_fq_filenames} \  
      --outFileNamePrefix {$prefix} \
@@ -127,8 +141,38 @@ STAR --genomeDir ${star_index_dir} \
      --twopassMode Basic
 ```
 
-Due to the `chimSegmentMin` and `chimJunctionOverhangMin` settings, STAR shall produce the additional output file(s). This file may need to be converted to BAM format, e.g. by running `samtools view -bhS Chimeric.out.sam > Chimeric.out.bam`. This generated `ChimericSorted.bam` can then be used as input file for *Dr. Disco*. Note that samtools has changed its commandline interface over time and that the stated command might be slighly different for different versions of samtools.
+Due to the `chimSegmentMin` and `chimJunctionOverhangMin` settings, STAR shall produce the additional output file(s).
+This file may need to be converted to BAM format, e.g. by running `samtools view -bhS Chimeric.out.sam > Chimeric.out.bam`.
+This generated `ChimericSorted.bam` can then be used as input file for *Dr. Disco*. Note that samtools has changed its commandline interface over time and that the stated command might be slighly different for different versions of samtools.
 
+### Step 1: STAR [2.7 (and above?)]
+
+```
+mkdir -p '{$prefix}/'
+STAR --genomeDir ${star_index_dir} \  
+     --outFileNamePrefix {$prefix} \
+	--runThreadN 7 \
+     --outSAMtype BAM SortedByCoordinate \
+	--outSAMstrandField intronMotif \
+	--outFilterIntronMotifs None \
+	--alignIntronMin 20 \
+	--alignIntronMax 200000 \
+	--alignMatesGapMax 200000 \
+	--alignSJoverhangMin 10 \
+	--alignSJDBoverhangMin 1 \
+	--chimSegmentMin 12 \
+	--chimJunctionOverhangMin 12 \
+	--chimOutType WithinBAM SeparateSAMold
+```
+
+Notice: **--chimOutType WithinBAM SeparateSAMold** needed in combination with `chimSegmentMin` and `chimJunctionOverhangMin.
+
+This will output the chimeric reads to:
+
+ - Chimeric.out.sam [Similar to STAR 2.4]
+ - Aligned.out.sorted.bam [With SA-tags properly set]
+
+ 
 ### Step 2: dr-disco fix
 
 The first step of Dr. Disco is fixing the BAM file. Altohugh fixing implies it is broken, the alignment provided by STAR is incompatible with the IGV split view and misses the 'SA:' sam flag. In `dr-disco fix` this is solved and allows a user to view discordant reads in IGV in more detail and by using the spit-view. For the split view it may be convenient to color the reads by subtype (split or spanning, and how the direction of the break is), as the mate and strand are related and discordant mates are usually shifted a bit with respect to the breakpoint. In the fixing steps such annotations are added as read groups. Also, this step ensures proper indexing and sorting. If you have as input file `<...>.Chimeric.out.bam`, you can generate the fixed bam file with *Dr. Disco* as follows:
