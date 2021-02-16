@@ -6,6 +6,14 @@
  
  - Free software: GNU General Public License v3 (GPLv3)
 
+## IMPORTANT NOTE
+
+### Dr. Disco was developed with STAR 2.4. STAR did not assign SA tags back then, which has been resolved over time. The arguments of later versions of STAR have also changed over time. We therefore provide the old instructions (STAR 2.4) and the latest instructions (STAR 2.7). The versions we tested with are:
+
+ - STAR 2.4.2 [V:020201]
+ - STAR 2.7.7.a [Mon Dec 28 13:38:40 EST 2020 compiled]
+ 
+
 ## Introduction
 
 Fusion genes are often driver events in several types of cancer, generally detected with DNA-sequencing (DNA-seq) and more recently with RNA-sequencing (RNA-seq).
@@ -81,7 +89,21 @@ STAR does not seem to be able to appropriately determine Chimeric reads if the o
 The illumina NextSeq is claimed to be responsible for measuring poly-G sequences (https://www.biostars.org/p/294612/) which may result in vast amounts of discordant reads aligned to poly-G regions in the genome.
 It is recommended to clean such datasets and erase poly-G suffixes, for instance with the tool fastp.
 
-### Step 1: STAR
+### Step 0: Build reference index
+
+
+#### STAR 2.7:
+
+
+nice ./STAR \
+    --runThreadN 8 \
+    --runMode genomeGenerate \
+    --genomeDir index/ \
+    --genomeFastaFiles ../GCA_000001405.15_GRCh38_no_alt_analysis_set.fna \
+    --sjdbGTFfile ../gencode.v34.primary_assembly.annotation.gtf
+
+
+### Step 1: STAR [2.4]
 
 Running RNA-STAR with fusion settings produces a file: ``<...>.Chimeric.out.sam``. This file contains discordant reads (split and spanning). It is recommended to run STAR with corresponding settings:
 
