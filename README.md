@@ -1,6 +1,6 @@
 # Dr. Disco
 
-### Detecting exon-to-exon and genomic breakpoints in RNA-Seq data
+### Detection of fusion transcripts and their genomic breakpoints from RNA sequencing data
 
 [![Build Status](https://travis-ci.org/yhoogstrate/dr-disco.svg?branch=master)](https://travis-ci.org/yhoogstrate/dr-disco)
  
@@ -16,8 +16,13 @@
 
 ### I HAVE A SAM FILE AND FORGOT ABOUT THE STAR VERSION!?!?!?!
 
+```
 samtools view -H Aligned.out.sorted.bam | grep "PN:STAR" | grep -P "VN:[^\\s]+"
+```
 
+----------
+
+----------
 
 ## Introduction
 
@@ -150,9 +155,9 @@ This generated `ChimericSorted.bam` can then be used as input file for *Dr. Disc
 ```
 mkdir -p '{$prefix}/'
 STAR --genomeDir ${star_index_dir} \  
-     --outFileNamePrefix {$prefix} \
+	--outFileNamePrefix {$prefix} \
 	--runThreadN 7 \
-     --outSAMtype BAM SortedByCoordinate \
+	--outSAMtype BAM SortedByCoordinate \
 	--outSAMstrandField intronMotif \
 	--outFilterIntronMotifs None \
 	--alignIntronMin 20 \
