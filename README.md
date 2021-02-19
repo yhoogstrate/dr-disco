@@ -195,11 +195,11 @@ Options:
   --help               Show this message and exit.
 ```
 
-Here the INPUT_ALIGNMENT_FILE will be `<...>.Chimeric.out.bam` and OUTPUT_ALIGNMENT_FILE will be `<...>.Chimeric.fixed.bam`.
+Here the INPUT_ALIGNMENT_FILE will be `Chimeric.out.sam` and OUTPUT_ALIGNMENT_FILE will be `My-Sample.Chimeric.fixed.bam`.
 Hence, you can generate the fixed bam-file with:
 
 ```
-dr-disco fix 'Chimeric.out.sam' 'My-Sample.fixed.bam'
+dr-disco fix 'Chimeric.out.sam' 'My-Sample.Chimeric.fixed.bam'
 ```
 
 ### Step 3: dr-disco detect
