@@ -81,15 +81,16 @@ def get_drdisco_version(alignment_file):
     drdisco_version = None # the version of dr-disco used to perform `dr-disco fix`
 
     with pysam.AlignmentFile(alignment_file, "rb") as bam_fh:
-        for pg in bam_fh.header['PG']:
-            if 'VN' in pg and 'ID' in pg and pg['ID'] == 'drdisco_fix_chimeric':
-                drdisco_version = pg['VN'].split(".")
-                
-                for i in range(len(drdisco_version)):
-                    try:
-                        drdisco_version[i] = int(drdisco_version[i])
-                    except:
-                        raise ValueError("Inconsistent Dr. Disco version: " + str(pg) )
+        if 'PG' in bam_fh.header:
+            for pg in bam_fh.header['PG']:
+                if 'VN' in pg and 'ID' in pg and pg['ID'] == 'drdisco_fix_chimeric':
+                    drdisco_version = pg['VN'].split(".")
+                    
+                    for i in range(len(drdisco_version)):
+                        try:
+                            drdisco_version[i] = int(drdisco_version[i])
+                        except:
+                            raise ValueError("Inconsistent Dr. Disco version: " + str(pg) )
     
     if drdisco_version == None:
         log.warning("No Dr. Disco version in fixed bam file detected? Using v0.0.0 as fallback.")
