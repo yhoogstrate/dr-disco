@@ -72,13 +72,7 @@ sudo pip install -r requirements.txt ;
 sudo python3 setup.py install --user
 ```
 
-### Pre-compiled
-
-Dr. Disco is also available at BioConda but this does not automatically ship with the blacklist files. Also, because of the changes in the built-system of bioconda, this version may be out of sync with the git repo.
-
-[![Bio-Conda installer](https://cdn.rawgit.com/yhoogstrate/dr-disco/master/share/bioconda-badge.svg)](share/bioconda-badge.svg)
-
-### Usage
+## Usage
 
 A `dr-disco` pipeline typically consists of the following steps:
 
