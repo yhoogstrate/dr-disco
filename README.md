@@ -169,7 +169,7 @@ STAR --genomeDir ${star_index_dir} \
 	--chimOutType WithinBAM SeparateSAMold
 ```
 
-Notice: `--chimOutType WithinBAM SeparateSAMold` **needed** in combination with `chimSegmentMin` and `chimJunctionOverhangMin.
+Notice: `--chimOutType WithinBAM SeparateSAMold` **needed** in combination with `chimSegmentMin` and `chimJunctionOverhangMin`.
 
 This will output the chimeric reads to:
 
@@ -179,7 +179,13 @@ This will output the chimeric reads to:
  
 ### Step 2: dr-disco fix
 
-The first step of Dr. Disco is fixing the BAM file. Altohugh fixing implies it is broken, the alignment provided by STAR is incompatible with the IGV split view and misses the 'SA:' sam flag. In `dr-disco fix` this is solved and allows a user to view discordant reads in IGV in more detail and by using the spit-view. For the split view it may be convenient to color the reads by subtype (split or spanning, and how the direction of the break is), as the mate and strand are related and discordant mates are usually shifted a bit with respect to the breakpoint. In the fixing steps such annotations are added as read groups. Also, this step ensures proper indexing and sorting. If you have as input file `<...>.Chimeric.out.bam`, you can generate the fixed bam file with *Dr. Disco* as follows:
+The first step of Dr. Disco is fixing the BAM file.
+This step annotates `SA:i:` and `FI:i` tags and adds read groups used by Dr. Disco.
+Adding these small fixes allows a user to view discordant reads in IGV in more detail and by using the spit-view.
+**Tip:** For the split view it may be convenient to color the reads by subtype (split or spanning, and how the direction of the break is),
+as the mate and strand are related and discordant mates are usually shifted a bit with respect to the breakpoint.
+In the fixing steps, such annotations are added as read groups. Also, this step ensures proper indexing and sorting.
+If you have as input file `Chimeric.out.sam`, you can generate the fixed bam file with *Dr. Disco* as follows:
 
 ```
 Usage: dr-disco fix [OPTIONS] INPUT_ALIGNMENT_FILE OUTPUT_ALIGNMENT_FILE
@@ -193,7 +199,7 @@ Here the INPUT_ALIGNMENT_FILE will be `<...>.Chimeric.out.bam` and OUTPUT_ALIGNM
 Hence, you can generate the fixed bam-file with:
 
 ```
-dr-disco fix '<...>.Chimeric.out.bam' 'sample.fixed.bam'
+dr-disco fix 'Chimeric.out.sam' 'My-Sample.fixed.bam'
 ```
 
 ### Step 3: dr-disco detect
@@ -207,6 +213,7 @@ Options:
   -m, --min-e-score INTEGER  Minimal score to initiate pulling sub-graphs
                              (larger numbers boost performance but result in
                              suboptimal results) [default=8]
+  --help                     Show this message and exit.
 ```
 
 Here the `-m` argument controls the level of merging sub-graphs. If datasets become very large there shall be many subgraphs. However, because this is such a time consuming process, it can be desired to skip some of them. Rule of thumb: for every 10.000.000 reads, increase this value with 1. So for 10.000.000-20.000.000 mate pairs choose 1. So for a dataset of 75.000.000 mate pairs, proceed with:
