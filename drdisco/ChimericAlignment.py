@@ -58,6 +58,10 @@ from drdisco.utils import str_to_bytearray
 
 
 class ChimericAlignment:
+    """
+    This accounts for files of the "Chimeric.out.sam" format as produced by STAR.
+    Later versions of STAR (above 2.6?) require `--chimOutType SeparateSAMold` or `--chimOutType WithinBAM SeparateSAMold`
+    """
     def __init__(self, input_alignment_file):
         self.input_alignment_file = input_alignment_file
         self.test_pysam_version()
@@ -104,8 +108,11 @@ class ChimericAlignment:
             except Exception:
                 nm = -1
 
+                """ :Z:(rname ,pos ,strand ,CIGAR ,mapQ ,NM ;)+ Other canonical alignments in a chimeric alignment, formatted as a semicolon-delimited list. Each element in the list represents a part of the chimeric alignment. Conventionally, at a supplementary line, the first element points to the primary line. Strand is
+                either ‘+’ or ‘-’, indicating forward/reverse strand, corresponding to FLAG bit 0x10. Pos is a 1-based coordinate. """
+
             sa_id = [bam_file.get_reference_name(read.reference_id),
-                     read.reference_start,
+                     read.reference_start + 1, # 1-based - as of 0.18.2 << 
                      "-" if read.is_reverse else "+",
                      read.cigarstring,
                      read.mapping_quality,

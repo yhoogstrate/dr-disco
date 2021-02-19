@@ -4,6 +4,8 @@
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
 from drdisco.__init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MAX_SIZE_CIRCULAR_RNA
+from drdisco.utils import get_drdisco_version
+from drdisco.utils import drdisco_version_leq
 
 import math
 import operator
@@ -1346,8 +1348,9 @@ class SubGraph():
 
 
 class BAMExtract(object):
-    def __init__(self, bam_file, require_fixed_bam_file):
+    def __init__(self, bam_file, require_fixed_bam_file, drdisco_version = [0, 0, 0]):
         self.pysam_fh = self.test_disco_alignment(bam_file, require_fixed_bam_file)
+        self.drdisco_version = drdisco_version
         self.overlapping_reads = 0
         self.crosshybridization_artifacts = 0
 
@@ -1784,9 +1787,11 @@ class BAMExtract(object):
             for read in self.pysam_fh.fetch():
                 _chr = self.pysam_fh.get_reference_name(read.reference_id)
                 try:
-                    sa = self.parse_SA(read.get_tag('SA'), _chr)
+                    sa = self.parse_SA(read.get_tag('SA'), _chr, self.drdisco_version)
+
                 except Exception:
                     raise ValueError("Problems parsing SA tag for:\n\t%s", str(read))
+
                 rg = JunctionTypeUtils.enum(read.get_tag('RG'))
 
                 pos1, pos2 = None, None
@@ -1896,7 +1901,7 @@ class BAMExtract(object):
     # static is elegant for functions that do not use class properties
     # http://stackoverflow.com /questions /18679803 /python-calling-method-without-self
     @staticmethod
-    def parse_SA(SA_tag, _chr):
+    def parse_SA(SA_tag, _chr, drdisco_version):
         """
         old data struct: [chr, pos, cigar, mapq, strand, Nm]
         new data struct: [chr, pos, strand, cigar, mapQ, Nm]
@@ -1913,7 +1918,10 @@ class BAMExtract(object):
 
             if sa_tags[i][2] == '+' or sa_tags[i][2] == '-':
                 sa_tags[i] = [sa_tags[i][0], sa_tags[i][1], sa_tags[i][3], sa_tags[i][4], sa_tags[i][2], sa_tags[i][5]]
+            
             sa_tags[i][1] = int(sa_tags[i][1])
+            if drdisco_version_leq(drdisco_version, [0, 18, 2]): # larger or equal to
+                sa_tags[i][1] -= 1 # from 1-based (SAM) to 0-based (BAM)
 
             if sa_tags[i][0] == '=':
                 sa_tags[i][0] = _chr
@@ -2020,9 +2028,10 @@ splice-junc:                           <=============>
 class IntronDecomposition:
     def __init__(self, alignment_file):
         self.alignment_file = alignment_file
+        self.drdisco_version = get_drdisco_version(alignment_file)
 
     def decompose(self, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS):
-        alignment = BAMExtract(self.alignment_file, True)
+        alignment = BAMExtract(self.alignment_file, True, self.drdisco_version)
 
         # initally worked, but slow because of same insane nodes
         fusion_junctions = {}  # fusion_junctions['chr1']['chr3'] = Graph() - where first chr < second chr

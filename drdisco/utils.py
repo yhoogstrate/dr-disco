@@ -5,6 +5,8 @@
 
 import gzip
 import re
+import pysam
+from drdisco import log
 
 
 alt_map = {'ins': '0'}
@@ -65,8 +67,55 @@ def parse_pos(strpos):
 
 
 def str_to_bytearray(s):
-	b = bytearray()
-	b.extend(map(ord, s))
-	return b
+    b = bytearray()
+    b.extend(map(ord, s))
+    return b
 
 
+def get_drdisco_version(alignment_file):
+    """
+    dr-disco fix <= v0.18.1: 0-based SA tags
+    dr-disco fix >= v0.18.2: 1-based SA tags
+    """
+
+    drdisco_version = None # the version of dr-disco used to perform `dr-disco fix`
+
+    with pysam.AlignmentFile(alignment_file, "rb") as bam_fh:
+        for pg in bam_fh.header['PG']:
+            if 'VN' in pg and 'ID' in pg and pg['ID'] == 'drdisco_fix_chimeric':
+                drdisco_version = pg['VN'].split(".")
+                
+                for i in range(len(drdisco_version)):
+                    try:
+                        drdisco_version[i] = int(drdisco_version[i])
+                    except:
+                        raise ValueError("Inconsistent Dr. Disco version: " + str(pg) )
+    
+    if drdisco_version == None:
+        log.warning("No Dr. Disco version in fixed bam file detected? Using v0.0.0 as fallback.")
+    else:
+        log.info("Dr. Disco version of fixed bam file: v" + ".".join([str(_) for _ in drdisco_version]))
+    
+    return drdisco_version
+
+
+def drdisco_version_leq(actual_version, requirement_version):
+    """
+    returns true if the actual verions is larger or equal to the requirement version
+    [0,18,2] >= [0,0,0] = T
+    [1,18,2] >= [0,0,0] = T
+    [0,18,2] >= [1,0,0] = F
+    [0, 0,0] >= [0,0,0] = T
+    """
+
+    if len(actual_version) != len(requirement_version):
+        raise ValueError("Inconsistent Dr. Disco version: " + str(pg) )
+
+    for i in range(len(actual_version)):
+        if actual_version[i] > requirement_version[i]:
+            return True
+        elif actual_version[i] < requirement_version[i]:
+            return False
+        # else : equal, skip to next
+    
+    return True
