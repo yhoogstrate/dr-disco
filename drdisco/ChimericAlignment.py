@@ -57,6 +57,7 @@ from drdisco.utils import str_to_bytearray
 """
 
 
+
 class ChimericAlignment:
     """
     This accounts for files of the "Chimeric.out.sam" format as produced by STAR.
@@ -216,7 +217,8 @@ class ChimericAlignment:
 
     def fix_chain(self, alignments, bam_file, mates):
         """
-        all segments in variable `aligments` must come from the same MATE (unless discordant pairs without suppl. alignments) and should not be marked as DUPLICATE or MULTIMAPPING
+        all segments in variable `aligments` must come from the same MATE (unless discordant pairs without suppl. alignments)
+        and should not be marked as DUPLICATE or MULTIMAPPING
         """
         chains_from = {}
         chains_to = {}
@@ -495,6 +497,22 @@ class ChimericAlignment:
         for a in all_reads_updated:
             fh_out.write(a)
 
+    @staticmethod
+    def test_chimeric_or_within_bam(alignment_file):
+        """
+        """
+        
+        state = 'Undetermined'
+        
+        with pysam.AlignmentFile(alignment_file, "rb") as fh:
+            if 'PG' in fh.header:
+                for pg in fh.header['PG']:
+                    if 'PP' in pg and 'CL' in pg and pg['CL'].find('Aligned.out') != -1:
+                        state = 'Aligned.out'
+        
+        return state
+
+
     def convert(self, bam_file_discordant_fixed, temp_dir):
         def randstr(n):
             return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(n))
@@ -505,6 +523,13 @@ class ChimericAlignment:
 
         basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
         basename = temp_dir.rstrip("/") + "/" + basename + '-' + uid
+
+
+        if self.test_chimeric_or_within_bam(self.input_alignment_file) == "Aligned.out":
+            err = "You are likely using the 'Aligned.out.bam' or 'Aligned.out.sorted.bam' file which does not mark spanning reads but only split reads.\n"
+            err += "This file is not compatible with Dr. Disco: dr-disco fix. Please use the appropriate file (Chimeric.out.sam) and read the Dr. Disco manual."
+            log.error(err)
+            raise Exception(err)
 
         # @TODO / consider todo - start straight from sam
         # samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
