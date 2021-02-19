@@ -106,7 +106,7 @@ It is recommended to clean such datasets and erase poly-G suffixes, for instance
     --sjdbGTFfile ../gencode.v34.primary_assembly.annotation.gtf
 ```
 
-### Step 1: STAR [2.4]
+### Step 1: STAR [2.7]
 
 ```
 nice ./STAR \
@@ -119,7 +119,9 @@ nice ./STAR \
 
 ### Step 1: STAR [2.4]
 
-Running RNA-STAR with fusion settings produces a file: ``<...>.Chimeric.out.sam``. This file contains discordant reads (split and spanning). It is recommended to run STAR with corresponding settings:
+Running RNA-STAR with fusion settings produces a file: ``<...>.Chimeric.out.sam``.
+This file contains discordant reads (both split and spanning).
+It is recommended to run STAR with corresponding settings:
 
 ```
 mkdir -p '{$prefix}/'
@@ -144,9 +146,10 @@ STAR --genomeDir ${star_index_dir} \
 
 Due to the `chimSegmentMin` and `chimJunctionOverhangMin` settings, STAR shall produce the additional output file(s).
 This file may need to be converted to BAM format, e.g. by running `samtools view -bhS Chimeric.out.sam > Chimeric.out.bam`.
-This generated `ChimericSorted.bam` can then be used as input file for *Dr. Disco*. Note that samtools has changed its commandline interface over time and that the stated command might be slighly different for different versions of samtools.
+This generated `ChimericSorted.bam` can then be used as input file for *Dr. Disco*.
+Note that samtools has changed its commandline interface over time and that the stated command might be slighly different for different versions of samtools.
 
-### Step 1: STAR [2.7 (and above?)]
+### Step 1: STAR [2.7]
 
 ```
 mkdir -p '{$prefix}/'
@@ -166,12 +169,12 @@ STAR --genomeDir ${star_index_dir} \
 	--chimOutType WithinBAM SeparateSAMold
 ```
 
-Notice: **--chimOutType WithinBAM SeparateSAMold** needed in combination with `chimSegmentMin` and `chimJunctionOverhangMin.
+Notice: `--chimOutType WithinBAM SeparateSAMold` **needed** in combination with `chimSegmentMin` and `chimJunctionOverhangMin.
 
 This will output the chimeric reads to:
 
  - Chimeric.out.sam [Similar to STAR 2.4]
- - Aligned.out.sorted.bam [With SA-tags properly set]
+ - Aligned.out.sorted.bam [This file does not mark flag spanning reads as chimeric and can thus not be used]
 
  
 ### Step 2: dr-disco fix
