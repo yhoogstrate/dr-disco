@@ -21,7 +21,6 @@ test.out
 truncated.*
 
 # Other / analysis
-/data
 /samples
 .Rhistory
 *.png
@@ -37,5 +36,6 @@ truncated.*
 .~lock.*
 /classification
 ignore
-/*.bam
+*.bam
 /*.sam
+*.ods

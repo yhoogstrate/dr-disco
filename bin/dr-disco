@@ -73,7 +73,6 @@ def CLI_subtract_chimeric_reads(temp_dir, input_alignment_file, output_alignment
     alignment_handle.convert(output_alignment_file, temp_dir)
 
 
-
 @CLI.command(name="unfix", short_help="Tries to restore the BAM file")
 @click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
 @click.argument('input_alignment_file', type=click.Path(exists=True))

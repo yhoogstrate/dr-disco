@@ -57,7 +57,12 @@ from drdisco.utils import str_to_bytearray
 """
 
 
+
 class ChimericAlignment:
+    """
+    This accounts for files of the "Chimeric.out.sam" format as produced by STAR.
+    Later versions of STAR (above 2.6?) require `--chimOutType SeparateSAMold` or `--chimOutType WithinBAM SeparateSAMold`
+    """
     def __init__(self, input_alignment_file):
         self.input_alignment_file = input_alignment_file
         self.test_pysam_version()
@@ -104,8 +109,11 @@ class ChimericAlignment:
             except Exception:
                 nm = -1
 
+                """ :Z:(rname ,pos ,strand ,CIGAR ,mapQ ,NM ;)+ Other canonical alignments in a chimeric alignment, formatted as a semicolon-delimited list. Each element in the list represents a part of the chimeric alignment. Conventionally, at a supplementary line, the first element points to the primary line. Strand is
+                either ‘+’ or ‘-’, indicating forward/reverse strand, corresponding to FLAG bit 0x10. Pos is a 1-based coordinate. """
+
             sa_id = [bam_file.get_reference_name(read.reference_id),
-                     read.reference_start,
+                     read.reference_start + 1, # 1-based - as of 0.18.2 << 
                      "-" if read.is_reverse else "+",
                      read.cigarstring,
                      read.mapping_quality,
@@ -209,7 +217,8 @@ class ChimericAlignment:
 
     def fix_chain(self, alignments, bam_file, mates):
         """
-        all segments in variable `aligments` must come from the same MATE (unless discordant pairs without suppl. alignments) and should not be marked as DUPLICATE or MULTIMAPPING
+        all segments in variable `aligments` must come from the same MATE (unless discordant pairs without suppl. alignments)
+        and should not be marked as DUPLICATE or MULTIMAPPING
         """
         chains_from = {}
         chains_to = {}
@@ -488,6 +497,22 @@ class ChimericAlignment:
         for a in all_reads_updated:
             fh_out.write(a)
 
+    @staticmethod
+    def test_chimeric_or_within_bam(alignment_file):
+        """
+        """
+        
+        state = 'Undetermined'
+        
+        with pysam.AlignmentFile(alignment_file, "rb") as fh:
+            if 'PG' in fh.header:
+                for pg in fh.header['PG']:
+                    if 'PP' in pg and 'CL' in pg and pg['CL'].find('Aligned.out') != -1:
+                        state = 'Aligned.out'
+        
+        return state
+
+
     def convert(self, bam_file_discordant_fixed, temp_dir):
         def randstr(n):
             return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(n))
@@ -498,6 +523,13 @@ class ChimericAlignment:
 
         basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
         basename = temp_dir.rstrip("/") + "/" + basename + '-' + uid
+
+
+        if self.test_chimeric_or_within_bam(self.input_alignment_file) == "Aligned.out":
+            err = "You are likely using the 'Aligned.out.bam' or 'Aligned.out.sorted.bam' file which does not mark spanning reads but only split reads.\n"
+            err += "This file is not compatible with Dr. Disco: dr-disco fix. Please use the appropriate file (Chimeric.out.sam) and read the Dr. Disco manual."
+            log.error(err)
+            raise Exception(err)
 
         # @TODO / consider todo - start straight from sam
         # samtools view -bS samples/7046-004-041_discordant.Chimeric.out.sam > samples/7046-004-041_discordant.Chimeric.out.unsorted.bam
