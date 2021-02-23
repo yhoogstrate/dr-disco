@@ -72,6 +72,13 @@ sudo pip install -r requirements.txt ;
 sudo python3 setup.py install --user
 ```
 
+### Docker
+
+Dr. Disco combined with RNA-STAR 2.7.7a is available for docker at Docker hub:
+
+https://hub.docker.com/repository/docker/yhoogstrate/dr-disco
+
+
 ## Usage
 
 A `dr-disco` pipeline typically consists of the following steps:
