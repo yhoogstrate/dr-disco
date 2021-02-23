@@ -90,6 +90,7 @@ A `dr-disco` pipeline typically consists of the following steps:
 5. *Integrate* integrates results from the same genomic event and annotates gene names
 
 #### Check mate pair orentation first
+
 STAR does not seem to be able to appropriately determine Chimeric reads if the orientation of the mates is not default. Hence, before running STAR, make sure whether the strand orientation is `FR` (_R1: forward, _R2: _reverse). If this is not the case, you can use **fastx_reverse_complement** (http://hannonlab.cshl.edu/fastx_toolkit/) to convert to the appropriate strands.
 
  - For *forward*, *reverse* (default) you can proceed with the original _R1 and _R2
