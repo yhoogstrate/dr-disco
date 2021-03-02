@@ -892,8 +892,11 @@ class Graph:
             self.edge_idx.remove(edge_m)
 
 
-    def search_edges_between(self, edge_to_prune):
-        """searches for other junctions in-between edge+insert size:"""
+    def search_edges_between(self, edge_to_prune, skip_duplicates = True):
+        """searches for other junctions in-between edge+insert size:
+        
+        if there are small junctions with both ends located within the search area, it can be returned twice
+        """
         def pos_to_range(pos):
             if pos.strand == STRAND_REVERSE:
                 #  return (pos.pos - MAX_ACCEPTABLE_INSERT_SIZE) - 1, pos.pos + MAX_ACCEPTABLE_ALIGNMENT_ERROR
@@ -906,6 +909,8 @@ class Graph:
 
         pos1_min, pos1_max = pos_to_range(pos1)
         pos2_min, pos2_max = pos_to_range(pos2)
+        
+        duplicates = set([])
 
         for step in self.idxtree[HTSeq.GenomicInterval(pos1._chr, max(0, pos1_min), pos1_max + 1)].steps():
             if step[1]:
@@ -914,7 +919,14 @@ class Graph:
                     node_i = position[pos1.strand]
                     for edge in node_i.edges.values():
                         if edge != edge_to_prune and edge.target.position.strand == pos2.strand and edge.target.position.pos >= pos2_min and edge.target.position.pos <= pos2_max:
-                            yield edge
+                            
+                            if skip_duplicates:
+                                if edge not in duplicates:
+                                    yield edge
+                                duplicates.add(edge)
+                            
+                            else:
+                                yield edge
 
     def rejoin_splice_juncs(self, splice_junctions_all, chrs):
         """thicker edges go across the break point:
