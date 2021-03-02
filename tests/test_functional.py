@@ -106,7 +106,7 @@ class TestFunctional_fix_chimeric(unittest.TestCase):
 #        if not filecmp.cmp(output_file_s, test_file):
 #            print 'diff \'' + output_file_s + '\' \'' + test_file + '\''
 
-        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg=get_diff(test_file, output_file_s))
+        self.assertTrue(filecmp.cmp(test_file, output_file_s), msg="diff '" +test_file + "' '" +  output_file_s + "'")
 
 
 class TestFunctional_detect(unittest.TestCase):
