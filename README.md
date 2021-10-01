@@ -60,8 +60,7 @@ Dr. Disco is also available at BioConda but this does not automatically ship wit
 
 ### Usage
 
-The method is explicitly developed to analyse one single-sample at the time, but can easily be run using linux parallel to scale up.
-
+The method is designed to analyse a single sample at the time, but can easily be run using linux parallel to scale up.
 
 A `dr-disco` pipeline typically consists of the following steps:
 
