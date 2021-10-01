@@ -9,6 +9,7 @@ from drdisco.DetectFrameShifts import DetectFrameShifts
 from drdisco.utils import reverse_complement, is_gzip
 import gzip
 import HTSeq
+from tqdm import tqdm
 from pyfaidx import Fasta
 
 
@@ -396,6 +397,8 @@ class GeneAnnotation:
     def parse(self):
         idx = HTSeq.GenomicArrayOfSets("auto", stranded=False)
         if self.gtf_file:  # could be None of no gtf file is provided
+            log.info("Loading " + self.gtf_file)
+
             gtf_file = HTSeq.GFF_Reader(self.gtf_file, end_included=True)
             n = 0
 
@@ -618,6 +621,8 @@ class DetectOutput:
         log.info("Classified " + str(k) + "/" + str(n) + " as valid")
 
     def integrate(self, output_table, gtf_file, fasta_file):
+        log.info("Integrating results")
+        
         def insert_in_index(index, entries, score, i):
             if score not in index:
                 index[score] = {}
@@ -645,7 +650,7 @@ class DetectOutput:
 
             # Find 'duplicates' or fusions that belong to each other
             log.info("Searching for intronic and exonic breaks that belong to the same event")
-            for e in self:
+            for e in tqdm(self):
                 if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
                     done_breaks = set([])
 

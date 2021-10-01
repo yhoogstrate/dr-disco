@@ -60,6 +60,9 @@ Dr. Disco is also available at BioConda but this does not automatically ship wit
 
 ### Usage
 
+The method is explicitly developed to analyse one single-sample at the time, but can easily be run using linux parallel to scale up.
+
+
 A `dr-disco` pipeline typically consists of the following steps:
 
 1. *Run STAR* in fusion mode to obtain the Chimeric sam file - By the time of writing we used STAR 2.4.2
