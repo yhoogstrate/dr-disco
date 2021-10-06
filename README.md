@@ -154,10 +154,19 @@ The results from `dr-disco detect` contain many false positives. These may be de
 Usage: dr-disco classify [OPTIONS] TABLE_INPUT_FILE TABLE_OUTPUT_FILE
 
 Options:
-  --only-valid                Only return results marked as 'valid'
-  --blacklist-regions TEXT    Blacklist these regions (BED file)
-  --blacklist-junctions TEXT  Blacklist these region-to-region junctions
-                              (custom format, see files in ./share/)
+  --only-valid                 Only return results marked as 'valid'
+  --blacklist-regions TEXT     Blacklist these regions (BED file)
+  --blacklist-junctions TEXT   Blacklist these region-to-region junctions
+                               (custom format, see files in ./share/)
+  --min-chim-overhang INTEGER  Minimum alignment length on each side of the
+                               junction. May need to be set to smaller values
+                               for read lengths smaller than 75bp. Larger
+                               values are more stringent. [default=50]
+  --ffpe                       Lowers the threshold for the relative amount of
+                               mismatches, as often found in FFPE material.
+                               Note that enabling this option will
+                               consequently result in more false positives.
+  --help                       Show this message and exit.
 ```
 
 After analysing our results after classification there were some positives that were systemetically recurrent, but also visual inspection suggested them to be true. These are often new exons or new genes (and marked as discordant probably due to non canonical splice junctions) or mistakes in the reference genome. Hence, as they are in terms of data exactly identical to fusion genes, these can not be filtered out. Therefore we added the option to blacklist certain regions or junctions. There is an important difference between them as a blacklist region prohibits any fusion to be within a certain region while a blacklist junction prohibits a fusion where the one break is in one region and the other break in the other. We have added quite some of these regions to the blacklist. In particular the blacklist for hg38 is rather complete. The blacklist files for hg19 and hh38 can be found here: [./share/](https://github.com/yhoogstrate/dr-disco/tree/master/share).
@@ -175,13 +184,17 @@ dr-disco classify \
 
 ### Step 5: dr-disco integrate
 
-The results of Dr. Disco classify can be integrated into fusion genes by running `dr-disco integrate`. The corresponding GTF file should contain gene annotations that correspond to the used reference genome.
+The results of Dr. Disco classify can be integrated into fusion genes by running `dr-disco integrate`. The corresponding GTF file should contain gene annotations that correspond to the used reference genome. The reference FASTA is used to determine splice junction motifs and their edit distance. The file should have a *.fai index file. I am not sure if the pyfaidx library will auto-generate one if it does not exist.
 
 ```
 Usage: dr-disco integrate [OPTIONS] TABLE_INPUT_FILE TABLE_OUTPUT_FILE
 
 Options:
-  --gtf TEXT  Use gene annotation (GTF file)
+  --gtf TEXT    Use gene annotation for estimating fusion genes and improve
+                classification of exonic (GTF file)
+  --fasta TEXT  Use reference sequences to estimate edit distances to splice
+                junction motifs (FASTA file)
+  --help        Show this message and exit.
 ```
 
 Hence, we could proceed with:
