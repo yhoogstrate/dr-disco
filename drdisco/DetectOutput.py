@@ -731,6 +731,7 @@ class DetectOutput:
             q = 0
             for e in intronic_linear:
                 results = {}
+                result_keys = []
                 positions = [(e.chrA, e.posA, e.strandA), (e.chrB, e.posB, e.strandB)]
 
                 for pos in positions:
@@ -747,15 +748,15 @@ class DetectOutput:
                         chrom = pos[0]
 
                     for step in self.idx[HTSeq.GenomicInterval(chrom, max(0, pos1), pos2, pos[2])].steps():
-                        for e2 in step[1]:
-                            if e != e2:
-                                if e2 not in results:
-                                    results[e2] = 0
+                        for e2 in [_ for _ in step[1] if _ != e]:
+                            if e2 not in results:
+                                results[e2] = 0
+                                result_keys.append(e2)
 
-                                results[e2] += 1
+                            results[e2] += 1
 
                 top_result = (None, 9999999999999)
-                for r in sorted(results.keys()):
+                for r in result_keys:
                     if results[r] >= 2 and r.strandA == e.strandA and r.strandB == e.strandB:
                         d1 = (r.posA - e.posA)
                         d2 = (r.posB - e.posB)
