@@ -650,7 +650,7 @@ class DetectOutput:
 
             # Find 'duplicates' or fusions that belong to each other
             log.info("Searching for intronic and exonic breaks that belong to the same event")
-            for e in tqdm(self):
+            for e in self:
                 if dfs and e.RNAstrandA != '.' and e.RNAstrandB != '.':
                     done_breaks = set([])
 
