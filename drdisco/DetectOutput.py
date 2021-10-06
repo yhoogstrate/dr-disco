@@ -727,6 +727,7 @@ class DetectOutput:
                 ffs.close()
 
             # Reorder
+            log.info("Re-order and find matching entries")
             idx2 = {}
             q = 0
             for e in intronic_linear:
