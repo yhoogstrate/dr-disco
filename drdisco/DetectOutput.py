@@ -731,11 +731,12 @@ class DetectOutput:
             idx2 = {}
             q = 0
             for e in intronic_linear:
-                results = {}
-                result_keys = []
+                results_split = [set([]), set([])]
                 positions = [(e.chrA, e.posA, e.strandA), (e.chrB, e.posB, e.strandB)]
 
-                for pos in positions:
+                for pos_i in [0,1]:
+                    pos = positions[pos_i]
+
                     if pos[2] == '-':
                         pos1 = pos[1] - 200000
                         pos2 = pos[1]
@@ -750,24 +751,21 @@ class DetectOutput:
 
                     for step in self.idx[HTSeq.GenomicInterval(chrom, max(0, pos1), pos2, pos[2])].steps():
                         for e2 in [_ for _ in step[1] if _ != e]:
-                            if e2 not in results:
-                                results[e2] = 0
-                                result_keys.append(e2)
+                            if e2.strandA == e.strandA and e2.strandB == e.strandB:
+                                results_split[pos_i].add(e2)
 
-                            results[e2] += 1
-
+                results = results_split[0].intersection(results_split[1])
                 top_result = (None, 9999999999999)
-                for r in result_keys:
-                    if results[r] >= 2 and r.strandA == e.strandA and r.strandB == e.strandB:
-                        d1 = (r.posA - e.posA)
-                        d2 = (r.posB - e.posB)
-                        sq_d = math.sqrt(pow(d1, 2) + pow(d2, 2))
+                for r in results:
+                    d1 = (r.posA - e.posA)
+                    d2 = (r.posB - e.posB)
+                    sq_d = math.sqrt(pow(d1, 2) + pow(d2, 2))
 
-                        shared_score = math.sqrt((pow(e.score, 2) + pow(r.score, 2)) * 0.5)
-                        penalty = 1.0 * sq_d / shared_score
+                    shared_score = math.sqrt((pow(e.score, 2) + pow(r.score, 2)) * 0.5)
+                    penalty = 1.0 * sq_d / shared_score
 
-                        if penalty < top_result[1]:
-                            top_result = (r, penalty)
+                    if penalty < top_result[1]:
+                        top_result = (r, penalty)
 
                 if top_result[0]:
                     insert_in_index(idx2, [e, top_result[0]], e.score + top_result[0].score, q)
