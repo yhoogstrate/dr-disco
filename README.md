@@ -6,6 +6,22 @@
  
  - Free software: GNU General Public License v3 (GPLv3)
 
+## Citing Dr. Disco, intronic breakpoints and rRNA minus RNA-seq in relation to fusion gene detection
+
+Manuscript:
+
+```
+Hoogstrate Y; Komor MA; Böttcher R; van Riet J; van de Werken HJG; van Lieshout S; Hoffmann R; van den Broek E; Bolijn AS; Dits N; Sie D; van der Meer D; Pepers F; Bangma CH; van Leenders GJLH; Smid M; French PJ; Martens JWM; van Workum W; van der Spek PJ; Janssen B; Caldenhoven E; Rausch C; de Jong M; Stubbs AP; Meijer GA; Fijneman RJA; Jenster GW:
+Fusion transcripts and their genomic breakpoints in poly(A)+ and rRNA-minus RNA sequencing data. GigaScience (2021). http://dx.doi.org/10.1093/gigascience/giab080
+```
+
+
+Supporting Data:
+
+```
+Hoogstrate Y; Komor MA; Böttcher R; van Riet J; van de Werken HJG; van Lieshout S; Hoffmann R; van den Broek E; Bolijn AS; Dits N; Sie D; van der Meer D; Pepers F; Bangma CH; van Leenders GJLH; Smid M; French PJ; Martens JWM; van Workum W; van der Spek PJ; Janssen B; Caldenhoven E; Rausch C; de Jong M; Stubbs AP; Meijer GA; Fijneman RJA; Jenster GW (2021): Supporting data for "Fusion transcripts and their genomic breakpoints in poly(A)+ and rRNA-minus RNA sequencing data" GigaScience Database. http://dx.doi.org/10.5524/100939
+```
+
 ## Introduction
 
 Fusion genes are often driver events in several types of cancer, generally detected with DNA-sequencing (DNA-seq) and more recently with RNA-sequencing (RNA-seq).
