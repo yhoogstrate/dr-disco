@@ -39,3 +39,4 @@ truncated.*
 ignore
 /*.bam
 /*.sam
+*.ods
