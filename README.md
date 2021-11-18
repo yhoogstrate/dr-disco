@@ -19,7 +19,8 @@ Fusion transcripts and their genomic breakpoints in poly(A)+ and rRNA-minus RNA 
 Supporting Data:
 
 ```
-Hoogstrate Y; Komor MA; Böttcher R; van Riet J; van de Werken HJG; van Lieshout S; Hoffmann R; van den Broek E; Bolijn AS; Dits N; Sie D; van der Meer D; Pepers F; Bangma CH; van Leenders GJLH; Smid M; French PJ; Martens JWM; van Workum W; van der Spek PJ; Janssen B; Caldenhoven E; Rausch C; de Jong M; Stubbs AP; Meijer GA; Fijneman RJA; Jenster GW (2021): Supporting data for "Fusion transcripts and their genomic breakpoints in poly(A)+ and rRNA-minus RNA sequencing data" GigaScience Database. http://dx.doi.org/10.5524/100939
+Hoogstrate Y; Komor MA; Böttcher R; van Riet J; van de Werken HJG; van Lieshout S; Hoffmann R; van den Broek E; Bolijn AS; Dits N; Sie D; van der Meer D; Pepers F; Bangma CH; van Leenders GJLH; Smid M; French PJ; Martens JWM; van Workum W; van der Spek PJ; Janssen B; Caldenhoven E; Rausch C; de Jong M; Stubbs AP; Meijer GA; Fijneman RJA; Jenster GW (2021): 
+Supporting data for "Fusion transcripts and their genomic breakpoints in poly(A)+ and rRNA-minus RNA sequencing data" GigaScience Database. http://dx.doi.org/10.5524/100939
 ```
 
 ## Introduction
