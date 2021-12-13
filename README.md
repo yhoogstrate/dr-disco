@@ -20,7 +20,8 @@ Jenster GW:
 
 Fusion transcripts and their genomic breakpoints in polyadenylated
 and ribosomal RNA–minus RNA sequencing data.
-GigaScience,·Volume·10,·Issue·12, December·2021,·giab080,
+
+GigaScience, Volume 10, Issue 12, December·2021, giab080,
 
 https://doi.org/10.1093/gigascience/giab080$
 ```
