@@ -11,7 +11,6 @@
 Manuscript:
 [10.1093/gigascience/giab080](http://dx.doi.org/10.1093/gigascience/giab080)
 ```
-<<<<<<< HEAD
 Hoogstrate Y; Komor MA; Böttcher R; van Riet J; van de Werken HJG;
 van Lieshout S; Hoffmann R; van den Broek E; Bolijn AS; Dits N; Sie D;
 van der Meer D; Pepers F; Bangma CH; van Leenders GJLH; Smid M;
@@ -19,9 +18,9 @@ French PJ; Martens JWM; van Workum W; van der Spek PJ; Janssen B;
 Caldenhoven E; Rausch C; de Jong M; Stubbs AP; Meijer GA; Fijneman RJA;
 Jenster GW:
 
-Fusion transcripts and their genomic breakpoints in poly(A)+ and
-rRNA-minus RNA sequencing data. GigaScience,·Volume·10,·Issue·12,
-December·2021,·giab080,
+Fusion transcripts and their genomic breakpoints in polyadenylated
+and ribosomal RNA–minus RNA sequencing data.
+GigaScience,·Volume·10,·Issue·12, December·2021,·giab080,
 
 https://doi.org/10.1093/gigascience/giab080$
 ```
