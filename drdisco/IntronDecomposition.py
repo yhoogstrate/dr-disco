@@ -1892,15 +1892,23 @@ class BAMExtract(object):
 
         fh = pysam.AlignmentFile(bamfile_out, "wb", header=self.pysam_fh.header)
 
-        for r in self.pysam_fh.fetch(pos1[0], pos1[1], pos1[2]):  # pysam.view(b,"chr21:1-500")
+        log.info('Scanning read names in pos1')
+        for r in tqdm(self.pysam_fh.fetch(pos1[0], pos1[1], pos1[2])):  # pysam.view(b,"chr21:1-500")
             ids.add(r.query_name)
+        log.info('  Total unique reads: ' + str(len(ids)))
 
-        for r in self.pysam_fh.fetch(pos2[0], pos2[1], pos2[2]):  # pysam.view(b,"chr21:1-500")
+        log.info('Scanning read names in pos2')
+        for r in tqdm(self.pysam_fh.fetch(pos2[0], pos2[1], pos2[2])):  # pysam.view(b,"chr21:1-500")
             ids.add(r.query_name)
+        log.info('  Total unique reads: ' + str(len(ids)))
 
-        for r in self.pysam_fh.fetch():
-            if r.query_name in ids:
-                fh.write(r)
+        log.info('Scanning through entire bam file looking for those reads')
+
+        with tqdm(total=self.pysam_fh.mapped) as pbar:
+            for r in tqdm(self.pysam_fh.fetch()):
+                if r.query_name in ids:
+                    fh.write(r)
+                pbar.update(1)
 
         fh.close()
         pysam.index(str(bamfile_out))
