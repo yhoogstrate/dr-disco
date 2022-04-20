@@ -242,3 +242,25 @@ dr-disco integrate \
     dr-disco.sample-name.filtered.txt \
     dr-disco.sample-name.integrated.txt
 ```
+
+
+### dr-disco bam-extract: Util for subtracting regional reads from bam file
+
+```
+Usage: dr-disco bam-extract [OPTIONS] REGION1 REGION2 BAM_INPUT_FILE
+                            BAM_OUTPUT_FILE
+
+Options:
+  --restrict-to-targeted-chromosomes
+                                  Excludes reads of which a piece was aligned
+                                  to other chromosomes than requested by the
+                                  regions.
+
+  --help                          Show this message and exit.
+```
+
+This tool makes a regional subset of the bam-file. It considered read by their identifier, therefore avoiding the issue of missing mate pairs that were aligned outside the region.
+It can be provided two regions, which is ideal for targetting both sides of a fusion junction.
+
+
+
