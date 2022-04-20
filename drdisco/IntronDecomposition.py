@@ -1884,9 +1884,13 @@ class BAMExtract(object):
 
         return str(_chr), int(_poss[0]), int(_poss[1])
 
-    def extract(self, pos1, pos2, bamfile_out):
+    def extract(self, pos1, pos2, bamfile_out, restrict_to_targeted_chromosomes=False):
+        """
+        The bam-extract function
+        """
         pos1 = self.parse_pos(pos1)
         pos2 = self.parse_pos(pos2)
+        target_chrs = set([pos1[0],pos2[0]])
 
         ids = set()
 
@@ -1902,8 +1906,22 @@ class BAMExtract(object):
             ids.add(r.query_name)
         log.info('  Total unique reads: ' + str(len(ids)))
 
-        log.info('Scanning through entire bam file looking for those reads')
 
+        if restrict_to_targeted_chromosomes:
+            ids_other_chromosomes = set() # read id's for reads that also map to other chromosomes, to be exclused afterwards
+            log.info('  Scanning for reads that also map to non targeted chromosomes')
+
+            with tqdm(total=self.pysam_fh.mapped) as pbar:
+                for r in tqdm(self.pysam_fh.fetch()):
+                    if r.query_name in ids and r.reference_name not in target_chrs:
+                        ids_other_chromosomes.add(r.query_name)
+                    pbar.update(1)
+                ids = ids.difference(ids_other_chromosomes)
+            log.info('  Total reads to be excluded because of also mapping to other chromosomes:' + str(len(ids_other_chromosomes)))
+            log.info('  Total unique reads: ' + str(len(ids)))
+
+
+        log.info('Scanning through entire bam file looking for those reads')
         with tqdm(total=self.pysam_fh.mapped) as pbar:
             for r in tqdm(self.pysam_fh.fetch()):
                 if r.query_name in ids:

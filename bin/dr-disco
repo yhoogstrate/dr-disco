@@ -94,13 +94,14 @@ def CLI_detect_break_points(min_e_score, bam_input_file, output_file):
 
 
 @CLI.command(name='bam-extract', short_help='Extract reads from two chromosomal positions (and also take the mates with the same name) - regions are in the format chr1:123-546')
+@click.option('--restrict-to-targeted-chromosomes',is_flag=True,help="Excludes reads of which a piece was aligned to other chromosomes than requested by the regions.")
 @click.argument('region1')
 @click.argument('region2')
 @click.argument('bam_input_file', type=click.Path(exists=True))
 @click.argument('bam_output_file')
-def CLI_bam_extract_regions(region1, region2, bam_input_file, bam_output_file):
+def CLI_bam_extract_regions(restrict_to_targeted_chromosomes, region1, region2, bam_input_file, bam_output_file):
     c = BAMExtract(bam_input_file, False)
-    c.extract(region1, region2, bam_output_file)
+    c.extract(region1, region2, bam_output_file, restrict_to_targeted_chromosomes)
 
 
 @CLI.command(name='logo-sequence', short_help='Extracts the genomic sequence before (negative file) or after (positive file) a given genomic location, in order to be used for creating sequence logo\'s.')
