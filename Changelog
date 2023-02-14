@@ -1,5 +1,10 @@
+2023-02-14  Youri Hoogstrate    v0.18.3
+	* when provided the appropriate discordant reads (i.e. no cannonical reads) from the master bam,
+	  `dr-disco fix` should be able to correctly fix those.
+	* got rid of fuma dependency
+
 2022-04-20  Youri Hoogstrate    v0.18.2
-    * strict mode for dr-disco bam-extract querying only targeted chromosomes/reference_nams
+	* strict mode for dr-disco bam-extract querying only targeted chromosomes/reference_nams
 
 2020-03-25	Youri Hoogstrate	v0.18.1
 	* blacklist regions and junctions 'chr' prefix insensitive
