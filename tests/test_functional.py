@@ -45,10 +45,10 @@ class TestFunctional_bam_extract(unittest.TestCase):
     def test_bam_extract_01(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
 
-        input_file = TEST_DIR + "test_terg_02.bam"
-        output_file = T_TEST_DIR + "test_terg_02.filtered.bam"
-        output_file_s = T_TEST_DIR + "test_terg_02.filtered.sam"
-        test_file = TEST_DIR + "test_terg_02.filtered.sam"
+        input_file = TEST_DIR + "test_02_terg.bam"
+        output_file = T_TEST_DIR + "test_02_terg.filtered.bam"
+        output_file_s = T_TEST_DIR + "test_02_terg.filtered.sam"
+        test_file = TEST_DIR + "test_02_terg.filtered.sam"
 
         # c = BAMExtract(input_file)
         # c.extract("chr21:39000000-40000000", "chr5:1-2", output_file)
@@ -86,10 +86,10 @@ class TestFunctional_fix_chimeric(unittest.TestCase):
     def test_fix_chimeric_01(self):
         TEST_DIR, T_TEST_DIR = self.__get_temp_dirs()
 
-        input_file = TEST_DIR + "test_terg_01.filtered.bam"
-        output_file = T_TEST_DIR + "test_terg_01.filtered.fixed.bam"
-        output_file_s = T_TEST_DIR + "test_terg_01.filtered.fixed.sam"
-        test_file = TEST_DIR + "test_terg_01.filtered.fixed.sam"
+        input_file = TEST_DIR + "test_01_terg.filtered.bam"
+        output_file = T_TEST_DIR + "test_01_terg.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_01_terg.filtered.fixed.sam"
+        test_file = TEST_DIR + "test_01_terg.filtered.fixed.sam"
 
         command = ["bin/dr-disco",
                    "fix",
