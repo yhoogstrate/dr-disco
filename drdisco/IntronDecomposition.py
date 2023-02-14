@@ -4,6 +4,7 @@
 # https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
 from drdisco.__init__ import MAX_ACCEPTABLE_INSERT_SIZE, MAX_ACCEPTABLE_ALIGNMENT_ERROR, MAX_GENOME_DISTANCE, MAX_SIZE_CIRCULAR_RNA
+from drdisco.__init__ import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 
 import math
 import operator
@@ -18,7 +19,6 @@ import scipy.stats
 from drdisco import log
 from .CigarAlignment import cigar_to_cigartuple
 
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 
 """[License: GNU General Public License v3 (GPLv3)]
 

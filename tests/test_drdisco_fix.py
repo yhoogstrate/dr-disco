@@ -31,6 +31,7 @@ import filecmp
 import pysam
 import os
 from tests.utils import main, get_diff
+import pysam
 
 
 subprocess.call(["bash", "tests/rm_bai_files.sh"])
@@ -45,11 +46,11 @@ if not os.path.exists(T_TEST_DIR):
 
 class TestChimericAlignment(unittest.TestCase):
     def test_01(self):
-        input_file = TEST_DIR + "test_terg_01.filtered.bam"
-        output_file = T_TEST_DIR + "test_terg_01.filtered.fixed.bam"
-        output_file_s = T_TEST_DIR + "test_terg_01.filtered.fixed.sam"
+        input_file = TEST_DIR + "test_01_terg.filtered.bam"
+        output_file = T_TEST_DIR + "test_01_terg.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_01_terg.filtered.fixed.sam"
 
-        test_file = TEST_DIR + "test_terg_01.filtered.fixed.sam"
+        test_file = TEST_DIR + "test_01_terg.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
         alignment_handle.convert(output_file, "tmp")
@@ -66,11 +67,11 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file = TEST_DIR + "test_terg_02.filtered.bam"
-        output_file = T_TEST_DIR + "test_terg_02.filtered.fixed.bam"
-        output_file_s = T_TEST_DIR + "test_terg_02.filtered.fixed.sam"
+        input_file = TEST_DIR + "test_02_terg.filtered.bam"
+        output_file = T_TEST_DIR + "test_02_terg.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_02_terg.filtered.fixed.sam"
 
-        test_file = TEST_DIR + "test_terg_02.filtered.fixed.sam"
+        test_file = TEST_DIR + "test_02_terg.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
         alignment_handle.convert(output_file, "tmp")
@@ -86,11 +87,11 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file = TEST_DIR + "test_terg_03.filtered.bam"
-        test_file = TEST_DIR + "test_terg_03.filtered.fixed.sam"
+        input_file = TEST_DIR + "test_03_terg.filtered.bam"
+        test_file = TEST_DIR + "test_03_terg.filtered.fixed.sam"
 
-        output_file = T_TEST_DIR + "test_terg_03.filtered.fixed.bam"
-        output_file_s = T_TEST_DIR + "test_terg_03.filtered.fixed.sam"
+        output_file = T_TEST_DIR + "test_03_terg.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_03_terg.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
         alignment_handle.convert(output_file, "tmp")
@@ -108,11 +109,11 @@ class TestChimericAlignment(unittest.TestCase):
         if not os.path.exists("tmp"):
             os.mkdir("tmp")
 
-        input_file = TEST_DIR + "test_terg_04.filtered.bam"
-        test_file = TEST_DIR + "test_terg_04.filtered.fixed.sam"
+        input_file = TEST_DIR + "test_04_terg.filtered.bam"
+        test_file = TEST_DIR + "test_04_terg.filtered.fixed.sam"
 
-        output_file = T_TEST_DIR + "test_terg_04.filtered.fixed.bam"
-        output_file_s = T_TEST_DIR + "test_terg_04.filtered.fixed.sam"
+        output_file = T_TEST_DIR + "test_04_terg.filtered.fixed.bam"
+        output_file_s = T_TEST_DIR + "test_04_terg.filtered.fixed.sam"
 
         alignment_handle = ChimericAlignment(input_file)
         alignment_handle.convert(output_file, "tmp")
@@ -137,6 +138,31 @@ class TestChimericAlignment(unittest.TestCase):
 
         # alignment_handle.convert(output_file, "tmp")
         self.assertRaises(Exception, alignment_handle.convert, output_file, "tmp")  # triggers exception because of empty file
+
+
+    def test_06__dealing_with_incorrect_hi_tags_in_within_bam_alignments(self):
+        if not os.path.exists("tmp"):
+            os.mkdir("tmp")
+
+        input_file_chim = TEST_DIR + "test_06__Chimeric.out.sam"
+        output_file_chim = T_TEST_DIR + "test_06__Chimeric.out.fixed.bam"
+        alignment_handle = ChimericAlignment(input_file_chim)
+        alignment_handle.convert(output_file_chim, "tmp")
+
+        input_file_within_bam = TEST_DIR + "test_06__Aligned.sortedByCoord.out.sam"
+        output_file_within_bam = T_TEST_DIR + "test_06__Aligned.sortedByCoord.out.fixed.bam"
+        alignment_handle = ChimericAlignment(input_file_within_bam)
+        alignment_handle.convert(output_file_within_bam, "tmp")
+        
+        fixed_chim = pysam.AlignmentFile(output_file_chim, "rb")
+        fixed_within_bam = pysam.AlignmentFile(output_file_within_bam, "rb")
+        
+        for read1, read2 in zip(fixed_chim.fetch(), fixed_within_bam.fetch()):
+            self.assertEqual(read1.query_name, read2.query_name)
+            self.assertEqual(read1.pos, read2.pos)
+            if read1.get_tag('RG').find("discordant_mates") == -1 and read1.get_tag('RG').find("silent_mate"):
+                self.assertEqual(read1.get_tag('HI'), read2.get_tag('HI'))
+            self.assertEqual(read1.get_tag('RG'), read2.get_tag('RG'))
 
 
 if __name__ == '__main__':

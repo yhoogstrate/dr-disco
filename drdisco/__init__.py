@@ -31,7 +31,7 @@
 import logging
 import sys
 
-__version_info__ = ('0', '18', '2')
+__version_info__ = ('0', '18', '3')
 __version__ = '.'.join(__version_info__) if (len(__version_info__) == 3) else '.'.join(__version_info__[0:3]) + "-" + __version_info__[3]
 __author__ = 'Youri Hoogstrate'
 __homepage__ = 'https://github.com/yhoogstrate/dr-disco'
@@ -51,3 +51,8 @@ MAX_SIZE_CIRCULAR_RNA = 100000
 
 # filter settings
 MIN_DISCO_PER_SUBNET_PER_NODE = 1  # minimum nodes is 2 per subnet, hence mininal 2 discordant reads are necessairy
+
+# constants
+STRAND_FORWARD      = True
+STRAND_REVERSE      = False
+STRAND_UNDETERMINED = None

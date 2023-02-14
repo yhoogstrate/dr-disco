@@ -6,7 +6,7 @@
 
 import re
 
-from fuma.Fusion import STRAND_FORWARD, STRAND_REVERSE
+from drdisco.__init__ import STRAND_FORWARD, STRAND_REVERSE, STRAND_UNDETERMINED
 
 """[License: GNU General Public License v3 (GPLv3)]
 

@@ -2,21 +2,6 @@
 # *- coding: utf-8 -*-
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
-import os
-import shutil
-import hashlib
-import random
-import string
-
-import pysam
-
-# from fuma.Fusion import STRAND_FORWARD
-# from .CigarAlignment import CigarAlignment
-
-from drdisco import __version__
-from drdisco import log
-from drdisco.utils import str_to_bytearray
-
 """[License: GNU General Public License v3 (GPLv3)]
 
     Dr. Disco: fusion gene detection in random hexamer RNA-seq data
@@ -43,6 +28,22 @@ from drdisco.utils import str_to_bytearray
     gmail dot com
 """
 
+
+import os
+import shutil
+import hashlib
+import random
+import string
+
+import pysam
+
+# from .CigarAlignment import CigarAlignment
+
+from drdisco import __version__
+from drdisco import log
+from drdisco.utils import str_to_bytearray
+
+
 """
  Sep 01: fix bam files:
  - SA tag at the end to link the multiple supplementary alignments IF present - by using samtools -n
@@ -57,9 +58,90 @@ from drdisco.utils import str_to_bytearray
 """
 
 
+def set_hi_tags_in_within_bam_alignments(segment1, segment2):
+    """ This is what I beleive to have found after testing:
+    R1 & supplementary: HI:i:1
+    R1 & not supplementary: HI:i:2
+
+    R2 & supplementary: HI:i:2
+    R2 & not supplementary: HI:i:1
+    """
+
+    # seems not necessary to use the clippings
+    # s1hard = sum([_[1] for _ in segment1.cigar if _[0] == 5])
+    # s1soft = sum([_[1] for _ in segment1.cigar if _[0] == 4])
+    
+    # s2hard = sum([_[1] for _ in segment2.cigar if _[0] == 5])
+    # s2soft = sum([_[1] for _ in segment2.cigar if _[0] == 4])
+    
+    # if s1hard > s1soft and s1hard > s2hard: # more hard than soft clips
+        # segment1.set_tag('HI', 2)
+        # segment2.set_tag('HI', 1)
+    # else:
+        # segment1.set_tag('HI', 1)
+        # segment2.set_tag('HI', 2)
+
+    flip = False
+
+    if segment1.is_read1 and segment2.is_read1:
+        # R1
+        if segment1.is_supplementary and not segment2.is_supplementary:
+            segment1.set_tag('HI', 1)
+            segment2.set_tag('HI', 2)
+        elif (not segment1.is_supplementary) and segment2.is_supplementary:
+            segment1.set_tag('HI', 2)
+            segment2.set_tag('HI', 1)
+        else:
+            raise Exception("This is odd: %s (%i) -> %s\n%s (%i) -> %s\n",
+                        segment1.query_name,
+                        segment1.reference_start,
+                        'suppl' if segment1.is_suipplementary else 'not suppl',
+                        segment2.query_name,
+                        segment2.reference_start,
+                        'suppl' if segment2.is_suipplementary else 'not suppl')
+
+        # just tested stuff and it worked
+        if segment1.get_tag('HI') == 1 and segment1.pos < segment2.pos:
+            flip = True
+
+    elif segment1.is_read2 and segment2.is_read2:
+        # R2
+        if segment1.is_supplementary and not segment2.is_supplementary:
+            segment1.set_tag('HI', 2)
+            segment2.set_tag('HI', 1)
+        elif not segment1.is_supplementary and segment2.is_supplementary:
+            segment1.set_tag('HI', 1)
+            segment2.set_tag('HI', 2)
+        else:
+            raise Exception("This is odd: %s (%i) -> %s\n%s (%i) -> %s\n",
+                        segment1.query_name,
+                        segment1.reference_start,
+                        'suppl' if segment1.is_suipplementary else 'not suppl',
+                        segment2.query_name,
+                        segment2.reference_start,
+                        'suppl' if segment2.is_suipplementary else 'not suppl')
+    
+        # if HI:i:2 comes before HI:i:1, then flip
+        if segment1.get_tag('HI') == 2 and segment1.pos < segment2.pos:
+            flip = True
+
+    else:
+        raise Exception("segments from r1 and r2 are not supported in this: %s (%i) -> %s\n%s (%i) -> %s\n",
+                        segment1.query_name,
+                        segment1.reference_start,
+                        'R1' if segment1.is_read1 else 'R2',
+                        segment2.query_name,
+                        segment2.reference_start,
+                        'R1' if segment2.is_read1 else 'R2')
+
+    return flip
+
+
+
 class ChimericAlignment:
     def __init__(self, input_alignment_file):
         self.input_alignment_file = input_alignment_file
+        self.warning_hi_tags = False
         self.test_pysam_version()
 
     def test_pysam_version(self):
@@ -379,7 +461,7 @@ class ChimericAlignment:
                 r2.append(alignment)
             else:
                 singletons.append(alignment)
-
+        
         n_r1 = len(r1)
         n_r2 = len(r2)
         n_s = len(singletons)
@@ -388,6 +470,14 @@ class ChimericAlignment:
 
         if n_r1 == 2:
             reads_updated, mates_updated = self.fix_chain(r1, bam_file, r2)
+
+            # wrong way of annotating HI:i:tags, currently common practice in WithinBAM
+            if reads_updated[0].get_tag('HI') == reads_updated[1].get_tag('HI'):
+                flip = set_hi_tags_in_within_bam_alignments(reads_updated[0], reads_updated[1])
+                
+                if flip:
+                    reads_updated[0], reads_updated[1] = reads_updated[1], reads_updated[0]
+                self.warning_hi_tags = True
 
             # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
             if reads_updated[0].get_tag('HI') == 1 and reads_updated[1].get_tag('HI') == 2:
@@ -415,7 +505,15 @@ class ChimericAlignment:
         elif n_r2 == 2:
             reads_updated, mates_updated = self.fix_chain(r2, bam_file, r1)
 
-            # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
+            # wrong way of annotating HI:i:tags, currently common practice in WithinBAM
+            if reads_updated[0].get_tag('HI') == reads_updated[1].get_tag('HI'):
+                flip = set_hi_tags_in_within_bam_alignments(reads_updated[0], reads_updated[1])
+                
+                if flip:
+                    reads_updated[0], reads_updated[1] = reads_updated[1], reads_updated[0]
+                self.warning_hi_tags = True
+            
+            
             if reads_updated[0].get_tag('HI') == 2 and reads_updated[1].get_tag('HI') == 1:
                 self.set_read_group([reads_updated[0]], 'spanning_paired_2_r')
                 self.set_read_group([reads_updated[1]], 'spanning_paired_1_r')
@@ -438,6 +536,14 @@ class ChimericAlignment:
 
         elif n_s == 2:
             reads_updated, mates_updated = self.fix_chain(singletons, bam_file, [])
+
+            # wrong way of annotating HI:i:tags, currently common practice in WithinBAM
+            if reads_updated[0].get_tag('HI') == reads_updated[1].get_tag('HI'):
+                flip = set_hi_tags_in_within_bam_alignments(reads_updated[0], reads_updated[1])
+                
+                if flip:
+                    reads_updated[0], reads_updated[1] = reads_updated[1], reads_updated[0]
+                self.warning_hi_tags = True
 
             # ca = CigarAlignment(reads_updated[0].cigar, reads_updated[1].cigar)
             # if ca.get_order() == STRAND_FORWARD:
@@ -489,6 +595,7 @@ class ChimericAlignment:
             fh_out.write(a)
 
     def convert(self, bam_file_discordant_fixed, temp_dir):
+        log.info(" --- ")
         def randstr(n):
             return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(n))
 
@@ -547,6 +654,19 @@ class ChimericAlignment:
             log.error(err)
             raise Exception(err)
         fh.close()
+
+        if self.warning_hi_tags:
+            log.warning("")
+            log.warning("+----------------------------------------------------------------------------------------------+")
+            log.warning("++--------------------------------------------------------------------------------------------++")
+            log.warning("||  This alignment file does not make appropriate use of HI:i:-tags                           ||")
+            log.warning("||  All segments are designated the same hit index                                            ||")
+            log.warning("||  This is most likely because you are using withinBAM alignment and not chimeric.out files  ||")
+            log.warning("||  These withinBAM files do not provide HI:i:-tags in compliance with alignment standards    ||")
+            log.warning("||  To fix this, I wrote a HI:i:-tag conversion, which is experimental!                       ||")
+            log.warning("++--------------------------------------------------------------------------------------------++")
+            log.warning("+----------------------------------------------------------------------------------------------+")
+            log.warning("")
 
         log.info("Converting fixed file into BAM")
         fhq = open(basename + ".name-sorted.fixed.bam", "wb")

@@ -24,7 +24,7 @@ Dr. Disco - testing fix-chimeric
 
 from drdisco.CigarAlignment import CigarAlignment, cigar_to_cigartuple
 
-from fuma.Fusion import STRAND_REVERSE
+from drdisco.__init__ import STRAND_REVERSE
 
 import unittest
 
