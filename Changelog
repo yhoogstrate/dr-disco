@@ -1,6 +1,7 @@
 2023-02-14  Youri Hoogstrate    v0.18.3
 	* when provided the appropriate discordant reads (i.e. no cannonical reads) from the master bam,
 	  `dr-disco fix` should be able to correctly fix those.
+	  Detailed bug report by Marcel Smid, thanks
 	* got rid of fuma dependency
 
 2022-04-20  Youri Hoogstrate    v0.18.2
