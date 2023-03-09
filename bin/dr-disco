@@ -3,21 +3,6 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 
-import drdisco
-import pysam
-import click
-
-
-from drdisco.IntronDecomposition import BAMExtract
-from drdisco.IntronDecomposition import IntronDecomposition
-from drdisco.ChimericAlignment import ChimericAlignment
-from drdisco.ChimericAlignment import ChimericAlignmentFixed
-
-from drdisco.Classify import Blacklist
-from drdisco.DetectOutput import DetectOutput
-
-from drdisco.utils import parse_pos
-
 """[License: GNU General Public License v3 (GPLv3)]
 
     Dr. Disco: fusion gene detection in random hexamer RNA-seq data
@@ -45,7 +30,27 @@ from drdisco.utils import parse_pos
 """
 
 
+import drdisco
+import pysam
+import click
+
+
+from drdisco.IntronDecomposition import BAMExtract
+from drdisco.IntronDecomposition import IntronDecomposition
+from drdisco.ChimericAlignment import ChimericAlignment
+from drdisco.ChimericAlignment import ChimericAlignmentFixed
+
+from drdisco.Classify import Blacklist
+from drdisco.DetectOutput import DetectOutput
+
+from drdisco.utils import parse_pos
+from drdisco.utils import test_pysam_version
+
+
+
 def main():
+    test_pysam_version()
+    
     CLI()
 
 
@@ -64,13 +69,13 @@ def CLI_fix_chimeric_alignment(temp_dir, input_alignment_file, output_alignment_
     alignment_handle.convert(output_alignment_file, temp_dir)
 
 
-@CLI.command(name="subtract", short_help="Subtract chimeric SAM/BAM alignment produced by RNA-STAR v2.6 or higher")
-@click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
-@click.argument('input_alignment_file', type=click.Path(exists=True))
-@click.argument('output_alignment_file')
-def CLI_subtract_chimeric_reads(temp_dir, input_alignment_file, output_alignment_file):
-    alignment_handle = ChimericAlignment(input_alignment_file)
-    alignment_handle.convert(output_alignment_file, temp_dir)
+# @CLI.command(name="subtract", short_help="Subtract chimeric SAM/BAM alignment produced by RNA-STAR v2.6 or higher")
+# @click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
+# @click.argument('input_alignment_file', type=click.Path(exists=True))
+# @click.argument('output_alignment_file')
+# def CLI_subtract_chimeric_reads(temp_dir, input_alignment_file, output_alignment_file):
+    # alignment_handle = ChimericAlignment(input_alignment_file)
+    # alignment_handle.convert(output_alignment_file, temp_dir)
 
 
 
@@ -226,6 +231,19 @@ def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
 
     for k in range(len(entries)):
         print (str(k + 1) + "\t" + entries[k])
+
+
+
+@CLI.command(name='chimeric-from-withinbam', short_help='Fetch Chimeric reads from the BAM files generated with \'--chimOutType WithinBAM\'.')
+@click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
+@click.argument('input_alignment_file', type=click.Path(exists=True))
+@click.argument('output_alignment_file')
+def CLI_extract_chimeric_from_withinbam(temp_dir, input_alignment_file, output_alignment_file):
+    alignment_handle = WithinBAM(input_alignment_file)
+    alignment_handle.extract(output_alignment_file, temp_dir)
+
+
+
 
 
 if __name__ == '__main__':

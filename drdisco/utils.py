@@ -5,6 +5,7 @@
 
 import gzip
 import re
+import pysam
 
 
 alt_map = {'ins': '0'}
@@ -65,8 +66,18 @@ def parse_pos(strpos):
 
 
 def str_to_bytearray(s):
-	b = bytearray()
-	b.extend(map(ord, s))
-	return b
+    b = bytearray()
+    b.extend(map(ord, s))
+    return b
+
+
+# there have been compatibility issues with old pysam versions
+def test_pysam_version():
+    versions = pysam.__version__.split('.', 2)
+
+    if int(versions[1]) < 9:
+        raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__ + " instead")
+    else:
+        return True
 
 

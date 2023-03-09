@@ -694,13 +694,6 @@ class ChimericAlignmentFixed:
         self.input_alignment_file = input_alignment_file
         self.test_pysam_version()
 
-    def test_pysam_version(self):
-        versions = pysam.__version__.split('.', 2)
-
-        if int(versions[1]) < 9:
-            raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__ + " instead")
-        else:
-            return True
 
     def convert(self, bam_file_discordant_fixed, temp_dir):
         basename, ext = os.path.splitext(os.path.basename(self.input_alignment_file))
