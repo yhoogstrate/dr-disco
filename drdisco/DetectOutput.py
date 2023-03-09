@@ -402,7 +402,7 @@ class GeneAnnotation:
             gtf_file = HTSeq.GFF_Reader(self.gtf_file, end_included=True)
             n = 0
 
-            for feature in gtf_file:
+            for feature in tqdm(gtf_file):
                 if feature.type == "gene":
                     if 'gene_name' in feature.attr:
                         name = feature.attr['gene_name']

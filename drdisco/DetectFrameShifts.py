@@ -5,6 +5,7 @@
 
 import HTSeq
 from drdisco import log
+from tqdm import tqdm
 
 
 """[License: GNU General Public License v3 (GPLv3)]
@@ -73,10 +74,12 @@ class DetectFrameShifts:
             transcript_idx = {}
             gtf_file = HTSeq.GFF_Reader(self.gtf_file, end_included=True)
 
-            for feature in gtf_file:
+            for feature in tqdm(gtf_file):
                 gtf_type = feature.type.lower()
                 if gtf_type in ['cds', 'exon']:
                     try:
+                        if 'transcript_version' not in feature.attr:
+                            feature.attr['transcript_version'] = '?'
                         transcript_id = feature.attr['gene_name'] + '(' + feature.attr['transcript_id'] + '.' + feature.attr['transcript_version'] + ')-' + feature.source
 
                         if transcript_id not in transcript_idx:
