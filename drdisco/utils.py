@@ -9,7 +9,10 @@ import pysam
 
 
 alt_map = {'ins': '0'}
-complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
+complement = {'A': 'T', 
+              'C': 'G', 
+              'G': 'C',
+              'T': 'A'}
 
 
 def reverse_complement(seq):
@@ -81,3 +84,11 @@ def test_pysam_version():
         return True
 
 
+def extract_newline_separated_file_as_set(filename: str) -> set:
+    out = set([])
+
+    with open(filename, 'r') as fh:
+        for line in fh:
+            out.add(str(line.strip()))
+
+    return out

@@ -28,40 +28,45 @@
     gmail dot com
 """
 
-#from __future__ import annotations
-#from abc import ABC, abstractmethod
-
-
-import os
-import shutil
-import hashlib
-import random
-import string
 
 import pysam
-
+from tqdm import tqdm
 
 
 from drdisco import __version__
 from drdisco import log
-from drdisco.alignment import alignment
-from drdisco.utils import str_to_bytearray
 
 
-class WithinBAM(alignment):
-    #def __init__(self, input_alignment_file):
-    #    self.input_alignment_file = input_alignment_file
+class alignment():
+    def __init__(self, input_alignment_file):
+        self.input_alignment_file = input_alignment_file
 
-    def obtain_chimeric_read_names(self) -> set:
-        names = set(['a'])
+    def extract_reads_by_names(self, read_names: set, output_file: str) -> int:
+        found = set([])
+        log.info("Accessing alignment file, trying to extract "+str(len(read_names)) + " unique reads")
         
-        return names
+        with pysam.AlignmentFile(self.input_alignment_file, "rb") as fh_in:
+            fh_out = pysam.AlignmentFile(output_file, "wb", header = fh_in.header)
 
-    def extract(self, output_alignment_file: str, temp_dir):
+            for read in tqdm(fh_in, total=fh_in.mapped):
+                if read.qname in read_names:
+                    found.add(read.qname)
+                    fh_out.write(read)
+
+        log.info("Extracted " + str(len(found)) + "/" + str(len(read_names)) + " unique reads")
+
+        return len(found)
+
+
+    def get_star_version(self) -> tuple:
+        try:
+            fh = pysam.AlignmentFile(self.input_alignment_file, "rb")
+        except:
+            fh = pysam.AlignmentFile(self.input_alignment_file, "r")
+
+        header = fh.header()
+
+        fh.close()
         
-        names = self.obtain_chimeric_read_names()
         
-        print("pass")
-
-
-
+        print(header)

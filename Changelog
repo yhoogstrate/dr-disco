@@ -3,6 +3,7 @@
 	  `dr-disco fix` should be able to correctly fix those.
 	  Detailed bug report by Marcel Smid, thanks
 	* got rid of fuma dependency
+	* implemented `dr-disco bam-extract-by-readname`
 
 2022-04-20  Youri Hoogstrate    v0.18.2
 	* strict mode for dr-disco bam-extract querying only targeted chromosomes/reference_nams
