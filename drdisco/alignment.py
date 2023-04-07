@@ -42,7 +42,7 @@ class alignment():
         self.input_alignment_file = input_alignment_file
 
     def extract_reads_by_names(self, read_names: set, output_file: str) -> int:
-        found = set([])
+        found = 0
         log.info("Accessing alignment file, trying to extract "+str(len(read_names)) + " unique reads")
         
         with pysam.AlignmentFile(self.input_alignment_file, "rb") as fh_in:
@@ -50,12 +50,12 @@ class alignment():
 
             for read in tqdm(fh_in, total=fh_in.mapped):
                 if read.qname in read_names:
-                    found.add(read.qname)
                     fh_out.write(read)
+                    found += 1
 
-        log.info("Extracted " + str(len(found)) + "/" + str(len(read_names)) + " unique reads")
+        log.info("Extracted " + str(found) + "/" + str(len(read_names)) + " unique reads")
 
-        return len(found)
+        return found
 
 
     def get_star_version(self) -> tuple:

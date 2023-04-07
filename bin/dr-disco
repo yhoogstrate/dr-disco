@@ -245,12 +245,11 @@ def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
 
 
 @CLI.command(name='chimeric-from-withinbam', short_help='Fetch Chimeric reads from the BAM files generated with \'--chimOutType WithinBAM\'.')
-@click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
 @click.argument('input_alignment_file', type=click.Path(exists=True))
 @click.argument('output_alignment_file')
-def CLI_extract_chimeric_from_withinbam(temp_dir, input_alignment_file, output_alignment_file):
+def CLI_extract_chimeric_from_withinbam(input_alignment_file, output_alignment_file):
     alignment_handle = WithinBAM(input_alignment_file)
-    alignment_handle.extract_chimeric_reads(output_alignment_file, temp_dir)
+    alignment_handle.extract_chimeric_reads(output_alignment_file)
 
 
 
