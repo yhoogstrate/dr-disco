@@ -40,6 +40,7 @@ import string
 
 import pysam
 
+from tqdm import tqdm
 
 
 from drdisco import __version__
@@ -53,15 +54,36 @@ class WithinBAM(alignment):
     #    self.input_alignment_file = input_alignment_file
 
     def obtain_chimeric_read_names(self) -> set:
-        names = set(['a'])
+        names = set([])
         
+        log.info('Searching for chimeric reads (read names) in bam-file')
+        
+        with pysam.AlignmentFile(self.input_alignment_file, "rb") as samfile_in:
+            with tqdm(total = samfile_in.mapped) as pbar:
+
+                for read in samfile_in.fetch():
+                    if read.has_tag('SA') or read.is_supplementary or read.flag in [65,81,97,113,129,145,161,177]: # last one are not properly mapped + not suppl
+                        names.add(read.qname)
+                    pbar.update(1)
+
+        log.info('Found '+str(len(names))+' chimeric reads (read names) in bam-file')
+
         return names
 
-    def extract(self, output_alignment_file: str, temp_dir):
+    def extract_chimeric_reads(self, output_alignment_file: str, temp_dir):
         
         names = self.obtain_chimeric_read_names()
-        
-        print("pass")
+
+        log.info('Extracting '+str(len(names))+' chimeric reads from bam file')
+
+        with pysam.AlignmentFile(self.input_alignment_file, "rb") as samfile_in:
+            with pysam.AlignmentFile(output_alignment_file, "wb", header=samfile_in.header) as samfile_out:
+                with tqdm(total = samfile_in.mapped) as pbar:
+
+                    for read in samfile_in.fetch():
+                        if read.qname in names:
+                            samfile_out.write(read)
+                        pbar.update(1)
 
 
 

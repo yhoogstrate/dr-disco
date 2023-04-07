@@ -250,7 +250,7 @@ def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
 @click.argument('output_alignment_file')
 def CLI_extract_chimeric_from_withinbam(temp_dir, input_alignment_file, output_alignment_file):
     alignment_handle = WithinBAM(input_alignment_file)
-    alignment_handle.extract(output_alignment_file, temp_dir)
+    alignment_handle.extract_chimeric_reads(output_alignment_file, temp_dir)
 
 
 
