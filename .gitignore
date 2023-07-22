@@ -40,3 +40,4 @@ ignore
 /*.bam
 /*.sam
 *.ods
+test.sh

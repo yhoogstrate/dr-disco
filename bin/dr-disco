@@ -3,21 +3,6 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=79:
 
 
-import drdisco
-import pysam
-import click
-
-
-from drdisco.IntronDecomposition import BAMExtract
-from drdisco.IntronDecomposition import IntronDecomposition
-from drdisco.ChimericAlignment import ChimericAlignment
-from drdisco.ChimericAlignment import ChimericAlignmentFixed
-
-from drdisco.Classify import Blacklist
-from drdisco.DetectOutput import DetectOutput
-
-from drdisco.utils import parse_pos
-
 """[License: GNU General Public License v3 (GPLv3)]
 
     Dr. Disco: fusion gene detection in random hexamer RNA-seq data
@@ -45,7 +30,30 @@ from drdisco.utils import parse_pos
 """
 
 
+import drdisco
+import pysam
+import click
+
+
+from drdisco.IntronDecomposition import BAMExtract
+from drdisco.IntronDecomposition import IntronDecomposition
+from drdisco.ChimericAlignment import ChimericAlignment
+from drdisco.ChimericAlignment import ChimericAlignmentFixed
+from drdisco.alignment import alignment
+from drdisco.WithinBAM import WithinBAM
+
+from drdisco.Classify import Blacklist
+from drdisco.DetectOutput import DetectOutput
+
+from drdisco.utils import parse_pos
+from drdisco.utils import test_pysam_version
+from drdisco.utils import extract_newline_separated_file_as_set
+
+
+
 def main():
+    test_pysam_version()
+    
     CLI()
 
 
@@ -60,15 +68,6 @@ def CLI():
 @click.argument('input_alignment_file', type=click.Path(exists=True))
 @click.argument('output_alignment_file')
 def CLI_fix_chimeric_alignment(temp_dir, input_alignment_file, output_alignment_file):
-    alignment_handle = ChimericAlignment(input_alignment_file)
-    alignment_handle.convert(output_alignment_file, temp_dir)
-
-
-@CLI.command(name="subtract", short_help="Subtract chimeric SAM/BAM alignment produced by RNA-STAR v2.6 or higher")
-@click.option("--temp-dir", "-t", type=click.Path(exists=True), default="/tmp", help="Path in which temp files are stored (default: /tmp)")
-@click.argument('input_alignment_file', type=click.Path(exists=True))
-@click.argument('output_alignment_file')
-def CLI_subtract_chimeric_reads(temp_dir, input_alignment_file, output_alignment_file):
     alignment_handle = ChimericAlignment(input_alignment_file)
     alignment_handle.convert(output_alignment_file, temp_dir)
 
@@ -102,6 +101,22 @@ def CLI_detect_break_points(min_e_score, bam_input_file, output_file):
 def CLI_bam_extract_regions(restrict_to_targeted_chromosomes, region1, region2, bam_input_file, bam_output_file):
     c = BAMExtract(bam_input_file, False)
     c.extract(region1, region2, bam_output_file, restrict_to_targeted_chromosomes)
+
+
+@CLI.command(name='bam-extract-by-readname', short_help='Extract reads by readname(s)')
+@click.argument('bam_input_file', type=click.Path(exists=True))
+@click.argument('bam_output_file')
+@click.option('--readname-file','-f', is_flag=True, help="Use new line separated file with read names.")
+@click.argument('readnames', nargs=-1)
+def CLI_bam_extract_reads_by_name(bam_input_file, bam_output_file, readname_file, readnames):
+    if readname_file:
+        readnames = extract_newline_separated_file_as_set(readnames[0])
+    else:
+        readnames = set([_ for _ in readnames])
+    
+    a = alignment(bam_input_file)
+    a.extract_reads_by_names(readnames, bam_output_file)
+
 
 
 @CLI.command(name='logo-sequence', short_help='Extracts the genomic sequence before (negative file) or after (positive file) a given genomic location, in order to be used for creating sequence logo\'s.')
@@ -226,6 +241,18 @@ def CLI_is_blacklisted(pos1, pos2, blacklist_regions, blacklist_junctions):
 
     for k in range(len(entries)):
         print (str(k + 1) + "\t" + entries[k])
+
+
+
+@CLI.command(name='chimeric-from-withinbam', short_help='Fetch Chimeric reads from the BAM files generated with \'--chimOutType WithinBAM\'.')
+@click.argument('input_alignment_file', type=click.Path(exists=True))
+@click.argument('output_alignment_file')
+def CLI_extract_chimeric_from_withinbam(input_alignment_file, output_alignment_file):
+    alignment_handle = WithinBAM(input_alignment_file)
+    alignment_handle.extract_chimeric_reads(output_alignment_file)
+
+
+
 
 
 if __name__ == '__main__':

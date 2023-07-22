@@ -5,10 +5,14 @@
 
 import gzip
 import re
+import pysam
 
 
 alt_map = {'ins': '0'}
-complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
+complement = {'A': 'T', 
+              'C': 'G', 
+              'G': 'C',
+              'T': 'A'}
 
 
 def reverse_complement(seq):
@@ -65,8 +69,26 @@ def parse_pos(strpos):
 
 
 def str_to_bytearray(s):
-	b = bytearray()
-	b.extend(map(ord, s))
-	return b
+    b = bytearray()
+    b.extend(map(ord, s))
+    return b
 
 
+# there have been compatibility issues with old pysam versions
+def test_pysam_version():
+    versions = pysam.__version__.split('.', 2)
+
+    if int(versions[1]) < 9:
+        raise Exception("Version of pysam needs to be at least 0.9 but is: " + pysam.__version__ + " instead")
+    else:
+        return True
+
+
+def extract_newline_separated_file_as_set(filename: str) -> set:
+    out = set([])
+
+    with open(filename, 'r') as fh:
+        for line in fh:
+            out.add(str(line.strip()))
+
+    return out

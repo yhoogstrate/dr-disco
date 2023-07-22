@@ -1358,6 +1358,9 @@ class SubGraph():
 
 
 class BAMExtract(object):
+    """
+    """
+    
     def __init__(self, bam_file, require_fixed_bam_file):
         self.pysam_fh = self.test_disco_alignment(bam_file, require_fixed_bam_file)
         self.overlapping_reads = 0
@@ -1828,7 +1831,8 @@ class BAMExtract(object):
 
                 else:  # pragma: no cover
                     raise Exception("Unknown type read: %s. Was the alignment fixed with a more up to date version of Dr.Disco?" % JunctionTypeUtils.str(rg))
-
+                
+                
                 # Detect introns, clipping and insertions /deletions by SAM flags
                 for internal_edge in self.find_cigar_edges(read):
                     i_pos1, i_pos2 = None, None
@@ -1840,7 +1844,7 @@ class BAMExtract(object):
                         if internal_edge[2] in [JunctionTypes.cigar_deletion] and i_pos1.get_dist(i_pos2, False) < MAX_ACCEPTABLE_INSERT_SIZE:
                             i_pos1, i_pos2 = None, None
 
-                    elif internal_edge[2] in [JunctionTypes.cigar_soft_clip]:
+                    elif internal_edge[2] in [JunctionTypes.cigar_soft_clip, JunctionTypes.cigar_hard_clip]:
                         if pos1 is None or rg in [JunctionTypes.spanning_paired_1_s, JunctionTypes.spanning_paired_2_s]:
                             pass
                         elif JunctionTypeUtils.is_fusion_junction(rg):
@@ -2060,12 +2064,14 @@ class IntronDecomposition:
         self.alignment_file = alignment_file
 
     def decompose(self, MIN_SCORE_FOR_EXTRACTING_SUBGRAPHS):
+        log.info("Bam extract")
         alignment = BAMExtract(self.alignment_file, True)
 
         # initally worked, but slow because of same insane nodes
         fusion_junctions = {}  # fusion_junctions['chr1']['chr3'] = Graph() - where first chr < second chr
         splice_junctions = {}  # [chr1] = Graph, etc.
 
+        log.info("Bam extract 2")
         alignment.extract_junctions(fusion_junctions, splice_junctions)
 
         # Calc progress bar
